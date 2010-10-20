@@ -1,0 +1,8 @@
+arch/arm/mach-s3c6410/pm.c
+arch/arm/plat-s3c64xx/volans-pm.c
+arch/arm/plat-s3c64xx/include/plat/pm.h
+arch/arm/plat-s3c64xx/pm.c
+include/linux/i2c/pmic.h
+include/config/pmic/max8698.h
+include/linux/i2c/max8698.h
+drivers/i2c/chips/max8698.c

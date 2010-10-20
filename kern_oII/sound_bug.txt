@@ -1,0 +1,489 @@
+dmesg
+Entered s3c24xx_pcm_pointer
+Entered s3c24xx_pcm_pointer
+Entered s3c24xx_pcm_pointer
+Entered s3c24xx_pcm_pointer
+Entered s3c24xx_pcm_pointer
+Entered s3c24xx_audio_buffdone
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_enqueue   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_audio_buffdone
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_enqueue   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_audio_buffdone
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_enqueue   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_audio_buffdone
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_enqueue   
+Entered s3c24xx_audio_buffdone
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_enqueue   
+Entered s3c24xx_audio_buffdone
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_enqueue   
+Entered s3c24xx_audio_buffdone
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_enqueue   
+Entered s3c24xx_audio_buffdone
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_enqueue   
+Entered s3c24xx_audio_buffdone
+Entered s3c24xx_pcm_pointer   
+Entered s3c24xx_pcm_trigger   
+s3c_i2s_trigger, stream:0     
+Stop                          
+s3c_snd_txctrl                
+I2S off                       
+Entered s3c24xx_pcm_hw_free   
+Entered s3c24xx_pcm_hw_free   
+[ ak4671.c (ak4671_mute,608) ] mute 1
+i2c-adapter i2c-3: master_xfer[0] W, addr=0x12, len=2
+Entered s3c24xx_pcm_close, prtd = c78a8ba0           
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 0 
+S3C-Keypad low Pressed  : 0                 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 300 
+S3C-Keypad low Released : 0                   
+s3c_i2s_startup                               
+Entered s3c24xx_pcm_open                      
+[ capella_ak4671 (android_hifi_hw_params,123) ] Entered android_hifi_hw_params, rate = 44100
+
+[ capella_ak4671 (android_hifi_hw_params,126) ] before :   IISMOD: 0,IISPSR: 0
+
+[ capella_ak4671 (android_hifi_hw_params,127) ]         GPDCON = 0x33313 
+
+[ capella_ak4671 (android_hifi_hw_params,184) ] m = 30, EPLL_CON0 : 0x801e0103, epll_con0:0x0
+
+[ capella_ak4671 (android_hifi_hw_params,189) ]  !!!! EPLL set - m:30, p:1, s:3, k:6903  => EPLL_CON0 : 0xc01e0103, EPLL_CON1: 0x1af7 !!!!
+
+i2c-adapter i2c-3: master_xfer[0] W, addr=0x12, len=2
+s3c_i2s_set_fmt                                      
+[AK4671] Set bitRate : 0xf8 (44100)                  
+i2c-adapter i2c-3: master_xfer[0] W, addr=0x12, len=2
+s3c_i2s_set_sysclk                                   
+s3c_i2s_set_clkdiv                                   
+[ capella_ak4671 (android_hifi_hw_params,298) ] after :  IISCON: 278 IISMOD: 0,IISFIC: 0,IISPSR: 0
+
+[ capella_ak4671 (android_hifi_hw_params,300) ]         : EPLL_CON0: 0xc01e0103 EPLLCON1:0x1af7 CLK_SRC:0x14550007 CLK_DIV2:0x0
+
+s3c_i2s_hw_params
+s3c iis mode: 0x00000e00
+s3c: params_channels 2  
+s3c: params_format 2    
+s3c: params_subformat 0 
+s3c: params_period_size 4096
+s3c: params_period_bytes 16384
+s3c: params_periods 5         
+s3c: params_buffer_size 22050 
+s3c: params_buffer_bytes 88200
+hw_params: IISMOD: e00        
+Entered s3c24xx_pcm_hw_params, params = (null) 
+params c03bf9a0, client c03bf9c0, channel 12
+Entered s3c24xx_pcm_hw_params, line 290
+Entered s3c24xx_pcm_prepare
+Entered s3c24xx_pcm_enqueue
+s3c_i2s_prepare
+[ ak4671.c (ak4671_mute,608) ] mute 0
+i2c-adapter i2c-3: master_xfer[0] W, addr=0x12, len=2
+------------[ cut here ]------------
+WARNING: at sound/core/pcm_lib.c:1652 snd_pcm_lib_write_transfer+0x144/0x160()
+BUG? (runtime->dma_area)
+Modules linked in:
+Backtrace:
+[<c0030714>] (dump_backtrace+0x0/0x10c) from [<c02de1b4>] (dump_stack+0x18/0x1c)
+ r7:c0377644 r6:00000674 r5:c0229654 r4:c7c67dc0
+[<c02de19c>] (dump_stack+0x0/0x1c) from [<c0047fc0>] (warn_slowpath_common+0x50/0x68)
+[<c0047f70>] (warn_slowpath_common+0x0/0x68) from [<c0048024>] (warn_slowpath_fmt+0x30/0x38)
+ r7:00000000 r6:00001000 r5:00000020 r4:c7c85c00
+[<c0047ff4>] (warn_slowpath_fmt+0x0/0x38) from [<c0229654>] (snd_pcm_lib_write_transfer+0x144/0x160)
+ r3:c0377724 r2:c037630c
+[<c0229510>] (snd_pcm_lib_write_transfer+0x0/0x160) from [<c022a568>] (snd_pcm_lib_write1+0x210/0x3f4)
+[<c022a358>] (snd_pcm_lib_write1+0x0/0x3f4) from [<c022a818>] (snd_pcm_lib_write+0x5c/0x7c)
+[<c022a7bc>] (snd_pcm_lib_write+0x0/0x7c) from [<c0226e14>] (snd_pcm_playback_ioctl1+0x104/0x5a4)
+ r6:beb7d944 r5:00000000 r4:c7b84300
+[<c0226d10>] (snd_pcm_playback_ioctl1+0x0/0x5a4) from [<c02272ec>] (snd_pcm_playback_ioctl+0x38/0x3c)
+ r7:400c4150 r6:beb7d944 r5:c02272b4 r4:c7c19600
+[<c02272b4>] (snd_pcm_playback_ioctl+0x0/0x3c) from [<c00bd48c>] (vfs_ioctl+0x38/0x98)
+[<c00bd454>] (vfs_ioctl+0x0/0x98) from [<c00bd658>] (do_vfs_ioctl+0x6c/0x5fc)
+ r7:00000004 r6:c7941060 r5:c7c19600 r4:beb7d944
+[<c00bd5ec>] (do_vfs_ioctl+0x0/0x5fc) from [<c00bdc28>] (sys_ioctl+0x40/0x68)
+[<c00bdbe8>] (sys_ioctl+0x0/0x68) from [<c002be80>] (ret_fast_syscall+0x0/0x2c)
+ r7:00000036 r6:00000000 r5:0002c5f0 r4:0002c5a0
+---[ end trace c9732ad91b6196a9 ]---
+Entered s3c24xx_pcm_hw_free
+[ ak4671.c (ak4671_mute,608) ] mute 1
+i2c-adapter i2c-3: master_xfer[0] W, addr=0x12, len=2
+Entered s3c24xx_pcm_close, prtd = c78a8ba0
+S3C-Keypad low Pressed  : 7
+S3C-Keypad low Released : 7
+S3C-Keypad low Pressed  : 8
+S3C-Keypad low Released : 8
+#
+

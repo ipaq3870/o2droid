@@ -1,0 +1,42 @@
+cat interrupts
+           CPU0
+ 38:          0         VIC  s3c-i2s
+ 49:          0         VIC  s3c-dmac
+ 50:          0         VIC  s3c-dmac
+ 54:         56         VIC  s3c-keypad
+ 58:          0         VIC  s3c2410-wdt
+ 62:     238077         VIC  s3c-lcd
+ 73:          0         VIC  s3c-dmac
+ 74:          0         VIC  s3c-dmac
+ 82:          2         VIC  s3c2440-i2c.0
+ 89:      70185         VIC  mmc0
+ 90:      30912         VIC  s3c-udc
+ 94:         30         VIC  s3c_updown
+ 95:       1676         VIC  s3c_action
+100:    1806486   s3c-timer  S3C2410 Timer Tick
+101:          0    s3c-eint  dpram irq
+106:          0    s3c-eint  keypad
+108:          0    s3c-eint  Phone Active
+Err:          0
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

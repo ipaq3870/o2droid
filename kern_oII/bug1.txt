@@ -1,0 +1,55 @@
+Entered s3c24xx_pcm_pointer
+Entered s3c24xx_pcm_trigger
+s3c_i2s_trigger, stream:0  
+Stop                       
+s3c_snd_txctrl             
+I2S off                    
+Entered s3c24xx_pcm_hw_free
+Entered s3c24xx_pcm_hw_free
+[ ak4671.c (ak4671_mute,608) ] mute 1
+Entered s3c24xx_pcm_close, prtd = c7044580
+s3c_i2s_startup                           
+Entered s3c24xx_pcm_open                  
+[ capella_ak4671 (android_hifi_hw_params,123) ] Entered android_hifi_hw_params, rate = 8000
+
+[ capella_ak4671 (android_hifi_hw_params,126) ] before :   IISMOD: 0,IISPSR: 0
+
+[ capella_ak4671 (android_hifi_hw_params,127) ]         GPDCON = 0x33313
+
+[ capella_ak4671 (android_hifi_hw_params,184) ] m = 30, EPLL_CON0 : 0x801e0103, epll_con0:0x0
+
+[ capella_ak4671 (android_hifi_hw_params,189) ]  !!!! EPLL set - m:30, p:1, s:3, k:6903  => EPLL_CON0 : 0xc01e0103, EPLL_CON1: 0x1af7 !!!!
+
+s3c_i2s_set_fmt
+s3c_i2s_set_sysclk
+s3c_i2s_set_clkdiv
+[ capella_ak4671 (android_hifi_hw_params,298) ] after :  IISCON: a78 IISMOD: 0,IISFIC: 0,IISPSR: 0
+
+[ capella_ak4671 (android_hifi_hw_params,300) ]         : EPLL_CON0: 0xc01e0103 EPLLCON1:0x1af7 CLK_SRC:0x14550007 CLK_DIV2:0x0
+
+s3c_i2s_hw_params
+
+s3c iis mode: 0x00000e00
+s3c: params_channels 2
+s3c: params_format 2
+s3c: params_subformat 0
+s3c: params_period_size 1000
+s3c: params_period_bytes 4000
+s3c: params_periods 4
+s3c: params_buffer_size 4000
+s3c: params_buffer_bytes 16000
+hw_params: IISMOD: e00
+Entered s3c24xx_pcm_hw_params, line 332
+Entered s3c24xx_pcm_mmap
+Entered s3c24xx_pcm_prepare
+size: 256000, dma_area:  ffd77000 prtd->dma_totsize: 256000
+dma_start:  57ba0000
+Entered s3c24xx_pcm_enqueue
+s3c_i2s_prepare
+[ ak4671.c (ak4671_mute,608) ] mute 0
+Entered s3c24xx_pcm_hw_free
+Entered s3c24xx_pcm_hw_free
+[ ak4671.c (ak4671_mute,608) ] mute 1
+Entered s3c24xx_pcm_close, prtd = c7044740
+#
+

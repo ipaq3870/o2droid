@@ -1,0 +1,282 @@
+dmesg
+Linux version 2.6.31-bfs310 (bss@hp-bs) (gcc version 4.4.1 (GCC) ) #391 PREEMPT Tue Jun 15 11:57:43 CEST 2010
+CPU: ARMv6-compatible processor [410fb766] revision 6 (ARMv7), cr=00c5387f                                   
+CPU: VIPT nonaliasing data cache, VIPT nonaliasing instruction cache                                         
+Machine: OMNIA II                                                                                            
+Memory policy: ECC disabled, Data cache writeback                                                            
+On node 0 totalpages: 32768                                                                                  
+free_area_init_node: node 0, pgdat c03c3bd8, node_mem_map c0461000                                           
+  Normal zone: 256 pages used for memmap                                                                     
+  Normal zone: 0 pages reserved                                                                              
+  Normal zone: 32512 pages, LIFO batch:7                                                                     
+CPU S3C6410 (id 0x36410101)                                                                                  
+s3c6410_init_clocks: initialising clocks                                                                     
+S3C24XX Clocks, (c) 2004 Simtec Electronics                                                                  
+s3c6400_setup_clocks: registering clocks                                                                     
+s3c6400_setup_clocks: clkdiv0 = 11047500                                                                     
+s3c6400_setup_clocks: xtal is 12000000                                                                       
+S3C64XX: APLL=800000000Hz, MPLL=194000000Hz, EPLL=96000000Hz                                                 
+S3C64XX: HCLKx2=266666666Hz, HCLK=133333333Hz, PCLK=33333333Hz                                               
+div1: 00000555                                                                                               
+mout_apll: source is fout_apll (1), rate is 800000000                                                        
+mout_epll: source is fout_epll (1), rate is 96000000                                                         
+mout_mpll: source is mpll (1), rate is 194000000                                                             
+mmc_bus: source is dout_mpll (1), rate is 32333333                                                           
+mmc_bus: source is dout_mpll (1), rate is 32333333                                                           
+mmc_bus: source is dout_mpll (1), rate is 32333333                                                           
+usb-host-bus: source is mout_epll (0), rate is 96000000                                                      
+uclk1: source is mout_epll (0), rate is 96000000                                                             
+spi_epll: source is mout_epll (0), rate is 96000000                                                          
+spi_epll: source is dout_mpll (1), rate is 194000000                                                         
+audio-bus: source is mout_epll (0), rate is 96000000                                                         
+audio-bus: source is mout_epll (0), rate is 96000000                                                         
+audio-bus: source is mout_epll (0), rate is 96000000                                                         
+irda-bus: source is mout_epll (0), rate is 96000000                                                          
+s3c64xx: 8388608 bytes SDRAM reserved for android-pmem at 0x50568000                                         
+Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 32512                                   
+Kernel command line: rootdelay=4 root=/dev/mmcblk0p7 init=/init                                              
+PID hash table entries: 512 (order: 9, 2048 bytes)                                                           
+Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)                                               
+Inode-cache hash table entries: 8192 (order: 3, 32768 bytes)                                                 
+Memory: 128MB = 128MB total                                                                                  
+Memory: 117104KB available (3516K code, 789K data, 140K init, 0K highmem)                                    
+SLUB: Genslabs=11, HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1                                      
+NR_IRQS:229                                                                                                  
+s3c64xx_init_irq: initialising interrupts                                                                    
+timer tcon=00098800, tcnt 2b66, tcfg 00000201,00011100, usec 00002e15                                        
+Console: colour dummy device 80x30                                                                           
+console [tty0] enabled                                                                                       
+Calibrating delay loop... <c>796.67 BogoMIPS (lpj=796672)                                                    
+Mount-cache hash table entries: 512                                                                          
+CPU: Testing write buffer coherency: ok                                                                      
+gpio: GPA has no PM function                                                                                 
+gpio: GPB has no PM function                                                                                 
+gpio: GPC has no PM function                                                                                 
+gpio: GPD has no PM function                                                                                 
+gpio: GPE has no PM function                                                                                 
+gpio: GPG has no PM function                                                                                 
+gpio: GPM has no PM function                                                                                 
+gpio: GPH has no PM function                                                                                 
+gpio: GPK has no PM function                                                                                 
+gpio: GPL has no PM function                                                                                 
+gpio: GPF has no PM function                                                                                 
+gpio: GPI has no PM function                                                                                 
+gpio: GPJ has no PM function                                                                                 
+gpio: GPN has no PM function                                                                                 
+gpio: GPO has no PM function                                                                                 
+gpio: GPP has no PM function                                                                                 
+gpio: GPQ has no PM function                                                                                 
+NET: Registered protocol family 16                                                                           
+i2c-core: driver [dummy] registered                                                                          
+Sanya: GPN5: 149                                                                                             
+Sanya: GPM0: 137                                                                                             
+Sanya: GPM1: 138                                                                                             
+S3C6410: Initialising architecture                                                                           
+S3C DMA-pl080 Controller Driver, (c) 2006-2007 Samsung Electronics                                           
+Total 32 DMA channels will be initialized.                                                                   
+bio: create slab <bio-0> at 0                                                                                
+SCSI subsystem initialized                                                                                   
+Bluetooth: Core ver 2.15                                                                                     
+NET: Registered protocol family 31                                                                           
+Bluetooth: HCI device and connection manager initialized                                                     
+Bluetooth: HCI socket layer initialized                                                                      
+NET: Registered protocol family 2                                                                            
+IP route cache hash table entries: 1024 (order: 0, 4096 bytes)                                               
+TCP established hash table entries: 4096 (order: 3, 32768 bytes)                                             
+TCP bind hash table entries: 4096 (order: 2, 16384 bytes)                                                    
+TCP: Hash tables configured (established 4096 bind 4096)                                                     
+TCP reno registered                                                                                          
+NET: Registered protocol family 1                                                                            
+S3C64XX ADC driver, (c) 2008 Samsung Electronics                                                             
+S3C64XX ADC driver successfully probed                                                                       
+S3C PWM Driver, (c) 2006-2007 Samsung Electronics                                                            
+audit: initializing netlink socket (disabled)                                                                
+type=2000 audit(0.140:1): initialized                                                                        
+ashmem: initialized                                                                                          
+squashfs: version 4.0 (2009/01/31) Phillip Lougher                                                           
+msgmni has been set to 229                                                                                   
+alg: No test for stdrng (krng)                                                                               
+io scheduler noop registered                                                                                 
+io scheduler anticipatory registered                                                                         
+io scheduler deadline registered                                                                             
+io scheduler cfq registered (default)                                                                        
+S3C_LCD clock got enabled :: 133.333 Mhz                                                                     
+LCD TYPE :: TD043MTEX will be initialized                                                                    
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 200 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 200 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 210 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 220 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 230 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 240 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 250 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 260 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 270 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 280 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 290 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 300 
+
+PWM channel 1 set g_tcnt = 1001, g_tcmp = 300 
+Window[0] - FB1: map_video_memory: clear ffc00000:00177000
+            FB1: map_video_memory: dma=57a00000 cpu=ffc00000 size=00177000
+Window[0] - FB2: map_video_memory: clear ffcbb800:000bb800                
+            FB2: map_video_memory: dma=57abb800 cpu=ffcbb800 size=000bb800
+Console: switching to colour frame buffer device 60x50                    
+fb0: s3cfb frame buffer device                                            
+s3c6400-uart.0: s3c2410_serial0 at MMIO 0x7f005000 (irq = 16) is a S3C6400/10
+s3c6400-uart.1: s3c2410_serial1 at MMIO 0x7f005400 (irq = 20) is a S3C6400/10
+s3c6400-uart.2: s3c2410_serial2 at MMIO 0x7f005800 (irq = 24) is a S3C6400/10
+brd: module loaded                                                           
+loop: module loaded                                                          
+pmem: 1 init                                                                 
+pdp_activate, id: 1                                                          
+ttyCSD(id: 1) serial device is created.                                      
+pdp_activate, id: 7                                                          
+ttyCDMA(id: 7) serial device is created.                                     
+pdp_activate, id: 9                                                          
+ttyTRFB(id: 9) serial device is created.                                     
+pdp_activate, id: 27                                                         
+ttyCIQ(id: 27) serial device is created.                                     
+s3c-udc : S3C HS USB OTG Device Driver, (c) 2008-2009 Samsung Electronics    
+s3c-udc : version 15 March 2009 (DMA Mode)                                   
+android init                                                                 
+android_probe pdata: (null)                                                  
+android_bind                                                                 
+android_bind_config                                                          
+mass_storage_function_add                                                    
+android_usb gadget: Number of LUNs=1                                         
+adb_function_add                                                             
+android_usb gadget: android_usb ready                                        
+Registered gadget driver 'android_usb'                                       
+OTG initialized<6>mice: PS/2 mouse device common for all mice                
+input: s3c-keypad as /devices/virtual/input/input0                           
+s3c-keypad Initialized                                                       
+S3C Keypad Driver                                                            
+S3C Touchscreen driver, (c) 2008 Samsung Electronics                         
+s3c-ts got loaded successfully : 12 bits                                     
+input: s3c-ts as /devices/virtual/input/input1                               
+S3C24XX RTC, (c) 2004,2006 Simtec Electronics                                
+s3c2410_rtc: tick irq 34, alarm irq 92                                       
+s3c2410-rtc s3c2410-rtc: rtc disabled, re-enabling                           
+s3c2410-rtc s3c2410-rtc: rtc core: registered s3c as rtc0                    
+i2c /dev entries driver                                                      
+i2c-core: driver [dev_driver] registered                                     
+i2c-adapter i2c-2: adapter [i2c-gpio2] registered                            
+i2c 2-0066: uevent                                                           
+i2c-adapter i2c-2: client [max8698] registered with bus id 2-0066            
+i2c-dev: adapter [i2c-gpio2] registered as minor 2                           
+i2c-gpio i2c-gpio.2: using pins 36 (SDA) and 35 (SCL, no clock stretching)   
+i2c-adapter i2c-3: adapter [i2c-gpio3] registered                            
+i2c 3-0024: uevent                                                           
+i2c-adapter i2c-3: client [AK4671] registered with bus id 3-0024             
+i2c 3-0010: uevent                                                           
+i2c-adapter i2c-3: client [Si4709] registered with bus id 3-0010             
+i2c-dev: adapter [i2c-gpio3] registered as minor 3                           
+i2c-gpio i2c-gpio.3: using pins 138 (SDA) and 137 (SCL, no clock stretching) 
+s3c-i2c s3c2440-i2c.0: clock source c03a19bc                                 
+s3c-i2c s3c2440-i2c.0: registers c8834000 (c78e0840, c03a46b8)               
+s3c-i2c s3c2440-i2c.0: slave address 0x10                                    
+s3c-i2c s3c2440-i2c.0: pdata desired frequency 400000                        
+s3c-i2c s3c2440-i2c.0: IICLC=00000004                                        
+s3c-i2c s3c2440-i2c.0: bus frequency set to 347 KHz                          
+s3c-i2c s3c2440-i2c.0: S3C2410_IICCON=0xa0                                   
+i2c-adapter i2c-0: adapter [s3c2410-i2c] registered                          
+i2c 0-0018: uevent                                                           
+i2c-adapter i2c-0: client [KXSD9] registered with bus id 0-0018              
+i2c-dev: adapter [s3c2410-i2c] registered as minor 0                         
+s3c-i2c s3c2440-i2c.0: i2c-0: S3C I2C adapter                                
+s3c-i2c s3c2440-i2c.1: clock source c03a19bc                                 
+s3c-i2c s3c2440-i2c.1: registers c8838000 (c78e0b60, c03a4808)               
+s3c-i2c s3c2440-i2c.1: slave address 0x10                                    
+s3c-i2c s3c2440-i2c.1: pdata desired frequency 400000                        
+s3c-i2c s3c2440-i2c.1: IICLC=00000004                                        
+s3c-i2c s3c2440-i2c.1: bus frequency set to 347 KHz                          
+s3c-i2c s3c2440-i2c.1: S3C2410_IICCON=0xa0                                   
+s3c-i2c s3c2440-i2c.1: failed to add bus to i2c core                         
+s3c-i2c: probe of s3c2440-i2c.1 failed with error -16                        
+max8698 2-0066: probe                                                        
+i2c-core: driver [max8698] registered                                        
+S3C2410 Watchdog Timer, (c) 2004 Simtec Electronics                          
+s3c2410-wdt s3c2410-wdt: watchdog inactive, reset disabled, irq enabled      
+cpuidle: using governor ladder                                               
+sdhci: Secure Digital Host Controller Interface driver                       
+sdhci: Copyright(c) Pierre Ossman                                            
+s3c-sdhci s3c-sdhci.1: clock source 0: hsmmc (133333333 Hz)                  
+s3c-sdhci s3c-sdhci.1: clock source 1: hsmmc (133333333 Hz)                  
+s3c-sdhci s3c-sdhci.1: clock source 2: mmc_bus (32333333 Hz)                 
+mmc0: SDHCI controller on samsung-hsmmc [s3c-sdhci.1] using DMA              
+Error: Driver 's3c-sdhci' is already registered, aborting...                 
+logger: created 64K log 'log_main'                                           
+logger: created 256K log 'log_events'                                        
+s3c6410_setup_sdhci0_cfg_card:s3c-sdhci[1]: ios->clock = 400000 CTRL 2=c0004120, 3=80808080
+logger: created 64K log 'log_radio'                                                        
+Advanced Linux Sound Architecture Driver Version 1.0.18a.                                  
+No device for DAI AK4671                                                                   
+No device for DAI s3c-i2s                                                                  
+[ capella_ak4671 (android_init,320) ] [android_ak4671] android_init ++                     
+
+[ capella_ak4671 (android_init,329) ] [android_ak4671] platform_set_drvdata
+
+[ capella_ak4671 (android_init,333) ] [android_ak4671] platform_device_add
+
+s3c_i2s_probe
+failed to get clk(asdf)
+[android_ak4671] android_snd_device add fail 
+[ capella_ak4671 (android_init,341) ] [android_ak4671] android_init --
+
+ALSA device list:
+  No soundcards found.
+TCP cubic registered  
+NET: Registered protocol family 17
+Bluetooth: L2CAP ver 2.13
+Bluetooth: L2CAP socket layer initialized
+Bluetooth: SCO (Voice Link) ver 0.6
+android_usb gadget: high speed config #1: android
+Bluetooth: SCO socket layer initialized
+android_usb gadget: high speed config #1, rc = 0
+Bluetooth: RFCOMM TTY layer initialized
+Bluetooth: RFCOMM socket layer initialized
+Bluetooth: RFCOMM ver 1.11
+Bluetooth: BNEP (Ethernet Emulation) ver 1.3
+Bluetooth: BNEP filters: protocol multicast
+Bluetooth: HIDP (Human Interface Emulation) ver 1.2
+lib80211: common routines for IEEE802.11 drivers
+lib80211_crypt: registered algorithm 'NULL'
+VFP support v0.3: implementor 41 architecture 1 part 20 variant b rev 5
+registered taskstats version 1
+Waiting 4sec before mounting root device...
+s3c6410_setup_sdhci0_cfg_card:s3c-sdhci[1]: ios->clock = 25000000 CTRL 2=c0004100, 3=00008080
+mmc0: new MMC card at address 0001
+mmcblk0: mmc0:0001 M8G4DD 7.65 GiB
+ mmcblk0: p1 < p5 p6 p7 >
+kjournald starting.  Commit interval 5 seconds
+EXT3 FS on mmcblk0p7, internal journal
+EXT3-fs: recovery complete.
+EXT3-fs: mounted filesystem with writeback data mode.
+VFS: Mounted root (ext3 filesystem) on device 179:7.
+Freeing init memory: 140K
+BFS CPU scheduler v0.310 by Con Kolivas.
+Warning: unable to open an initial console.
+i2c 0-0018: uevent
+i2c 3-0024: uevent
+i2c 3-0010: uevent
+init: cannot open '/initlogo.rle'
+enabling adb
+adb_open
+android_usb gadget: high speed config #1: android
+android_usb gadget: high speed config #1, rc = 0
+adb_release
+adb_open
+#
+
