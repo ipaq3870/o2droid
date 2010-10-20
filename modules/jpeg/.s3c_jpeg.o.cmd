@@ -1,0 +1,1 @@
+cmd_../modules/jpeg/s3c_jpeg.o := /opt/cross/bin/arm-linux-gnueabi-ld -EL    -r -o ../modules/jpeg/s3c_jpeg.o ../modules/jpeg/LogMsg.o ../modules/jpeg/JPGOpr.o ../modules/jpeg/JPGMisc.o ../modules/jpeg/JPGMem.o ../modules/jpeg/s3c-jpeg.o 

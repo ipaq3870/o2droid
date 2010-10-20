@@ -1,0 +1,2 @@
+kernel/../modules/param/param.ko
+kernel/../modules/param/crc32.ko

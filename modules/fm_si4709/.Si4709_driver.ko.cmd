@@ -1,0 +1,1 @@
+cmd_../modules/fm_si4709/Si4709_driver.ko := /opt/cross/bin/arm-linux-gnueabi-ld -EL -r   --build-id -o ../modules/fm_si4709/Si4709_driver.ko ../modules/fm_si4709/Si4709_driver.o ../modules/fm_si4709/Si4709_driver.mod.o
