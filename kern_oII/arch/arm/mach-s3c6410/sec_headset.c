@@ -36,8 +36,7 @@
 #include <asm/mach-types.h>
 #include <mach/sec_headset.h>
 
-//extern int call_state;
-int call_state = 0;
+extern int call_state;
 
 // #define CONFIG_DEBUG_SEC_HEADSET
 
@@ -59,11 +58,7 @@ int call_state = 0;
 //#define SEND_END_CHECK_TIME get_jiffies_64() + (HZ/50) //1000ms / 50 = 20ms
 //#define SEND_END_CHECK_TIME get_jiffies_64() + (HZ/100) //1000ms / 100 = 10ms 
 
-//bss extern int s3c_adc_get_adc_data(int channel);
-int s3c_adc_get_adc_data(int channel) {
-	return 8;
-}
-
+extern int s3c_adc_get_adc_data(int channel);
 struct sec_headset_info {
 	struct sec_headset_port port;
 	struct input_dev *input;

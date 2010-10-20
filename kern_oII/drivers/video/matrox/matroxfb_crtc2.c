@@ -289,12 +289,7 @@ static int matroxfb_dh_release(struct fb_info* info, int user) {
 #undef m2info
 }
 
-/*
- * This function is called before the register_framebuffer so
- * no locking is needed.
- */
-static void matroxfb_dh_init_fix(struct matroxfb_dh_fb_info *m2info)
-{
+static void matroxfb_dh_init_fix(struct matroxfb_dh_fb_info *m2info) {
 	struct fb_fix_screeninfo *fix = &m2info->fbcon.fix;
 
 	strcpy(fix->id, "MATROX DH");

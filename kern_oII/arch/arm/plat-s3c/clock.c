@@ -1,4 +1,4 @@
-/* linux/arch/arm/plat-s3c24xx/clock.c
+/* linux/arch/arm/plat-s3c/clock.c
  *
  * Copyright (c) 2004-2005 Simtec Electronics
  *	Ben Dooks <ben@simtec.co.uk>
@@ -38,13 +38,15 @@
 #include <linux/ioport.h>
 #include <linux/clk.h>
 #include <linux/spinlock.h>
+#include <linux/delay.h>
 #include <linux/io.h>
 
 #include <mach/hardware.h>
+#include <mach/map.h>
 #include <asm/irq.h>
 
 #include <plat/cpu-freq.h>
-
+#include <plat/regs-clock.h>
 #include <plat/clock.h>
 #include <plat/cpu.h>
 
@@ -254,14 +256,6 @@ struct clk clk_mpll = {
 	.set_rate	= clk_default_setrate,
 };
 
-#ifdef CONFIG_CPU_S3C6410
-struct clk clk_apll = {
-	.name		= "apll",
-	.id		= -1,
-	.set_rate	= clk_default_setrate,
-};
-#endif
-
 struct clk clk_upll = {
 	.name		= "upll",
 	.id		= -1,
@@ -273,9 +267,8 @@ struct clk clk_f = {
 	.name		= "fclk",
 	.id		= -1,
 	.rate		= 0,
-	.parent		= &clk_mpll,
+	.parent		= NULL,
 	.ctrlbit	= 0,
-	.set_rate	= clk_default_setrate,
 };
 
 struct clk clk_h = {
@@ -287,16 +280,22 @@ struct clk clk_h = {
 	.set_rate	= clk_default_setrate,
 };
 
-#ifdef CONFIG_CPU_S3C6410
 struct clk clk_hx2 = {
-	.name		= "hclkx2",
-	.id		= -1,
-	.rate		= 0,
-	.parent		= NULL,
-	.ctrlbit	= 0,
+	.name       	= "hclkx2",
+	.id     	= -1,
+	.rate       	= 0,
+	.parent     	= NULL,
+	.ctrlbit    	= 0,
 	.set_rate	= clk_default_setrate,
 };
-#endif
+
+struct clk clk_s = {
+	.name       	= "sclk",
+	.id     	= -1,
+	.rate       	= 0,
+	.parent     	= NULL,
+	.ctrlbit    	= 0,
+};
 
 struct clk clk_p = {
 	.name		= "pclk",
@@ -315,7 +314,6 @@ struct clk clk_usb_bus = {
 };
 
 
-
 struct clk s3c24xx_uclk = {
 	.name		= "uclk",
 	.id		= -1,
@@ -323,8 +321,10 @@ struct clk s3c24xx_uclk = {
 
 /* initialise the clock system */
 
-int s3c24xx_register_clock(struct clk *clk)
+int s3c_register_clock(struct clk *clk)
 {
+	clk->owner = THIS_MODULE;
+
 	if (clk->enable == NULL)
 		clk->enable = clk_null_enable;
 
@@ -340,12 +340,12 @@ int s3c24xx_register_clock(struct clk *clk)
 	return 0;
 }
 
-int s3c24xx_register_clocks(struct clk **clks, int nr_clks)
+int s3c_register_clocks(struct clk **clks, int nr_clks)
 {
 	int fails = 0;
 
 	for (; nr_clks > 0; nr_clks--, clks++) {
-		if (s3c24xx_register_clock(*clks) < 0)
+		if (s3c_register_clock(*clks) < 0)
 			fails++;
 	}
 
@@ -354,40 +354,36 @@ int s3c24xx_register_clocks(struct clk **clks, int nr_clks)
 
 /* initalise all the clocks */
 
-int __init s3c24xx_register_baseclocks(unsigned long xtal)
+int __init s3c_register_baseclocks(unsigned long xtal)
 {
-	printk(KERN_INFO "S3C24XX Clocks, (c) 2004 Simtec Electronics\n");
+	printk(KERN_INFO "S3C Clocks, (c) 2004 Simtec Electronics\n");
 
 	clk_xtal.rate = xtal;
 
 	/* register our clocks */
 
-	if (s3c24xx_register_clock(&clk_xtal) < 0)
+	if (s3c_register_clock(&clk_xtal) < 0)
 		printk(KERN_ERR "failed to register master xtal\n");
 
-	if (s3c24xx_register_clock(&clk_mpll) < 0)
+	if (s3c_register_clock(&clk_mpll) < 0)
 		printk(KERN_ERR "failed to register mpll clock\n");
 
-#ifdef CONFIG_CPU_S3C6410
-	if (s3c24xx_register_clock(&clk_apll) < 0)
-		printk(KERN_ERR "failed to register apll clock\n");
-#endif
-
-	if (s3c24xx_register_clock(&clk_upll) < 0)
+	if (s3c_register_clock(&clk_upll) < 0)
 		printk(KERN_ERR "failed to register upll clock\n");
 
-	if (s3c24xx_register_clock(&clk_f) < 0)
+	if (s3c_register_clock(&clk_f) < 0)
 		printk(KERN_ERR "failed to register cpu fclk\n");
 
-	if (s3c24xx_register_clock(&clk_h) < 0)
+	if (s3c_register_clock(&clk_h) < 0)
 		printk(KERN_ERR "failed to register cpu hclk\n");
-	
-#ifdef CONFIG_CPU_S3C6410
-	if (s3c24xx_register_clock(&clk_hx2) < 0)
-		printk(KERN_ERR "failed to register cpu hclkx2\n");
-#endif
 
-	if (s3c24xx_register_clock(&clk_p) < 0)
+	if (s3c_register_clock(&clk_hx2) < 0)
+		printk(KERN_ERR "failed to register cpu hclkx2\n");
+
+	if (s3c_register_clock(&clk_s) < 0)
+		printk(KERN_ERR "failed to register cpu sclk\n");
+
+	if (s3c_register_clock(&clk_p) < 0)
 		printk(KERN_ERR "failed to register cpu pclk\n");
 
 	return 0;

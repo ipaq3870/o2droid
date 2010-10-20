@@ -190,6 +190,38 @@ int s3c_adc_get(struct s3c_adc_request *req)
 }
 EXPORT_SYMBOL(s3c_adc_get);
 
+//bss
+int s3c_adc_get_adc_data(int channel)
+{	
+	int adc_value = 0;
+	int cur_adc_port = 0;
+
+#ifdef ADC_WITH_TOUCHSCREEN
+        mutex_lock(&adc_mutex);
+	s3c_adc_save_SFR_on_ADC();
+#else
+        mutex_lock(&adc_mutex);
+#endif
+
+	cur_adc_port = adc_port;
+	adc_port = channel;
+
+	adc_value = s3c_adc_convert();
+
+	adc_port = cur_adc_port;
+
+#ifdef ADC_WITH_TOUCHSCREEN
+	s3c_adc_restore_SFR_on_ADC();
+	mutex_unlock(&adc_mutex);
+#else
+	mutex_unlock(&adc_mutex);
+#endif
+
+	pr_debug("%s : Converted Value: %03d\n", __FUNCTION__, adc_value);
+
+	return adc_value;
+}
+EXPORT_SYMBOL(s3c_adc_get_adc_data);
 
 static ssize_t
 s3c_adc_read(struct file *file, char __user * buffer,

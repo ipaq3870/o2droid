@@ -77,6 +77,10 @@ deps_config := \
 	fs/ext3/Kconfig \
 	fs/ext2/Kconfig \
 	fs/Kconfig \
+	drivers/sensor/optical/Kconfig \
+	drivers/sensor/compass/Kconfig \
+	drivers/sensor/accel/Kconfig \
+	drivers/sensor/Kconfig \
 	drivers/staging/udlfb/Kconfig \
 	drivers/staging/pata_rdc/Kconfig \
 	drivers/staging/cpc-usb/Kconfig \
@@ -193,7 +197,6 @@ deps_config := \
 	drivers/video/display/Kconfig \
 	drivers/video/backlight/Kconfig \
 	drivers/video/omap/Kconfig \
-	drivers/video/samsung/Kconfig \
 	drivers/video/geode/Kconfig \
 	drivers/gpu/drm/Kconfig \
 	drivers/char/agp/Kconfig \
@@ -356,6 +359,7 @@ deps_config := \
 	drivers/pnp/isapnp/Kconfig \
 	drivers/pnp/Kconfig \
 	drivers/parport/Kconfig \
+	drivers/tfsr/Kconfig \
 	drivers/mtd/ubi/Kconfig.debug \
 	drivers/mtd/ubi/Kconfig \
 	drivers/mtd/lpddr/Kconfig \

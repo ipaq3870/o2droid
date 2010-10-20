@@ -976,7 +976,17 @@ extern struct fb_info *registered_fb[FB_MAX];
 extern int num_registered_fb;
 extern struct class *fb_class;
 
-extern int lock_fb_info(struct fb_info *info);
+//extern int lock_fb_info(struct fb_info *info);
+
+static inline int lock_fb_info(struct fb_info *info)
+{
+	mutex_lock(&info->lock);
+	if (!info->fbops) {
+		mutex_unlock(&info->lock);
+		return 0;
+	}
+	return 1;
+}
 
 static inline void unlock_fb_info(struct fb_info *info)
 {

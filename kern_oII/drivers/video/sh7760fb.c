@@ -120,6 +120,18 @@ static int sh7760_setcolreg (u_int regno,
 	return 0;
 }
 
+static void encode_fix(struct fb_fix_screeninfo *fix, struct fb_info *info,
+		       unsigned long stride)
+{
+	memset(fix, 0, sizeof(struct fb_fix_screeninfo));
+	strcpy(fix->id, "sh7760-lcdc");
+
+	fix->smem_start = (unsigned long)info->screen_base;
+	fix->smem_len = info->screen_size;
+
+	fix->line_length = stride;
+}
+
 static int sh7760fb_get_color_info(struct device *dev,
 				   u16 lddfr, int *bpp, int *gray)
 {
@@ -322,8 +334,7 @@ static int sh7760fb_set_par(struct fb_info *info)
 
 	iowrite32(ldsarl, par->base + LDSARL);	/* mem for lower half of DSTN */
 
-	info->fix.line_length = stride;
-
+	encode_fix(&info->fix, info, stride);
 	sh7760fb_check_var(&info->var, info);
 
 	sh7760fb_blank(FB_BLANK_UNBLANK, info);	/* panel on! */
@@ -424,8 +435,6 @@ static int sh7760fb_alloc_mem(struct fb_info *info)
 
 	info->screen_base = fbmem;
 	info->screen_size = vram;
-	info->fix.smem_start = (unsigned long)info->screen_base;
-	info->fix.smem_len = info->screen_size;
 
 	return 0;
 }
@@ -510,8 +519,6 @@ static int __devinit sh7760fb_probe(struct platform_device *pdev)
 	info->var.transp.offset = 0;
 	info->var.transp.length = 0;
 	info->var.transp.msb_right = 0;
-
-	strcpy(info->fix.id, "sh7760-lcdc");
 
 	/* set the DON2 bit now, before cmap allocation, as it will randomize
 	 * palette memory.

@@ -57,9 +57,9 @@ static unsigned short reg_pll_mode = 0xf0 | AK4671_PLL; // Default setting : 44.
 static unsigned int sub_mic_path;
 static unsigned int cur_amp_path;
 
-static unsigned short max9877_normal_i2c[] = {MAX9877_ADDRESS >> 1, I2C_CLIENT_END };
+static unsigned short max9877_normal_i2c[] = {I2C_CLIENT_END };
 static unsigned short max9877_ignore[] = { I2C_CLIENT_END };
-static unsigned short max9877_i2c_probe[] = { 3, MAX9877_ADDRESS >> 1, I2C_CLIENT_END };
+static unsigned short max9877_i2c_probe[] = { 5, MAX9877_ADDRESS >> 1, I2C_CLIENT_END };
 
 static struct i2c_driver max9877_i2c_driver;
 static struct i2c_client max9877_i2c_client;

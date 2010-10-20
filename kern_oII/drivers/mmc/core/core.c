@@ -878,6 +878,7 @@ void mmc_detect_change(struct mmc_host *host, unsigned long delay)
 
 EXPORT_SYMBOL(mmc_detect_change);
 
+int g_rescan_retry = 0;
 
 void mmc_rescan(struct work_struct *work)
 {

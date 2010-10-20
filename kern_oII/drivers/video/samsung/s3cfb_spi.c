@@ -23,99 +23,48 @@
 
 #if 0 //defined(CONFIG_PLAT_S3C24XX)
 
-#define S3CFB_SPI_CLK(x)	(S3C2443_GPL10 + (ch * 0))
-#define S3CFB_SPI_MOSI(x)	(S3C2443_GPL11 + (ch * 0))
-#define S3CFB_SPI_CS(x)	(S3C2443_GPL14 + (ch * 0))
+#define S3C_FB_SPI_CLK(x)	(S3C2443_GPL10 + (ch * 0))
+#define S3C_FB_SPI_MOSI(x)	(S3C2443_GPL11 + (ch * 0))
+#define S3C_FB_SPI_CS(x)	(S3C2443_GPL14 + (ch * 0))
 
 static inline void s3cfb_spi_lcd_dclk(int ch, int value)
 {
-	s3c2410_gpio_setpin(S3CFB_SPI_CLK(ch), value);
+	s3c2410_gpio_setpin(S3C_FB_SPI_CLK(ch), value);
 }
 
 static inline void s3cfb_spi_lcd_dseri(int ch, int value)
 {
-	s3c2410_gpio_setpin(S3CFB_SPI_MOSI(ch), value);
+	s3c2410_gpio_setpin(S3C_FB_SPI_MOSI(ch), value);
 }
 
 static inline void s3cfb_spi_lcd_den(int ch, int value)
 {
-	s3c2410_gpio_setpin(S3CFB_SPI_CS(ch), value);
+	s3c2410_gpio_setpin(S3C_FB_SPI_CS(ch), value);
 }
 
 static inline void s3cfb_spi_set_lcd_data(int ch)
 {
-	s3c2410_gpio_cfgpin(S3CFB_SPI_CLK(ch), 1);
-	s3c2410_gpio_cfgpin(S3CFB_SPI_MOSI(ch), 1);
-	s3c2410_gpio_cfgpin(S3CFB_SPI_CS(ch), 1);
+	s3c2410_gpio_cfgpin(S3C_FB_SPI_CLK(ch), 1);
+	s3c2410_gpio_cfgpin(S3C_FB_SPI_MOSI(ch), 1);
+	s3c2410_gpio_cfgpin(S3C_FB_SPI_CS(ch), 1);
 
-	s3c2410_gpio_pullup(S3CFB_SPI_CLK(ch), 2);
-	s3c2410_gpio_pullup(S3CFB_SPI_MOSI(ch), 2);
-	s3c2410_gpio_pullup(S3CFB_SPI_CS(ch), 2);
-}
-
-#elif defined(CONFIG_PLAT_S3C64XX) || defined(CONFIG_PLAT_S5P64XX)
-
-#if defined(CONFIG_PLAT_S5P64XX)
-#define S3CFB_SPI_CLK(x)	(S5P64XX_GPN(2 + (x * 4)))
-#define S3CFB_SPI_MOSI(x)	(S5P64XX_GPN(3 + (x * 4)))
-#define S3CFB_SPI_CS(x)		(S5P64XX_GPN(1 + (x * 4)))
-
-int s3cfb_spi_gpio_request(int ch)
-{
-	int err = 0;
-
-	if (gpio_is_valid(S3CFB_SPI_CLK(ch))) {
-		err = gpio_request(S3CFB_SPI_CLK(ch), "GPN");
-
-		if (err)
-			goto err_clk;
-	} else {
-		err = 1;
-		goto err_clk;
-	}
-
-	if (gpio_is_valid(S3CFB_SPI_MOSI(ch))) {
-		err = gpio_request(S3CFB_SPI_MOSI(ch), "GPN");
-
-		if (err)
-			goto err_mosi;
-	} else {
-		err = 1;
-		goto err_mosi;
-	}
-
-	if (gpio_is_valid(S3CFB_SPI_CS(ch))) {
-		err = gpio_request(S3CFB_SPI_CS(ch), "GPN");
-
-		if (err)
-			goto err_cs;
-	} else {
-		err = 1;
-		goto err_cs;
-	}
-
-err_cs:
-	gpio_free(S3CFB_SPI_MOSI(ch));
-
-err_mosi:
-	gpio_free(S3CFB_SPI_CLK(ch));
-
-err_clk:
-	return err;
-
+	s3c2410_gpio_pullup(S3C_FB_SPI_CLK(ch), 2);
+	s3c2410_gpio_pullup(S3C_FB_SPI_MOSI(ch), 2);
+	s3c2410_gpio_pullup(S3C_FB_SPI_CS(ch), 2);
 }
 
 #elif defined(CONFIG_PLAT_S3C64XX)
-#define S3CFB_SPI_CLK(x)	(S3C64XX_GPC(1 + (x * 4)))
-#define S3CFB_SPI_MOSI(x)	(S3C64XX_GPC(2 + (x * 4)))
-#define S3CFB_SPI_CS(x)		(S3C64XX_GPC(3 + (x * 4)))
+
+#define S3C_FB_SPI_CLK(x)	(S3C64XX_GPC(1 + (ch * 4)))
+#define S3C_FB_SPI_MOSI(x)	(S3C64XX_GPC(2 + (ch * 4)))
+#define S3C_FB_SPI_CS(x)	(S3C64XX_GPC(3 + (ch * 4)))
 
 int s3cfb_spi_gpio_request(int ch)
 {
 	int err = 0;
 
-	if (gpio_is_valid(S3CFB_SPI_CLK(ch))) {
-		err = gpio_request(S3CFB_SPI_CLK(ch), "GPC");
+	if (gpio_is_valid(S3C_FB_SPI_CLK(ch))) {
+		err = gpio_request(S3C_FB_SPI_CLK(ch), "GPC");
 
 		if (err)
 			goto err_clk;
@@ -124,8 +73,8 @@ int s3cfb_spi_gpio_request(int ch)
 		goto err_clk;
 	}
 
-	if (gpio_is_valid(S3CFB_SPI_MOSI(ch))) {
-		err = gpio_request(S3CFB_SPI_MOSI(ch), "GPC");
+	if (gpio_is_valid(S3C_FB_SPI_MOSI(ch))) {
+		err = gpio_request(S3C_FB_SPI_MOSI(ch), "GPC");
 
 		if (err)
 			goto err_mosi;
@@ -134,8 +83,8 @@ int s3cfb_spi_gpio_request(int ch)
 		goto err_mosi;
 	}
 
-	if (gpio_is_valid(S3CFB_SPI_CS(ch))) {
-		err = gpio_request(S3CFB_SPI_CS(ch), "GPC");
+	if (gpio_is_valid(S3C_FB_SPI_CS(ch))) {
+		err = gpio_request(S3C_FB_SPI_CS(ch), "GPC");
 
 		if (err)
 			goto err_cs;
@@ -145,100 +94,55 @@ int s3cfb_spi_gpio_request(int ch)
 	}
 
 err_cs:
-	gpio_free(S3CFB_SPI_MOSI(ch));
+	gpio_free(S3C_FB_SPI_MOSI(ch));
 
 err_mosi:
-	gpio_free(S3CFB_SPI_CLK(ch));
+	gpio_free(S3C_FB_SPI_CLK(ch));
 
 err_clk:
 	return err;
-
+	
 }
-#endif
 
 inline void s3cfb_spi_lcd_dclk(int ch, int value)
 {
-	gpio_set_value(S3CFB_SPI_CLK(ch), value);
+	gpio_set_value(S3C_FB_SPI_CLK(ch), value);
 }
 
 inline void s3cfb_spi_lcd_dseri(int ch, int value)
 {
-	gpio_set_value(S3CFB_SPI_MOSI(ch), value);
+	gpio_set_value(S3C_FB_SPI_MOSI(ch), value);
 }
 
 inline void s3cfb_spi_lcd_den(int ch, int value)
 {
-	gpio_set_value(S3CFB_SPI_CS(ch), value);
+	gpio_set_value(S3C_FB_SPI_CS(ch), value);
 }
 
 inline void s3cfb_spi_set_lcd_data(int ch)
 {
-	gpio_direction_output(S3CFB_SPI_CLK(ch), 1);
-	gpio_direction_output(S3CFB_SPI_MOSI(ch), 1);
-	gpio_direction_output(S3CFB_SPI_CS(ch), 1);
+	gpio_direction_output(S3C_FB_SPI_CLK(ch), 1);
+	gpio_direction_output(S3C_FB_SPI_MOSI(ch), 1);
+	gpio_direction_output(S3C_FB_SPI_CS(ch), 1);
 
-	s3c_gpio_setpull(S3CFB_SPI_CLK(ch), S3C_GPIO_PULL_NONE);
-	s3c_gpio_setpull(S3CFB_SPI_MOSI(ch), S3C_GPIO_PULL_NONE);
-	s3c_gpio_setpull(S3CFB_SPI_CS(ch), S3C_GPIO_PULL_NONE);
+	s3c_gpio_setpull(S3C_FB_SPI_CLK(ch), S3C_GPIO_PULL_NONE);
+	s3c_gpio_setpull(S3C_FB_SPI_MOSI(ch), S3C_GPIO_PULL_NONE);
+	s3c_gpio_setpull(S3C_FB_SPI_CS(ch), S3C_GPIO_PULL_NONE);
 }
 
 void s3cfb_spi_gpio_free(int ch)
 {
-	gpio_free(S3CFB_SPI_CLK(ch));
-	gpio_free(S3CFB_SPI_MOSI(ch));
-	gpio_free(S3CFB_SPI_CS(ch));
+	gpio_free(S3C_FB_SPI_CLK(ch));
+	gpio_free(S3C_FB_SPI_MOSI(ch));
+	gpio_free(S3C_FB_SPI_CS(ch));
 }
 
-#elif defined(CONFIG_PLAT_S5PC1XX)
+#elif 0 //defined(CONFIG_PLAT_S5PC1XX)
 
-#define S5P_FB_SPI_CLK(x)	(S5PC1XX_GPB(1 + (x * 4)))
-#define S5P_FB_SPI_MOSI(x)	(S5PC1XX_GPB(2 + (x * 4)))
-#define S5P_FB_SPI_CS(x)	(S5PC1XX_GPB(3 + (x * 4)))
-
-int s3cfb_spi_gpio_request(int ch)
-{
-        int err = 0;
-
-        if (gpio_is_valid(S5P_FB_SPI_CLK(ch))) {
-                err = gpio_request(S5P_FB_SPI_CLK(ch), "GPB");
-
-                if (err)
-                        goto err_clk;
-        } else {
-                err = 1;
-                goto err_clk;
-        }
-
-        if (gpio_is_valid(S5P_FB_SPI_MOSI(ch))) {
-                err = gpio_request(S5P_FB_SPI_MOSI(ch), "GPB");
-
-                if (err)
-                        goto err_mosi;
-        } else {
-                err = 1;
-                goto err_mosi;
-        }
-
-        if (gpio_is_valid(S5P_FB_SPI_CS(ch))) {
-                err = gpio_request(S5P_FB_SPI_CS(ch), "GPB");
-
-                if (err)
-                        goto err_cs;
-        } else {
-                err = 1;
-                goto err_cs;
-        }
-
-err_cs:
-        gpio_free(S5P_FB_SPI_MOSI(ch));
-
-err_mosi:
-        gpio_free(S5P_FB_SPI_CLK(ch));
-
-err_clk:
-        return err;
-
-}
+#define S5P_FB_SPI_MISO(x)	(S5P_GPB0 + (ch * 4))
+#define S5P_FB_SPI_CLK(x)	(S5P_GPB1 + (ch * 4))
+#define S5P_FB_SPI_MOSI(x)	(S5P_GPB2 + (ch * 4))
+#define S5P_FB_SPI_nSS(x)	(S5P_GPB3 + (ch * 4))
 
 inline void s3cfb_spi_lcd_dclk(int ch, int value)
 {
@@ -252,25 +156,18 @@ inline void s3cfb_spi_lcd_dseri(int ch, int value)
 
 inline void s3cfb_spi_lcd_den(int ch, int value)
 {
-	gpio_set_value(S5P_FB_SPI_CS(ch), value);
+	gpio_set_value(S5P_FB_SPI_nSS(ch), value);
 }
 
 inline void s3cfb_spi_set_lcd_data(int ch)
 {
 	gpio_direction_output(S5P_FB_SPI_CLK(ch), 1);
 	gpio_direction_output(S5P_FB_SPI_MOSI(ch), 1);
-	gpio_direction_output(S5P_FB_SPI_CS(ch), 1);
+	gpio_direction_output(S5P_FB_SPI_nSS(ch), 1);
 
-	s3c_gpio_setpull(S5P_FB_SPI_CLK(ch), S3C_GPIO_PULL_NONE);
-	s3c_gpio_setpull(S5P_FB_SPI_MOSI(ch), S3C_GPIO_PULL_NONE);
-	s3c_gpio_setpull(S5P_FB_SPI_CS(ch), S3C_GPIO_PULL_NONE);
-}
-
-void s3cfb_spi_gpio_free(int ch)
-{
-        gpio_free(S5P_FB_SPI_CLK(ch));
-        gpio_free(S5P_FB_SPI_MOSI(ch));
-        gpio_free(S5P_FB_SPI_CS(ch));
+	gpio_pullup(S5P_FB_SPI_CLK(ch), S5P_GPIO_PUD_DISABLE);
+	gpio_pullup(S5P_FB_SPI_MOSI(ch), S5P_GPIO_PUD_DISABLE);
+	gpio_pullup(S5P_FB_SPI_nSS(ch), S5P_GPIO_PUD_DISABLE);
 }
 
 #endif

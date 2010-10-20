@@ -1,47 +1,41 @@
-/*
- * pmic.h - interface for PMIC.
- *
- * Copyright (C) 2009 Samsung Electronics.
- *
- * Author: Geun-Young, Kim <nenggun.kim@samsung.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- */
+#ifndef __LINUX_PMIC_H
+#define __LINUX_PMIC_H
 
-#ifndef __PMIC_H__
-#define __PMIC_H__
-
+#if defined (CONFIG_PMIC_MAX8906)
+#include <linux/i2c/max8906.h>
+#elif defined (CONFIG_PMIC_MAX8698)
 #include <linux/i2c/max8698.h>
-#include <mach/hardware.h>
+#endif
 
-#define POWER_RTC		POWER_SYM_LDO1
-#define POWER_ALIVE		POWER_SYM_LDO2
-#define POWER_USB_OTGi	POWER_SYM_LDO3
-#define POWER_MOVINAND	POWER_SYM_LDO4
-#define POWER_MMC		POWER_SYM_LDO5
+/*===========================================================================
 
-#define POWER_BT		POWER_SYM_LDO6
+FUNCTION set_pmic
 
-#define POWER_LCD		POWER_SYM_LDO7
-#define POWER_USB_OTG	POWER_SYM_LDO8
-#define POWER_DAC		POWER_SYM_LDO9
+DESCRIPTION
+    This function turn on / off block power or change voltage
+    in the PM section.
 
-#define PMIC_POWER_ON	1
-#define PMIC_POWER_OFF	0
+INPUT PARAMETERS
+    max8698_pm_type pm_type   : type of power control.
+    int value	: value for changing state
 
-typedef enum _voltage_symbol {
-	VCC_ARM = 0,
-	VCC_INT
-} voltage_symbol_t;
+RETURN VALUE
+    boolean : 0 = FALSE
+              1 = TRUE
 
-extern int pmic_power_control(const int symbol, const int ctl);
-extern int pmic_power_read(const int symbol, int *pvalue);
+DEPENDENCIES
+SIDE EFFECTS
+EXAMPLE 
 
-extern int set_pmic_voltage(voltage_symbol_t vol_type, const int value);
-extern int get_pmic_voltage(voltage_symbol_t vol_type, int *pvalue);
+===========================================================================*/
 
-#endif	/* __PMIC_H__ */
+typedef enum {
+	VCC_ARM,
+	VCC_INT,
+	ENDOFPMTYPE
+} pmic_pm_type;
 
+extern boolean set_pmic(pmic_pm_type pm_type, int value);
+extern boolean get_pmic(pmic_pm_type pm_type, int *value);
 
+#endif /* __LINUX_PMIC_H */

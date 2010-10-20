@@ -16,6 +16,7 @@
 #include <linux/compat.h>
 #include <linux/types.h>
 #include <linux/errno.h>
+#include <linux/smp_lock.h>
 #include <linux/kernel.h>
 #include <linux/major.h>
 #include <linux/slab.h>
@@ -44,17 +45,6 @@
 
 struct fb_info *registered_fb[FB_MAX] __read_mostly;
 int num_registered_fb __read_mostly;
-
-int lock_fb_info(struct fb_info *info)
-{
-	mutex_lock(&info->lock);
-	if (!info->fbops) {
-		mutex_unlock(&info->lock);
-		return 0;
-	}
-	return 1;
-}
-EXPORT_SYMBOL(lock_fb_info);
 
 /*
  * Helpers
@@ -1096,11 +1086,13 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			return -EINVAL;
 		con2fb.framebuffer = -1;
 		event.data = &con2fb;
+
 		if (!lock_fb_info(info))
 			return -ENODEV;
 		event.info = info;
 		fb_notifier_call_chain(FB_EVENT_GET_CONSOLE_MAP, &event);
 		unlock_fb_info(info);
+
 		ret = copy_to_user(argp, &con2fb, sizeof(con2fb)) ? -EFAULT : 0;
 		break;
 	case FBIOPUT_CON2FBMAP:
@@ -1120,7 +1112,8 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		if (!lock_fb_info(info))
 			return -ENODEV;
 		event.info = info;
-		ret = fb_notifier_call_chain(FB_EVENT_SET_CONSOLE_MAP, &event);
+		ret = fb_notifier_call_chain(FB_EVENT_SET_CONSOLE_MAP,
+					      &event);
 		unlock_fb_info(info);
 		break;
 	case FBIOBLANK:
@@ -1309,6 +1302,8 @@ static long fb_compat_ioctl(struct file *file, unsigned int cmd,
 
 static int
 fb_mmap(struct file *file, struct vm_area_struct * vma)
+__acquires(&info->lock)
+__releases(&info->lock)
 {
 	int fbidx = iminor(file->f_path.dentry->d_inode);
 	struct fb_info *info = registered_fb[fbidx];
@@ -1322,13 +1317,15 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
 	off = vma->vm_pgoff << PAGE_SHIFT;
 	if (!fb)
 		return -ENODEV;
-	mutex_lock(&info->mm_lock);
 	if (fb->fb_mmap) {
 		int res;
+		mutex_lock(&info->lock);
 		res = fb->fb_mmap(info, vma);
-		mutex_unlock(&info->mm_lock);
+		mutex_unlock(&info->lock);
 		return res;
 	}
+
+	mutex_lock(&info->lock);
 
 	/* frame buffer memory */
 	start = info->fix.smem_start;
@@ -1337,13 +1334,13 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
 		/* memory mapped io */
 		off -= len;
 		if (info->var.accel_flags) {
-			mutex_unlock(&info->mm_lock);
+			mutex_unlock(&info->lock);
 			return -EINVAL;
 		}
 		start = info->fix.mmio_start;
 		len = PAGE_ALIGN((start & ~PAGE_MASK) + info->fix.mmio_len);
 	}
-	mutex_unlock(&info->mm_lock);
+	mutex_unlock(&info->lock);
 	start &= PAGE_MASK;
 	if ((vma->vm_end - vma->vm_start + off) > len)
 		return -EINVAL;
@@ -1357,6 +1354,10 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
 		return -EAGAIN;
 	return 0;
 }
+
+#ifdef CONFIG_FB_S3C
+extern void s3cfb_stop_progress(void);
+#endif
 
 static int
 fb_open(struct inode *inode, struct file *file)
@@ -1389,6 +1390,9 @@ __releases(&info->lock)
 #ifdef CONFIG_FB_DEFERRED_IO
 	if (info->fbdefio)
 		fb_deferred_io_open(info, inode, file);
+#endif
+#ifdef CONFIG_FB_S3C
+	s3cfb_stop_progress();
 #endif
 out:
 	mutex_unlock(&info->lock);
@@ -1457,16 +1461,6 @@ static int fb_check_foreignness(struct fb_info *fi)
 	return 0;
 }
 
-static bool fb_do_apertures_overlap(struct fb_info *gen, struct fb_info *hw)
-{
-	/* is the generic aperture base the same as the HW one */
-	if (gen->aperture_base == hw->aperture_base)
-		return true;
-	/* is the generic aperture base inside the hw base->hw base+size */
-	if (gen->aperture_base > hw->aperture_base && gen->aperture_base <= hw->aperture_base + hw->aperture_size)
-		return true;
-	return false;
-}
 /**
  *	register_framebuffer - registers a frame buffer device
  *	@fb_info: frame buffer info structure
@@ -1490,30 +1484,12 @@ register_framebuffer(struct fb_info *fb_info)
 	if (fb_check_foreignness(fb_info))
 		return -ENOSYS;
 
-	/* check all firmware fbs and kick off if the base addr overlaps */
-	for (i = 0 ; i < FB_MAX; i++) {
-		if (!registered_fb[i])
-			continue;
-
-		if (registered_fb[i]->flags & FBINFO_MISC_FIRMWARE) {
-			if (fb_do_apertures_overlap(registered_fb[i], fb_info)) {
-				printk(KERN_ERR "fb: conflicting fb hw usage "
-				       "%s vs %s - removing generic driver\n",
-				       fb_info->fix.id,
-				       registered_fb[i]->fix.id);
-				unregister_framebuffer(registered_fb[i]);
-				break;
-			}
-		}
-	}
-
 	num_registered_fb++;
 	for (i = 0 ; i < FB_MAX; i++)
 		if (!registered_fb[i])
 			break;
 	fb_info->node = i;
 	mutex_init(&fb_info->lock);
-	mutex_init(&fb_info->mm_lock);
 
 	fb_info->dev = device_create(fb_class, fb_info->device,
 				     MKDEV(FB_MAJOR, i), NULL, "fb%d", i);
@@ -1550,10 +1526,7 @@ register_framebuffer(struct fb_info *fb_info)
 	registered_fb[i] = fb_info;
 
 	event.info = fb_info;
-	if (!lock_fb_info(fb_info))
-		return -ENODEV;
 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
-	unlock_fb_info(fb_info);
 	return 0;
 }
 
@@ -1587,12 +1560,8 @@ unregister_framebuffer(struct fb_info *fb_info)
 		goto done;
 	}
 
-
-	if (!lock_fb_info(fb_info))
-		return -ENODEV;
 	event.info = fb_info;
 	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
-	unlock_fb_info(fb_info);
 
 	if (ret) {
 		ret = -EINVAL;
@@ -1609,10 +1578,6 @@ unregister_framebuffer(struct fb_info *fb_info)
 	device_destroy(fb_class, MKDEV(FB_MAJOR, i));
 	event.info = fb_info;
 	fb_notifier_call_chain(FB_EVENT_FB_UNREGISTERED, &event);
-
-	/* this may free fb info */
-	if (fb_info->fbops->fb_destroy)
-		fb_info->fbops->fb_destroy(fb_info);
 done:
 	return ret;
 }
@@ -1630,8 +1595,6 @@ void fb_set_suspend(struct fb_info *info, int state)
 {
 	struct fb_event event;
 
-	if (!lock_fb_info(info))
-		return;
 	event.info = info;
 	if (state) {
 		fb_notifier_call_chain(FB_EVENT_SUSPEND, &event);
@@ -1640,7 +1603,6 @@ void fb_set_suspend(struct fb_info *info, int state)
 		info->state = FBINFO_STATE_RUNNING;
 		fb_notifier_call_chain(FB_EVENT_RESUME, &event);
 	}
-	unlock_fb_info(info);
 }
 
 /**
@@ -1710,11 +1672,8 @@ int fb_new_modelist(struct fb_info *info)
 	err = 1;
 
 	if (!list_empty(&info->modelist)) {
-		if (!lock_fb_info(info))
-			return -ENODEV;
 		event.info = info;
 		err = fb_notifier_call_chain(FB_EVENT_NEW_MODELIST, &event);
-		unlock_fb_info(info);
 	}
 
 	return err;

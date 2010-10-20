@@ -83,14 +83,12 @@ static inline u32 rfbi_read_reg(int idx)
 
 static int rfbi_get_clocks(void)
 {
-	rfbi.dss_ick = clk_get(rfbi.fbdev->dev, "ick");
-	if (IS_ERR(rfbi.dss_ick)) {
-		dev_err(rfbi.fbdev->dev, "can't get ick\n");
+	if (IS_ERR((rfbi.dss_ick = clk_get(rfbi.fbdev->dev, "dss_ick")))) {
+		dev_err(rfbi.fbdev->dev, "can't get dss_ick\n");
 		return PTR_ERR(rfbi.dss_ick);
 	}
 
-	rfbi.dss1_fck = clk_get(rfbi.fbdev->dev, "dss1_fck");
-	if (IS_ERR(rfbi.dss1_fck)) {
+	if (IS_ERR((rfbi.dss1_fck = clk_get(rfbi.fbdev->dev, "dss1_fck")))) {
 		dev_err(rfbi.fbdev->dev, "can't get dss1_fck\n");
 		clk_put(rfbi.dss_ick);
 		return PTR_ERR(rfbi.dss1_fck);

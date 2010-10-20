@@ -193,11 +193,11 @@ static int ak4671_set_idle_mode(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 
-	P(" idle_mode_value : %d", (int)ucontrol->value.integer.value[0]);
+	//P(" idle_mode_value : %d", (int)ucontrol->value.integer.value[0]);
 
 	if(ucontrol->value.integer.value[0] == 2) // force shutdown
 	{
-	P(" Force shutdown mode");
+	//P(" Force shutdown mode");
 		if(ak4671_power)
 		{
 			idle_mode_disable(codec, ak4671_path);
@@ -212,7 +212,7 @@ static int ak4671_set_idle_mode(struct snd_kcontrol *kcontrol,
 
 	if(ak4671_power == 0 && ak4671_idle_mode == IDLE_POWER_DOWN_MODE_ON)
 	{
-		P("audio power up");
+		//P("audio power up");
 		set_registers(codec, ak4671_path);
 		return 1;
 	}
@@ -361,7 +361,6 @@ static int ak4671_set_path(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	int i = 0, new_path;
-	P("");
 
 	while(audio_path[i] != NULL) {
 		new_path = (i << 4) | ucontrol->value.integer.value[0];
@@ -373,6 +372,7 @@ static int ak4671_set_path(struct snd_kcontrol *kcontrol,
 		}
 		i++;
 	}
+	P("New Path: %x\n", new_path);
 	return 1;
 }
 
@@ -605,7 +605,7 @@ static int ak4671_mute(struct snd_soc_dai *dai, int mute)
 #if 1
 	struct snd_soc_codec *codec = dai->codec;
 	u16 mute_reg;
-	P("mute %d", mute);
+//	P("mute %d", mute);
 
 	mute_reg = ak4671_read_reg_cache(codec, AK4671_MODE_CONTROL2) & 0xfffb;
 	if (!mute)
@@ -765,7 +765,7 @@ pcm_err:
 
 #define I2C_DRIVERID_AK4671 0xfefe /* liam -  need a proper id */
 
-static unsigned short normal_i2c[] = { 0, I2C_CLIENT_END };
+static unsigned short normal_i2c[] = { I2C_CLIENT_END };
 
 /* Magic definition of all other variables and things */
 I2C_CLIENT_INSMOD;
@@ -773,9 +773,9 @@ I2C_CLIENT_INSMOD;
 static struct i2c_driver ak4671_i2c_driver;
 static struct i2c_client ak4671_client;
 
-static unsigned short ak4671_normal_i2c[] = { 0x24 >> 1, I2C_CLIENT_END };
-static unsigned short ak4671_ignore[] = { 1, 0x24 >> 1, I2C_CLIENT_END };
-static unsigned short ak4671_i2c_probe[] = { I2C_CLIENT_END };
+static unsigned short ak4671_normal_i2c[] = { I2C_CLIENT_END };
+static unsigned short ak4671_ignore[] = { I2C_CLIENT_END };
+static unsigned short ak4671_i2c_probe[] = {5, 0x24 >>1,  I2C_CLIENT_END };
 
 static struct i2c_client_address_data ak4671_addr_data = {
 	.normal_i2c = ak4671_normal_i2c,
@@ -890,9 +890,9 @@ static ssize_t ak4671_control_store(
 	printk("echo [REGISTER NUMBER(HEX)][VALUE(HEX)] > ak4671_control\n");
 	printk("ex) echo 030f > ak4671_control\n");
 
-	P("buf = %s", buf);
-	P("buf size = %d", sizeof(buf));
-	P("buf size = %d", strlen(buf));
+	////P("buf = %s", buf);
+	//P("buf size = %d", sizeof(buf));
+	//P("buf size = %d", strlen(buf));
 
 	if(sizeof(buf) != 4) {
 		printk("input error\n");

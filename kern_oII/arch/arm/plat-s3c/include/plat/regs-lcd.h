@@ -59,6 +59,7 @@
 
 #elif defined(CONFIG_CPU_S3C6400) || defined(CONFIG_CPU_S3C6410) || defined(CONFIG_CPU_S5P6440) || defined(CONFIG_CPU_S5PC100) || defined(CONFIG_CPU_S5PC110)
 #define S3C_VIDCON2		S3C_LCDREG(0x08)  	/* Video control 2 register */
+#define S3C_PRTCON		S3C_LCDREG(0x0C)	/* Protection control register */
 #define S3C_VIDTCON0		S3C_LCDREG(0x10)  	/* Video time control 0 register */
 #define S3C_VIDTCON1		S3C_LCDREG(0x14)  	/* Video time control 1 register */
 #define S3C_VIDTCON2		S3C_LCDREG(0x18)  	/* Video time control 2 register */

@@ -378,6 +378,7 @@ static void __init offb_init_fb(const char *name, const char *full_name,
 	struct fb_fix_screeninfo *fix;
 	struct fb_var_screeninfo *var;
 	struct fb_info *info;
+	int size;
 
 	if (!request_mem_region(res_start, res_size, "offb"))
 		return;
@@ -392,12 +393,15 @@ static void __init offb_init_fb(const char *name, const char *full_name,
 		return;
 	}
 
-	info = framebuffer_alloc(sizeof(u32) * 16, NULL);
+	size = sizeof(struct fb_info) + sizeof(u32) * 16;
+
+	info = kmalloc(size, GFP_ATOMIC);
 	
 	if (info == 0) {
 		release_mem_region(res_start, res_size);
 		return;
 	}
+	memset(info, 0, size);
 
 	fix = &info->fix;
 	var = &info->var;
@@ -493,7 +497,7 @@ static void __init offb_init_fb(const char *name, const char *full_name,
 		iounmap(par->cmap_adr);
 		par->cmap_adr = NULL;
 		iounmap(info->screen_base);
-		framebuffer_release(info);
+		kfree(info);
 		release_mem_region(res_start, res_size);
 		return;
 	}

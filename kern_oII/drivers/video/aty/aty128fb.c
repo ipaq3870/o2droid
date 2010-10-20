@@ -354,7 +354,7 @@ static int default_crt_on __devinitdata = 0;
 static int default_lcd_on __devinitdata = 1;
 
 #ifdef CONFIG_MTRR
-static bool mtrr = true;
+static int mtrr = 1;
 #endif
 
 #ifdef CONFIG_PMAC_BACKLIGHT

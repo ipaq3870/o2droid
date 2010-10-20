@@ -11,7 +11,7 @@
 #ifndef __ASM_ARCH_HARDWARE_H
 #define __ASM_ARCH_HARDWARE_H __FILE__
 
-#include <mach/volans.h>
+#include <mach/Omnia_II.h>
 /* currently nothing here, placeholder */
 
 #endif /* __ASM_ARCH_IRQ_H */

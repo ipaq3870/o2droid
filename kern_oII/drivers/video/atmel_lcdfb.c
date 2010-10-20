@@ -29,8 +29,14 @@
 
 /* configurable parameters */
 #define ATMEL_LCDC_CVAL_DEFAULT		0xc8
-#define ATMEL_LCDC_DMA_BURST_LEN	8	/* words */
-#define ATMEL_LCDC_FIFO_SIZE		512	/* words */
+#define ATMEL_LCDC_DMA_BURST_LEN	8
+
+#if defined(CONFIG_ARCH_AT91SAM9263) || defined(CONFIG_ARCH_AT91CAP9) || \
+	defined(CONFIG_ARCH_AT91SAM9RL)
+#define ATMEL_LCDC_FIFO_SIZE		2048
+#else
+#define ATMEL_LCDC_FIFO_SIZE		512
+#endif
 
 #if defined(CONFIG_ARCH_AT91)
 #define	ATMEL_LCDFB_FBINFO_DEFAULT	(FBINFO_DEFAULT \
@@ -261,9 +267,6 @@ static inline void atmel_lcdfb_free_video_memory(struct atmel_lcdfb_info *sinfo)
 /**
  *	atmel_lcdfb_alloc_video_memory - Allocate framebuffer memory
  *	@sinfo: the frame buffer to allocate memory for
- * 	
- * 	This function is called only from the atmel_lcdfb_probe()
- * 	so no locking by fb_info->mm_lock around smem_len setting is needed.
  */
 static int atmel_lcdfb_alloc_video_memory(struct atmel_lcdfb_info *sinfo)
 {
@@ -348,7 +351,7 @@ static int atmel_lcdfb_check_var(struct fb_var_screeninfo *var,
 	dev_dbg(dev, "  bpp:        %u\n", var->bits_per_pixel);
 	dev_dbg(dev, "  clk:        %lu KHz\n", clk_value_khz);
 
-	if (PICOS2KHZ(var->pixclock) > clk_value_khz) {
+	if ((PICOS2KHZ(var->pixclock) * var->bits_per_pixel / 8) > clk_value_khz) {
 		dev_err(dev, "%lu KHz pixel clock is too fast\n", PICOS2KHZ(var->pixclock));
 		return -EINVAL;
 	}
