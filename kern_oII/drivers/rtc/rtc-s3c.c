@@ -294,6 +294,7 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
 {
 	unsigned int have_retried = 0;
 	void __iomem *base = s3c_rtc_base;
+	int year_bin;
 
  retry_get_time:
 	rtc_tm->tm_min  = readb(base + S3C_RTCMIN);
@@ -302,6 +303,9 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
 	rtc_tm->tm_mon  = readb(base + S3C_RTCMON);
 	rtc_tm->tm_year = readb(base + S3C_RTCYEAR);
 	rtc_tm->tm_sec  = readb(base + S3C_RTCSEC);
+
+	year_bin = bcd2bin(rtc_tm->tm_year) - 20; //bss
+	rtc_tm->tm_year = bin2bcd(year_bin);	//bss
 
 	/* the only way to work out wether the system was mid-update
 	 * when we read it is to check the second counter, and if it
@@ -356,7 +360,8 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
 	writeb(bin2bcd(tm->tm_hour), base + S3C_RTCHOUR);
 	writeb(bin2bcd(tm->tm_mday), base + S3C_RTCDATE);
 	writeb(bin2bcd(tm->tm_mon + 1), base + S3C_RTCMON);
-	writeb(bin2bcd(year), base + S3C_RTCYEAR);
+//bss	writeb(bin2bcd(year), base + S3C_RTCYEAR);
+	writeb(bin2bcd(year + 20), base + S3C_RTCYEAR); //bss
 
 	return 0;
 }
