@@ -1,0 +1,7 @@
+alias l='ls -l'
+alias ci='cat /check'
+alias dm='dmesg -c '
+export LD_LIBRARY_PATH=/lib:/system/lib:/sd/bin
+export TERMINFO=/system/lib/terminfo
+export TERM=xterm
+

@@ -1,0 +1,21 @@
+;; @WYNEX-Package-Information
+;; @Package-Name KListPack
+;; 
+;; 2009/12/22 5:45 updated
+;; 
+
+CWAniLabel:0:0
+CWExtendableList:0:0
+CWExtendableListEntry:0:0
+CWExtendableListItem:0:0
+CWExtendableListListener:1:0
+CWExtendableListNode:0:0
+CWListListener:1:0
+CWMultiLineEntry:0:0
+CWMultiLineItem:0:0
+CWMultiLineLabel:0:0
+KFixedList:0:0
+KListCellRenderer:1:0
+KListItem:0:0
+KScrollBarUI:0:0
+KTest:0:1

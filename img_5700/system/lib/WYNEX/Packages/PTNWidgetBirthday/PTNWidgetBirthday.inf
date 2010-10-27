@@ -1,0 +1,11 @@
+;; @WYNEX-Package-Information
+;; @Package-Name PTNWidgetBirthday
+;; 
+;; 2009/12/22 5:45 updated
+;; 
+
+bListEntry:0:0
+bListItem:0:0
+PTNWidgetBirthday:0:0
+PTNWidgetBirthdayProvider:0:1
+PTNWidgetBirthdayTest:0:1

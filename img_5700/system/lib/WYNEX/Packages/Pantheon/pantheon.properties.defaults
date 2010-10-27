@@ -1,0 +1,28 @@
+# -------------------------------------
+# ROOT
+# -------------------------------------
+! increase version number evey time when this file is modified
+version=4
+
+
+# -------------------------------------
+# HOME
+# -------------------------------------
+home.startPanelIndex=0
+home.backgroundImageFile=
+home.maxPageCount=10
+home.defaultPageTitle=No Title
+
+
+# -------------------------------------
+# MENU
+# -------------------------------------
+home.menu.gridRows=4
+home.menu.gridCols=4
+
+
+# -------------------------------------
+# WIDGET
+# -------------------------------------
+home.widget.maxWidgetCount=99
+

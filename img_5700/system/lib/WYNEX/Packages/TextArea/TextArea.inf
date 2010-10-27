@@ -1,0 +1,10 @@
+;; @WYNEX-Package-Information
+;; @Package-Name TextArea
+;; 
+;; 2009/12/22 5:44 updated
+;; 
+
+TextAreaActiveClient:0:0
+TextAreaCompositeIterator:0:0
+TextAreaDemo:0:1
+TextAreaTextComponent:0:0

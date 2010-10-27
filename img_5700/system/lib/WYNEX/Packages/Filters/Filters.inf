@@ -1,0 +1,17 @@
+;; @WYNEX-Package-Information
+;; @Package-Name Filters
+;; 
+;; 2009/12/22 5:45 updated
+;; 
+
+AbstractBufferedImageOp:0:0
+BoxBlurFilter:0:0
+Colormap:1:0
+FiltersTest:0:1
+GradientFilter:0:0
+ImageMath:0:0
+LinearColormap:0:0
+MirrorFilter:0:0
+PerspectiveFilter:0:0
+PixelUtils:0:0
+TransformFilter:0:0

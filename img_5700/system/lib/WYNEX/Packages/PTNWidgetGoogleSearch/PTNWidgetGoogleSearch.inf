@@ -1,0 +1,9 @@
+;; @WYNEX-Package-Information
+;; @Package-Name PTNWidgetGoogleSearch
+;; 
+;; 2009/12/22 5:44 updated
+;; 
+
+PTNWidgetGoogleSearch:0:0
+PTNWidgetGoogleSearchProvider:0:1
+PTNWidgetGoogleSearchTest:0:1
