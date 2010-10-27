@@ -1880,7 +1880,7 @@ static DEFINE_MUTEX(ams320fs01_backlight_lock);
 
 static void ams320fs01_set_backlight_level(u8 level)
 {
-	printk("ams320fs01_set_backlight_level");
+//	printk("ams320fs01_set_backlight_level");
 	if (backlight_level == level)
 		return;
 

@@ -80,6 +80,7 @@ static inline int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
 }
 #endif
 
+#if defined(CONFIG_DEVMEM) || defined(CONFIG_DEVKMEM)
 #ifdef CONFIG_STRICT_DEVMEM
 static inline int range_is_allowed(unsigned long pfn, unsigned long size)
 {
@@ -105,7 +106,9 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
 	return 1;
 }
 #endif
+#endif
 
+#ifdef CONFIG_DEVMEM
 void __attribute__((weak)) unxlate_dev_mem_ptr(unsigned long phys, void *addr)
 {
 }
@@ -254,6 +257,9 @@ static ssize_t write_mem(struct file * file, const char __user * buf,
 	*ppos += written;
 	return written;
 }
+#endif	/* CONFIG_DEVMEM */
+
+#if defined(CONFIG_DEVMEM) || defined(CONFIG_DEVKMEM)
 
 int __attribute__((weak)) phys_mem_access_prot_allowed(struct file *file,
 	unsigned long pfn, unsigned long size, pgprot_t *vma_prot)
@@ -301,7 +307,33 @@ static inline int private_mapping_ok(struct vm_area_struct *vma)
 }
 #endif
 
+void __attribute__((weak))
+map_devmem(unsigned long pfn, unsigned long len, pgprot_t prot)
+{
+	/* nothing. architectures can override. */
+}
+
+void __attribute__((weak))
+unmap_devmem(unsigned long pfn, unsigned long len, pgprot_t prot)
+{
+	/* nothing. architectures can override. */
+}
+
+static void mmap_mem_open(struct vm_area_struct *vma)
+{
+	map_devmem(vma->vm_pgoff,  vma->vm_end - vma->vm_start,
+			vma->vm_page_prot);
+}
+
+static void mmap_mem_close(struct vm_area_struct *vma)
+{
+	unmap_devmem(vma->vm_pgoff,  vma->vm_end - vma->vm_start,
+			vma->vm_page_prot);
+}
+
 static struct vm_operations_struct mmap_mem_ops = {
+	.open  = mmap_mem_open,
+	.close = mmap_mem_close,
 #ifdef CONFIG_HAVE_IOREMAP_PROT
 	.access = generic_access_phys
 #endif
@@ -336,10 +368,12 @@ static int mmap_mem(struct file * file, struct vm_area_struct * vma)
 			    vma->vm_pgoff,
 			    size,
 			    vma->vm_page_prot)) {
+		unmap_devmem(vma->vm_pgoff, size, vma->vm_page_prot);
 		return -EAGAIN;
 	}
 	return 0;
 }
+#endif	/* CONFIG_DEVMEM */
 
 #ifdef CONFIG_DEVKMEM
 static int mmap_kmem(struct file * file, struct vm_area_struct * vma)
@@ -694,8 +728,6 @@ static ssize_t read_zero(struct file * file, char __user * buf,
 		written += chunk - unwritten;
 		if (unwritten)
 			break;
-		if (signal_pending(current))
-			return written ? written : -ERESTARTSYS;
 		buf += chunk;
 		count -= chunk;
 		cond_resched();
@@ -730,6 +762,8 @@ static loff_t null_lseek(struct file * file, loff_t offset, int orig)
 	return file->f_pos = 0;
 }
 
+#if defined(CONFIG_DEVMEM) || defined(CONFIG_DEVKMEM) || defined(CONFIG_DEVPORT)
+
 /*
  * The memory devices use the full 32/64 bits of the offset, and so we cannot
  * check against negative addresses: they are ok. The return value is weird,
@@ -761,10 +795,15 @@ static loff_t memory_lseek(struct file * file, loff_t offset, int orig)
 	return ret;
 }
 
+#endif
+
+#if defined(CONFIG_DEVMEM) || defined(CONFIG_DEVKMEM) || defined(CONFIG_DEVPORT)
 static int open_port(struct inode * inode, struct file * filp)
 {
-	return capable(CAP_SYS_RAWIO) ? 0 : -EPERM;
+	return 0;	/* temporary open to all process */
+//	return capable(CAP_SYS_RAWIO) ? 0 : -EPERM;
 }
+#endif
 
 #define zero_lseek	null_lseek
 #define full_lseek      null_lseek
@@ -774,6 +813,7 @@ static int open_port(struct inode * inode, struct file * filp)
 #define open_kmem	open_mem
 #define open_oldmem	open_mem
 
+#ifdef CONFIG_DEVMEM
 static const struct file_operations mem_fops = {
 	.llseek		= memory_lseek,
 	.read		= read_mem,
@@ -782,6 +822,7 @@ static const struct file_operations mem_fops = {
 	.open		= open_mem,
 	.get_unmapped_area = get_unmapped_area_mem,
 };
+#endif
 
 #ifdef CONFIG_DEVKMEM
 static const struct file_operations kmem_fops = {
@@ -838,6 +879,16 @@ static const struct file_operations oldmem_fops = {
 };
 #endif
 
+#ifdef CONFIG_S3C_MEM
+extern int s3c_mem_mmap(struct file* filp, struct vm_area_struct *vma);
+extern int s3c_mem_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg);
+
+static const struct file_operations s3c_mem_fops = {
+	.ioctl  = s3c_mem_ioctl,
+	.mmap   = s3c_mem_mmap,
+};
+#endif
+
 static ssize_t kmsg_write(struct file * file, const char __user * buf,
 			  size_t count, loff_t *ppos)
 {
@@ -863,64 +914,101 @@ static const struct file_operations kmsg_fops = {
 	.write =	kmsg_write,
 };
 
-static const struct {
-	unsigned int		minor;
-	char			*name;
-	umode_t			mode;
-	const struct file_operations	*fops;
-	struct backing_dev_info	*dev_info;
-} devlist[] = { /* list of minor devices */
-	{1, "mem",     S_IRUSR | S_IWUSR | S_IRGRP, &mem_fops,
-		&directly_mappable_cdev_bdi},
-#ifdef CONFIG_DEVKMEM
-	{2, "kmem",    S_IRUSR | S_IWUSR | S_IRGRP, &kmem_fops,
-		&directly_mappable_cdev_bdi},
-#endif
-	{3, "null",    S_IRUGO | S_IWUGO,           &null_fops, NULL},
-#ifdef CONFIG_DEVPORT
-	{4, "port",    S_IRUSR | S_IWUSR | S_IRGRP, &port_fops, NULL},
-#endif
-	{5, "zero",    S_IRUGO | S_IWUGO,           &zero_fops, &zero_bdi},
-	{7, "full",    S_IRUGO | S_IWUGO,           &full_fops, NULL},
-	{8, "random",  S_IRUGO | S_IWUSR,           &random_fops, NULL},
-	{9, "urandom", S_IRUGO | S_IWUSR,           &urandom_fops, NULL},
-	{11,"kmsg",    S_IRUGO | S_IWUSR,           &kmsg_fops, NULL},
-#ifdef CONFIG_CRASH_DUMP
-	{12,"oldmem",    S_IRUSR | S_IWUSR | S_IRGRP, &oldmem_fops, NULL},
-#endif
-};
-
-static int memory_open(struct inode *inode, struct file *filp)
+static int memory_open(struct inode * inode, struct file * filp)
 {
 	int ret = 0;
-	int i;
 
 	lock_kernel();
-
-	for (i = 0; i < ARRAY_SIZE(devlist); i++) {
-		if (devlist[i].minor == iminor(inode)) {
-			filp->f_op = devlist[i].fops;
-			if (devlist[i].dev_info) {
-				filp->f_mapping->backing_dev_info =
-					devlist[i].dev_info;
-			}
-
+	switch (iminor(inode)) {
+#ifdef CONFIG_DEVMEM
+		case 1:
+			filp->f_op = &mem_fops;
+			filp->f_mapping->backing_dev_info =
+				&directly_mappable_cdev_bdi;
 			break;
-		}
+#endif
+#ifdef CONFIG_DEVKMEM
+		case 2:
+			filp->f_op = &kmem_fops;
+			filp->f_mapping->backing_dev_info =
+				&directly_mappable_cdev_bdi;
+			break;
+#endif
+		case 3:
+			filp->f_op = &null_fops;
+			break;
+#ifdef CONFIG_DEVPORT
+		case 4:
+			filp->f_op = &port_fops;
+			break;
+#endif
+		case 5:
+			filp->f_mapping->backing_dev_info = &zero_bdi;
+			filp->f_op = &zero_fops;
+			break;
+		case 7:
+			filp->f_op = &full_fops;
+			break;
+		case 8:
+			filp->f_op = &random_fops;
+			break;
+		case 9:
+			filp->f_op = &urandom_fops;
+			break;
+		case 11:
+			filp->f_op = &kmsg_fops;
+			break;
+#ifdef CONFIG_CRASH_DUMP
+		case 12:
+			filp->f_op = &oldmem_fops;
+			break;
+#endif
+#ifdef CONFIG_S3C_MEM
+		case 13:
+			filp->f_op = &s3c_mem_fops;
+			break;
+#endif
+		default:
+			unlock_kernel();
+			return -ENXIO;
 	}
-
-	if (i == ARRAY_SIZE(devlist))
-		ret = -ENXIO;
-	else
-		if (filp->f_op && filp->f_op->open)
-			ret = filp->f_op->open(inode, filp);
-
+	if (filp->f_op && filp->f_op->open)
+		ret = filp->f_op->open(inode,filp);
 	unlock_kernel();
 	return ret;
 }
 
 static const struct file_operations memory_fops = {
 	.open		= memory_open,	/* just a selector for the real open */
+};
+
+static const struct {
+	unsigned int		minor;
+	char			*name;
+	umode_t			mode;
+	const struct file_operations	*fops;
+} devlist[] = { /* list of minor devices */
+#ifdef CONFIG_DEVMEM
+	{1, "mem",     S_IRUSR | S_IWUSR | S_IRGRP, &mem_fops},
+#endif
+#ifdef CONFIG_DEVKMEM
+	{2, "kmem",    S_IRUSR | S_IWUSR | S_IRGRP, &kmem_fops},
+#endif
+	{3, "null",    S_IRUGO | S_IWUGO,           &null_fops},
+#ifdef CONFIG_DEVPORT
+	{4, "port",    S_IRUSR | S_IWUSR | S_IRGRP, &port_fops},
+#endif
+	{5, "zero",    S_IRUGO | S_IWUGO,           &zero_fops},
+	{7, "full",    S_IRUGO | S_IWUGO,           &full_fops},
+	{8, "random",  S_IRUGO | S_IWUSR,           &random_fops},
+	{9, "urandom", S_IRUGO | S_IWUSR,           &urandom_fops},
+	{11,"kmsg",    S_IRUGO | S_IWUSR,           &kmsg_fops},
+#ifdef CONFIG_CRASH_DUMP
+	{12,"oldmem",    S_IRUSR | S_IWUSR | S_IRGRP, &oldmem_fops},
+#endif
+#ifdef CONFIG_S3C_MEM
+	{13,"s3c-mem", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH, &s3c_mem_fops},
+#endif
 };
 
 static struct class *mem_class;

@@ -326,9 +326,8 @@ static struct clk_sources clkset_irda = {
 };
 
 static struct clk *clkset_uart_list[] = {
-//	&clk_mout_epll.clk,
+	&clk_mout_epll.clk,
 	&clk_dout_mpll,
-	NULL,
 	NULL,
 	NULL,
 };
