@@ -19,11 +19,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#define BSS 0
+#define BSS 1
 #define _DEBUG
 #define _ENABLE_ERROR_DEVICE
-//#define _DPRAM_DEBUG_HEXDUMP
-#undef _DPRAM_DEBUG_HEXDUMP
+#define _DPRAM_DEBUG_HEXDUMP
+//#undef _DPRAM_DEBUG_HEXDUMP
 
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -915,8 +915,10 @@ static void dpram_nvdata_load(struct _param_nv *param) {
 	unsigned int          nPgsPerBlk;
 	unsigned int          nSctsPerPg;
 	BMLVolSpec            stVolSpec;
+#endif
 
 	if (!dump_on) {
+#if 0
 		// printk("[DPRAM] Start getting DGS info.\n");
     
 		if (BML_Open(0) != BML_SUCCESS) {
@@ -947,8 +949,9 @@ static void dpram_nvdata_load(struct _param_nv *param) {
 		//	while(1);
 		} else {
 		}
+#endif
 		if(*onedram_sem) {
-	 //   		WRITE_TO_DPRAM( 0xF80000 - 0x5000, param->addr, param->size);
+//	  		WRITE_TO_DPRAM( 0xF80000 - 0x5000, param->addr, param->size);
 	 //          WRITE_TO_DPRAM( DPRAM_DGS_INFO_BLOCK_OFFSET, aDGSBuf, DPRAM_DGS_INFO_BLOCK_SIZE);   
 		}
 		else
@@ -956,7 +959,6 @@ static void dpram_nvdata_load(struct _param_nv *param) {
 	}
 	else
 		dprintk("CP DUMP MODE !!! \n");
-#endif
 }
 
 static void dpram_phone_power_on(void)
@@ -965,7 +967,7 @@ static void dpram_phone_power_on(void)
 	if( phone_power_state ) {
 		printk("[OneDram] phone off (before phone power on).\n");
 		gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_LOW);
-//		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
 		interruptible_sleep_on_timeout(&dpram_wait, 100);	//	mdelay(500);
 		printk("[OneDram] phone rst low 500ms).\n");
 	}
@@ -975,13 +977,13 @@ static void dpram_phone_power_on(void)
 	gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_HIGH);
 	gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_HIGH);
 
-//	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
 	interruptible_sleep_on_timeout(&dpram_wait, 40);	//	mdelay(200);
 
 	gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_HIGH);
 	interruptible_sleep_on_timeout(&dpram_wait, 6);		//	mdelay(30);
-	
-//	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
+
+	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
 	interruptible_sleep_on_timeout(&dpram_wait, 100);	//	mdelay(500);
 
 	gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_LOW);
@@ -1004,7 +1006,7 @@ static void dpram_phone_boot_start(void) {
 	int retval = 0;
 	int i, j;
 
-return;
+//return;
 	free_irq(IRQ_ONEDRAM_INT_N, NULL);
 		  
 	if(!dump_on)
@@ -1021,9 +1023,10 @@ print_onedram_status();
 	
 print_onedram_status();
 	i = 0; j = 0;
-		while(*onedram_checkBA == 0x1 && i++ < 100)
-			mdelay(10);
-
+		while(*onedram_checkBA == 0x1 && i++ < 100) {
+			mdelay(100);
+			*onedram_mailboxBA = send_mail;
+		}
 		if (i > 98) {
 			printk("Sanya DP exit 1: i: %d\n", i);
 			retval = request_irq(IRQ_ONEDRAM_INT_N, dpram_irq_handler, IRQF_DISABLED, "dpram_irq", NULL);
@@ -1215,16 +1218,42 @@ print_onedram_status();
 		}
 	}
 
-	static void dpram_phone_image_load(void)
+	static void dpram_phone_power_off(void)
 	{
+		printk("[OneDram] phone power off.\n");
 
 		gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_LOW);
 		gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_LOW);
+		msleep(10);
+
+		gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_HIGH);
+		gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_HIGH);
+		msleep(100);
+
+		gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_LOW);
+		gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_LOW);
+
+		printk("[OneDRAM] Phone power Off. - GPIO-done\n");
 	}
 
 	static int dpram_phone_getstatus(void)
 	{
 		return gpio_get_value(GPIO_PHONE_ACTIVE);
+	}
+
+	static void dpram_phone_reset_bs(void)
+	{
+	    dprintk("[OneDRAM] Phone power Reset.\n");
+		if(*onedram_sem) {
+			dprintk("[OneDRAM} semaphore: %d\n", *onedram_sem);
+			*onedram_sem = 0x00;
+		}
+		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+		mdelay(100);
+		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
+
+		// Wait until phone is stable
+		mdelay(200);
 	}
 
 	static void dpram_phone_reset(void)
@@ -1578,6 +1607,8 @@ static int dpram_tty_open(struct tty_struct *tty, struct file *file)
 {
 	dpram_device_t *device = &dpram_table[tty->index];
 
+printk("Sanya: dpram_tty_open %x\n", tty->index);
+
 	device->serial.tty = tty;
 	device->serial.open_count++;
 
@@ -1681,7 +1712,7 @@ boot_complete = 1; //bss
 			return 0;
 
 		case DPRAM_PHONEIMG_LOAD:
-			dpram_phone_image_load();
+			//bss dpram_phone_image_load();
 			return 0;
 
 		case DPRAM_PHONE_MDUMP:
@@ -1696,7 +1727,7 @@ boot_complete = 1; //bss
 		{
 			struct _param_nv param;
 			val = copy_from_user((void *)&param, (void *)arg, sizeof(param));
-			//dpram_nvdata_load(&param);
+			dpram_nvdata_load(&param);
 			return 0;
 		}
 		case DPRAM_GET_DGS_INFO: {
@@ -1711,47 +1742,16 @@ boot_complete = 1; //bss
 
 		case DPRAM_PHONE_OFF:
 			print_onedram_status();
-//send_interrupt_to_phone_with_semaphore(INT_COMMAND(INT_MASK_CMD_PHONE_START));
+			dpram_phone_reset_bs();
 			print_onedram_status();
 
- 
 
-	if(*onedram_sem) {
-		printk("DSG\n");
-		//hexdump(DPRAM_VBASE + 0xFFF000, DPRAM_DGS_INFO_BLOCK_SIZE);
-	}
-
-	dpram_dump_nvdata();
-#if 0			
-			{
-			        unsigned char reg_buff = 0;
-				if (Get_MAX8698_PM_REG(EN1, &reg_buff)) {
-					printk("MAX8698_PM:  BUCK1 (%d)\n", reg_buff);
-				}
-				if (Get_MAX8698_PM_REG(EN2, &reg_buff)) {
-					printk("MAX8698_PM:  BUCK2 (%d)\n", reg_buff);
-				}
-				if (Get_MAX8698_PM_REG(ELDO3, &reg_buff)) {
-					printk("MAX8698_PM:  OTGI 1.2V (%d)\n", reg_buff);
-				}
-				if (Get_MAX8698_PM_REG(ELDO4, &reg_buff)) {
-					printk("MAX8698_PM:  VLED 3.3V (%d)\n", reg_buff);
-				}
-				if (Get_MAX8698_PM_REG(ELDO5, &reg_buff)) {
-					printk("MAX8698_PM:  VTF 3.0V (%d)\n", reg_buff);
-				}
-				if (Get_MAX8698_PM_REG(ELDO6, &reg_buff)) {
-					printk("MAX8698_PM:  VLCD 1.8V (%d)\n", reg_buff);
-				}
-				if (Get_MAX8698_PM_REG(ELDO7, &reg_buff)) {
-					printk("MAX8698_PM:  VLCD 3.0V (%d)\n", reg_buff);
-				}
-				if (Get_MAX8698_PM_REG(ELDO8, &reg_buff)) {
-					printk("MAX8698_PM:  OTG 3.3V (%d)\n", reg_buff);
-				}
-
+			if(*onedram_sem) {
+				printk("DSG\n");
+				hexdump(DPRAM_VBASE + 0xFFF000, DPRAM_DGS_INFO_BLOCK_SIZE);
+				dpram_dump_nvdata();
 			}
-#endif
+
 			//dpram_phone_power_off();
 			return 0;
 
@@ -1890,7 +1890,7 @@ static void send_tasklet_handler(unsigned long data) {
 
 	int ret = 0;
 
-//	printk("Sanya: send_tasklet_handler cmd: %x device: %x tty: %x\n", non_cmd, device, device->serial.tty);
+	printk("Sanya: send_tasklet_handler cmd: %x device: %x tty: %x\n", non_cmd, device, device->serial.tty);
 	if (device != NULL && device->serial.tty) {
 		struct tty_struct *tty = device->serial.tty;
 		do {
@@ -2410,7 +2410,7 @@ static void init_hw_setting(void)
 	if (gpio_is_valid(GPIO_PHONE_RST_N)) {
 		if (gpio_request(GPIO_PHONE_RST_N, S3C_GPIO_LAVEL(GPIO_PHONE_RST_N)))
 			printk(KERN_ERR "Filed to request GPIO_PHONE_RST_N!\n");
-//		gpio_direction_output(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+		gpio_direction_output(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
 	}
 	s3c_gpio_setpull(GPIO_PHONE_RST_N, S3C_GPIO_PULL_NONE); 
 
@@ -2522,7 +2522,7 @@ static int __devinit dpram_probe(struct platform_device *dev)
 #endif /* _ENABLE_ERROR_DEVICE */
 
 	/* @LDK@ H/W setting */
-//	init_hw_setting();
+	init_hw_setting();
 
 	dpram_shared_bank_remap();
 

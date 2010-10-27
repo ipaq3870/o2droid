@@ -1243,7 +1243,7 @@ print_onedram_status();
 	    dprintk("[OneDRAM] Phone power Reset.\n");
 		if(*onedram_sem) {
 			dprintk("[OneDRAM} semaphore: %d\n", *onedram_sem);
-			*onedram_sem = 0x00;
+//			*onedram_sem = 0x00;
 		}
 //		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
 		mdelay(100);
