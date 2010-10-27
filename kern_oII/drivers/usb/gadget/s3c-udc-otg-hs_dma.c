@@ -1287,8 +1287,11 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 		goto	OK_OUT;
 	}
 	
-	if (intr_status) 
+	if (intr_status) {
+	    if (printk_ratelimit())
 		DEBUG_ERROR("no handler for S3C_UDC_OTG_GINTSTS [%d]\n", intr_status);
+	    return IRQ_HANDLED;
+	}
 	else
 		DEBUG_ERROR("no S3C_UDC_OTG_GINTSTS( == 0)\n");
 
