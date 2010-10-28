@@ -14,7 +14,5 @@ rild.libpath=/system/lib/libsec-ril.so
 rild.libargs=-d /dev/ttyS0
 keyguard.no_require_sim=true
 
-
-ro.ril.hsxpa=2
-ro.ril.gprsclass=12
-
+#ro.ril.hsxpa=2
+#ro.ril.gprsclass=12
