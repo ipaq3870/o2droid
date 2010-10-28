@@ -264,9 +264,7 @@
 
   <apn carrier="Saunalahti" apn="internet.saunalahti" mcc="244" mnc="21" type="default,supl"/>
   <apn carrier="Saunalaht MMS" apn="mms.saunalahti.fi" mmsc="http://mms.saunalahti.fi:8002" mmsproxy="62.142.4.197" mmsport="8080" mcc="244" mnc="21" type="mms"/>
-
-  <apn carrier="Kyivstar AB Internet" apn="www.ab.kyivstar.net" mcc="255" mnc="03" type="default,supl"/>   
-
+   
 <!-- 
   <apn carrier="" apn="" mcc="" mnc="" type="default,supl"/>
   <apn carrier="" apn="" user="" password="" mmsc="" mmsproxy="" mmsport="" mcc="" mnc="" type="mms"/>
