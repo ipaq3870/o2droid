@@ -18,7 +18,8 @@
 void (*s3c64xx_idle)(void);
 void (*s3c64xx_reset_hook)(void);
 
-#ifdef CONFIG_MACH_SATURN
+//#ifdef CONFIG_MACH_SATURN
+#if 1 //bss
 extern void __iomem *s3c6410_wdt_addr;
 #endif
 
@@ -37,7 +38,8 @@ static void arch_idle(void)
 
 void arch_reset(char mode)
 {
-#ifdef CONFIG_MACH_SATURN
+//#ifdef CONFIG_MACH_SATURN
+#if 1 //bss
 	void __iomem	*wdt_reg = s3c6410_wdt_addr;
 
 	printk(KERN_ERR ">>Watchdog reset tried to assert reset\n");

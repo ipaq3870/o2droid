@@ -306,6 +306,86 @@ extern int get_usb_cable_state(void);
 #define AUDIO_TYPE2                     (0x1 << 1)
 #define AUDIO_TYPE1                     (0x1 << 0)
 
+extern void arch_reset(char mode);
+
+static void saturn_pm_power_off(void)
+{
+	int	mode = REBOOT_MODE_NONE;
+	char reset_mode = 'r';
+	int cnt = 0;
+	int i;
+
+	if (!gpio_get_value(GPIO_TA_CONNECTED_N)) 
+	{	/* Reboot Charging */
+		mode = REBOOT_MODE_CHARGING;
+		if (sec_set_param_value)
+			sec_set_param_value(__REBOOT_MODE, &mode);
+		/* Watchdog Reset */
+		arch_reset(reset_mode);
+	}
+	else 
+	{	/* Power Off or Reboot */
+		if (sec_set_param_value)
+			sec_set_param_value(__REBOOT_MODE, &mode);
+		if (get_usb_cable_state() & (JIG_UART_ON | JIG_UART_OFF | JIG_USB_OFF | JIG_USB_ON)) {
+			/* Watchdog Reset */
+			arch_reset(reset_mode);
+		}
+		else 
+		{
+			/* POWER_N -> Input */
+			gpio_direction_input(GPIO_POWER_N);
+			gpio_direction_input(GPIO_PHONE_ACTIVE);
+
+			if (!gpio_get_value(GPIO_POWER_N) || gpio_get_value(GPIO_PHONE_ACTIVE))
+			{	
+				/* Wait Power Button Release */
+				while (gpio_get_value(GPIO_PHONE_ACTIVE)) 
+				{
+					if (cnt++ < 5) 
+					{
+						printk(KERN_EMERG "%s: GPIO_PHONE_ACTIVE is high(%d)\n", __func__, cnt);
+						mdelay(1000);
+
+					} 
+					else 
+					{
+						printk(KERN_EMERG "%s: GPIO_PHONE_ACTIVE TIMED OUT!!!\n", __func__);
+						
+						// Display Yellow LED 	
+						// (PHONE_RST: Output Low) -> (nPHONE_RST: Low) -> (MSM_PSHOLD: Low) -> CP PMIC Off
+						gpio_direction_output(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
+						s3c_gpio_setpull(GPIO_PHONE_RST_N, S3C_GPIO_PULL_NONE);
+						gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+						break;
+					}
+				}	
+				while (!gpio_get_value(GPIO_POWER_N));
+			}
+
+			if (!gpio_get_value(GPIO_TA_CONNECTED_N) || !gpio_get_value(GPIO_CHG_ING_N) ) 
+			{
+	        		mode = REBOOT_MODE_CHARGING;
+				if (sec_set_param_value)
+					sec_set_param_value(__REBOOT_MODE, &mode);
+				/* Watchdog Reset */
+				arch_reset(reset_mode);
+			}			
+			else
+			{
+				if (sec_set_param_value)
+					sec_set_param_value(__REBOOT_MODE, &mode);				
+				/* PS_HOLD -> Output Low */
+				gpio_direction_output(GPIO_PDA_PS_HOLD, GPIO_LEVEL_HIGH);
+				s3c_gpio_setpull(GPIO_PDA_PS_HOLD, S3C_GPIO_PULL_NONE);
+				gpio_set_value(GPIO_PDA_PS_HOLD, GPIO_LEVEL_LOW);
+			}	
+		}
+	}
+	
+	while (1);
+}
+
 static int uart_current_owner = 0;
 
 static ssize_t uart_switch_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -366,44 +446,7 @@ static void saturn_switch_init(void)
                 pr_err("Failed to create device file(%s)!\n", dev_attr_uart_sel.attr.name);
 
 };
-#if 0
-static void omnia_II_init_gpio(void)
-{
-	struct __gpio_config *pgpio;
-	unsigned int pin;
-	int i;
 
-	for (i = 0; i < ARRAY_SIZE(volans_gpio_table); i++) {
-		pgpio = &volans_gpio_table[i];
-		pin = pgpio->gpio;
-
-		if (pgpio->level != GPIO_LEVEL_NONE)
-			s3c_gpio_setpin(pin, pgpio->level);
-
-		/* off part */
-		if (pin < S3C64XX_GPK(0)) {
-			s3c_gpio_cfgpin(pin, S3C_GPIO_SFN(pgpio->af));
-			s3c_gpio_setpull(pin, pgpio->pull);
-			s3c_gpio_slp_cfgpin(pin, pgpio->slp_con);
-			s3c_gpio_slp_setpull_updown(pin, pgpio->slp_pull);
-		}
-
-		/* alive part */
-		else if (pin < S3C64XX_GPO(0)) {
-			s3c_gpio_cfgpin(pin, S3C_GPIO_SFN(pgpio->af));
-			s3c_gpio_setpull(pin, pgpio->pull);
-		}
-
-		/* memory part */
-		else {
-			s3c_gpio_cfgpin(pin, S3C_GPIO_SFN(pgpio->af));
-			s3c_gpio_setpull(pin, pgpio->pull);
-			s3c_gpio_slp_cfgpin(pin, pgpio->slp_con);
-			s3c_gpio_slp_setpull_updown(pin, pgpio->slp_pull);
-		}
-	}
-}
-#endif
 static struct map_desc smdk6410_iodesc[] = {
 	{
 		.virtual	= (unsigned long)S3C_VA_LCD,
@@ -421,7 +464,7 @@ static struct map_desc smdk6410_iodesc[] = {
 		.length	= S3C64XX_SZ_HOSTIFA,
 		.type		= MT_DEVICE,
 	},{
-/*		.virtual	= (unsigned long)(S3C64XX_VA_OTG),
+		.virtual	= (unsigned long)(S3C64XX_VA_OTG),
 		.pfn		= __phys_to_pfn(S3C64XX_PA_OTG),
 		.length	= S3C64XX_SZ_OTG,
 		.type		= MT_DEVICE,
@@ -430,7 +473,7 @@ static struct map_desc smdk6410_iodesc[] = {
 		.pfn		= __phys_to_pfn(S3C64XX_PA_OTGSFR),
 		.length	= S3C64XX_SZ_OTGSFR,
 		.type		= MT_DEVICE,
-*/	},
+	},
 };
 
 static struct platform_device *smdk6410_devices[] __initdata = {
@@ -514,7 +557,8 @@ EXPORT_SYMBOL_GPL(s3c6410_power_off);
 
 static void __init smdk6410_map_io(void)
 {
-	pm_power_off = s3c6410_power_off;
+//	pm_power_off = s3c6410_power_off;
+	pm_power_off = saturn_pm_power_off;
 	s3c64xx_init_io(smdk6410_iodesc, ARRAY_SIZE(smdk6410_iodesc));
 	s3c_init_clocks(12000000);
         s3c_init_uarts(saturn_uartcfgs, ARRAY_SIZE(saturn_uartcfgs));
@@ -549,8 +593,7 @@ static void __init smdk6410_machine_init(void)
 	s3c_fimc0_set_platdata(NULL);
 	s3c_fimc1_set_platdata(NULL);
 
-	//omnia_II_init_gpio();
-	smdk6410_gpio_init();
+	//smdk6410_gpio_init();
 	//writel(readl(S3C_PCLK_GATE)|S3C_CLKCON_PCLK_GPIO, S3C_PCLK_GATE);
 
 	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
@@ -730,41 +773,6 @@ void s3c_reset_uart_cfg_gpio(unsigned char port)
 }
 EXPORT_SYMBOL(s3c_reset_uart_cfg_gpio);
 
-static void check_pmic(void)
-{	
-	unsigned char reg_buff = 0;
-	if (Get_MAX8698_PM_REG(EN1, &reg_buff)) {
-		pr_info("%s: BUCK1 (%d)\n", __func__, reg_buff);
-		if (reg_buff)
-			Set_MAX8698_PM_REG(EN1, 0);
-	}
-	if (Get_MAX8698_PM_REG(EN2, &reg_buff)) {
-		pr_info("%s: BUCK2 (%d)\n", __func__, reg_buff);
-		if (reg_buff)
-			Set_MAX8698_PM_REG(EN2, 0);
-	}
-	if (Get_MAX8698_PM_REG(ELDO3, &reg_buff)) {
-		pr_info("%s: OTGI 1.2V (%d)\n", __func__, reg_buff);
-	}
-	if (Get_MAX8698_PM_REG(ELDO4, &reg_buff)) {
-		pr_info("%s: VLED 3.3V (%d)\n", __func__, reg_buff);
-	}
-	if (Get_MAX8698_PM_REG(ELDO5, &reg_buff)) {
-		pr_info("%s: VTF 3.0V (%d)\n", __func__, reg_buff);
-		if (reg_buff)
-			Set_MAX8698_PM_REG(ELDO5, 0);
-	}
-	if (Get_MAX8698_PM_REG(ELDO6, &reg_buff)) {
-		pr_info("%s: VLCD 1.8V (%d)\n", __func__, reg_buff);
-	}
-	if (Get_MAX8698_PM_REG(ELDO7, &reg_buff)) {
-		pr_info("%s: VLCD 3.0V (%d)\n", __func__, reg_buff);
-	}
-	if (Get_MAX8698_PM_REG(ELDO8, &reg_buff)) {
-		pr_info("%s: OTG 3.3V (%d)\n", __func__, reg_buff);
-	}
-}
-
 unsigned int CURRENT_REV(void)
 {
 	return 1;
@@ -852,6 +860,41 @@ static int saturn_sleep_gpio_table[][6] = {
 	{ GPIO_LCD_ID, GPIO_LCD_ID_AF, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_NONE },
 	{ GPIO_LCD_SCLK, GPIO_LCD_SCLK_AF, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, S3C_GPIO_SLP_OUT0, S3C_GPIO_PULL_NONE },
 };
+
+static void check_pmic(void)
+{	
+	unsigned char reg_buff = 0;
+	if (Get_MAX8698_PM_REG(EN1, &reg_buff)) {
+		pr_info("%s: BUCK1 (%d)\n", __func__, reg_buff);
+		if (reg_buff)
+			Set_MAX8698_PM_REG(EN1, 0);
+	}
+	if (Get_MAX8698_PM_REG(EN2, &reg_buff)) {
+		pr_info("%s: BUCK2 (%d)\n", __func__, reg_buff);
+		if (reg_buff)
+			Set_MAX8698_PM_REG(EN2, 0);
+	}
+	if (Get_MAX8698_PM_REG(ELDO3, &reg_buff)) {
+		pr_info("%s: OTGI 1.2V (%d)\n", __func__, reg_buff);
+	}
+	if (Get_MAX8698_PM_REG(ELDO4, &reg_buff)) {
+		pr_info("%s: VLED 3.3V (%d)\n", __func__, reg_buff);
+	}
+	if (Get_MAX8698_PM_REG(ELDO5, &reg_buff)) {
+		pr_info("%s: VTF 3.0V (%d)\n", __func__, reg_buff);
+		if (reg_buff)
+			Set_MAX8698_PM_REG(ELDO5, 0);
+	}
+	if (Get_MAX8698_PM_REG(ELDO6, &reg_buff)) {
+		pr_info("%s: VLCD 1.8V (%d)\n", __func__, reg_buff);
+	}
+	if (Get_MAX8698_PM_REG(ELDO7, &reg_buff)) {
+		pr_info("%s: VLCD 3.0V (%d)\n", __func__, reg_buff);
+	}
+	if (Get_MAX8698_PM_REG(ELDO8, &reg_buff)) {
+		pr_info("%s: OTG 3.3V (%d)\n", __func__, reg_buff);
+	}
+}
 
 void s3c_config_sleep_gpio(void)
 {	
