@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+<float name="offsetx" value="0.0" />
+<boolean name="first_time" value="true" />
+<boolean name="time" value="false" />
+<float name="offsety" value="0.0" />
+<boolean name="threeD" value="true" />
+<int name="input_mode" value="2" />
+<boolean name="sound" value="true" />
+</map>

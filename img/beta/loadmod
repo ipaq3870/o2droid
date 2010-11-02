@@ -1,0 +1,25 @@
+#!/bin/bash
+insmod /modules/dpram.ko
+insmod /modules/multipdp.ko
+chmod +rw /dev/*
+ln -s /sd/Phone_I8000XXJA1.bin /dev/bml9
+efsd &
+sleep 25
+ipctool 07 00 00 00 01 01 03                    # IPC_GSM_PWR_PHONE_PWR_UP NOTI
+sleep 5
+ipctool -d 07 00 02 ff 0a 01 02                 # IPC_GSM_MISC_ME_VERSION GET
+radiooptions 5
+sleep 5
+ipctool -d 07 00 02 ff 0a 01 02                 # IPC_GSM_MISC_ME_VERSION GET
+
+> /tmp_log
+STAT=1
+while [ $STAT -gt 0 ]
+do
+	ipctool 09 00 03 00 05 01 03 03 01        # IPC_GSM_SEC_PIN_STATUS NOTI
+	logcat -b radio > /tmp_log&
+	sleep 2
+	kill -9 $!
+	grep SIM_IO /tmp_log >/dev/null  2>&1
+	STAT=$?
+done

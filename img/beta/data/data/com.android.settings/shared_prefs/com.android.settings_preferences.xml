@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+<boolean name="sound_effects" value="true" />
+<boolean name="allow_mock_location" value="true" />
+<boolean name="enable_adb" value="true" />
+<boolean name="haptic_feedback" value="true" />
+<boolean name="play_media_notification_sounds" value="true" />
+<boolean name="keep_screen_on" value="true" />
+<boolean name="dtmf_tone" value="true" />
+</map>

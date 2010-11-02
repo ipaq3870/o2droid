@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+<int name="version" value="39" />
+<int name="adSenseMessage" value="2" />
+<string name="ignore">com.android.launcher2@com.tni.KeepScreen@com.tni.KeepScreenLite@com.android.launcher@com.android.launcher2@com.htc.launcher@com.htc.android.mail@com.tni.TasKiller@com.tni.TasKillerFull@com.android.launcher2</string>
+</map>

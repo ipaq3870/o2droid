@@ -1,0 +1,9 @@
+on boot
+    setprop ro.setupwizard.mode DISABLED
+    setprop ro.build.product smdk6410
+    setprop ro.product.device smdk6410
+
+    setprop wifi.interface eth0
+
+service smdk6410-setup /system/etc/init.smdk6410.sh
+        oneshot

@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+<int name="keya" value="0" />
+<int name="keyb" value="0" />
+<string name="GUID">6b1689af-8189-43a1-a352-ffb4f53901c9</string>
+<int name="keyc" value="0" />
+<int name="keyd" value="4" />
+<string name="nickname"></string>
+<string name="lastversion">1.1.10</string>
+<int name="keye" value="82" />
+<boolean name="sound" value="true" />
+<boolean name="firsttime" value="false" />
+</map>

@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+<int name="com.ferguson.rod.demonumberoflevels" value="10" />
+<string name="Demo.plistname">Demo levels</string>
+<int name="com.ferguson.rod.democompleted" value="0" />
+<string name="Demo.plistauthor">Rod Ferguson</string>
+<int name="com.ferguson.rod.democurrent" value="0" />
+<string name="Demo.plistid">com.ferguson.rod.demo</string>
+</map>

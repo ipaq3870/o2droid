@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<gs>
+<p pkg="com.android.settings" cl="com.android.settings.widget.SettingsAppWidgetProvider" />
+<p pkg="com.tni.TasKiller" cl="com.tni.TasKiller.TasKillerMiniBar" />
+<h pkg="com.android.launcher" id="400" />
+<h pkg="org.adw.launcher" id="400" />
+<g id="1" h="0" />
+<g id="2" h="1" p="1" />
+<g id="3" h="1" p="0" />
+</gs>
