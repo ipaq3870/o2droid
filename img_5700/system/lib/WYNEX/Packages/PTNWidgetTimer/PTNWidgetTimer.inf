@@ -1,9 +1,0 @@
-;; @WYNEX-Package-Information
-;; @Package-Name PTNWidgetTimer
-;; 
-;; 2009/12/22 5:45 updated
-;; 
-
-PTNWidgetTimer:0:0
-PTNWidgetTimerProvider:0:1
-PTNWidgetTimerTest:0:1

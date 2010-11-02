@@ -1,9 +1,0 @@
-;; @WYNEX-Package-Information
-;; @Package-Name PTNWidgetDualClock
-;; 
-;; 2009/12/22 7:19 updated
-;; 
-
-PTNWidgetDualClock:0:0
-PTNWidgetDualClockProvider:0:1
-PTNWidgetDualClockTest:0:1

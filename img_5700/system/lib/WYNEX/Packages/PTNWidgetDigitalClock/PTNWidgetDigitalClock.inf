@@ -1,9 +1,0 @@
-;; @WYNEX-Package-Information
-;; @Package-Name PTNWidgetDigitalClock
-;; 
-;; 2009/12/22 6:8 updated
-;; 
-
-PTNWidgetDigitalClock:0:0
-PTNWidgetDigitalClockProvider:0:1
-PTNWidgetDigitalClockTest:0:1
