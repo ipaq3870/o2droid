@@ -1287,12 +1287,14 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 		goto	OK_OUT;
 	}
 	
-	if (intr_status) 
+	if (intr_status) {
+	    if (unlikely(printk_ratelimit()))
 		DEBUG_ERROR("no handler for S3C_UDC_OTG_GINTSTS [%d]\n", intr_status);
-	else
+	} else
+	    if (unlikely(printk_ratelimit()))
 		DEBUG_ERROR("no S3C_UDC_OTG_GINTSTS( == 0)\n");
 
-	goto	FAIL_OUT;
+//	goto	FAIL_OUT;
 	
 OK_OUT:
 	spin_unlock_irqrestore(&dev->lock, flags);
