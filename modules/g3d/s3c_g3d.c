@@ -143,8 +143,8 @@ unsigned int g_uiFreeMemMap = 0x0;
 
 #define S3C6410_SZ_G3D 		SZ_4K
 
-#define DEBUG_S3C_G3D
-//#undef	DEBUG_S3C_G3D
+//#define DEBUG_S3C_G3D
+#undef	DEBUG_S3C_G3D
 
 #ifdef DEBUG_S3C_G3D
 #define DEBUG(fmt,args...) printk(fmt, ##args)
@@ -351,7 +351,7 @@ static int flag = 0;
 
 static unsigned int physical_address;
 
-int interrupt_already_recevied;
+int interrupt_already_recevied=0;
 
 unsigned int s3c_g3d_base_physical;
 
@@ -374,62 +374,63 @@ void garbageCollect(int *newid);
 static int g3d_pm_flag = 0;
 static void clk_g3d_enable(void)
 {
-	printk("clk_g3d_enable\n");
-	if (g3d_pm_flag > 0) {
-		g3d_pm_flag++;
+//	printk("clk_g3d_enable\n");
+	if (g3d_pm_flag++ > 0) {
 		return;
 	}
 
 	clk_enable(g3d_clock);
-	g3d_pm_flag++;
 }
 
 static void clk_g3d_disable(void)
 {
-	printk("clk_g3d_disabl\n");
-	if (g3d_pm_flag <= 0) {
+//	printk("clk_g3d_disabl\n");
+	if (g3d_pm_flag-- <= 0) {
 		return;
 	}
 
-	g3d_pm_flag--;
 	clk_disable(g3d_clock);
 }
 
-#ifdef USE_G3D_DOMAIN_GATING
 static void softReset_g3d(void)
 {
-	printk("softReset_g3d\n");
+//	printk("softReset_g3d\n");
     int i=0;
     // device reset
     __raw_writel(1,s3c_g3d_base+FGGB_RST);
-    for(i=0;i<1000;i++);
+    udelay(10);
     __raw_writel(0,s3c_g3d_base+FGGB_RST);
-    for(i=0;i<1000;i++);
+//    udelay(10);
 
 }
 
+#ifdef USE_G3D_DOMAIN_GATING
+
 void s3c_g3d_timer(void)
 {
-	printk("s3c_g3d_timer\n");
-	if (!g_G3D_PowerInit)
+//	printk("s3c_g3d_timer\n");
+	if (!g_G3D_PowerInit )
 		return;
+
 	if (g_G3D_CriticalFlag > 0)
-	{/*turn on*/
+	{/*now on, so see later to need turn off*/
 		mod_timer(&g3d_pm_timer, jiffies + TIMER_INTERVAL);
-		g_G3D_SelfPowerOFF=False;
+		//why? g_G3D_SelfPowerOFF=False;
 		return;
 	}
+	if (g_G3D_SelfPowerOFF) return;
+	g_G3D_SelfPowerOFF=True;
+	if (IS_DOMAIN_POWER_OFF) return;
 	/*turn off*/
 	clk_g3d_disable();
 	DOMAIN_POWER_OFF;
-	g_G3D_SelfPowerOFF=True;
 	//printk("[3D] Power off-timer wait\n");    
 }
 #endif /* USE_G3D_DOMAIN_GATING */
 
 irqreturn_t s3c_g3d_isr(int irq, void *dev_id)
 {
-	printk("s3c_g3d_isr\n");
+//	printk("s3c_g3d_isr\n");
 	__raw_writel(0, s3c_g3d_base + FGGB_INTPENDING);
 
 	interrupt_already_recevied = 1;
@@ -440,7 +441,7 @@ irqreturn_t s3c_g3d_isr(int irq, void *dev_id)
 
 unsigned int s3c_g3d_get_current_used_mem(void)
 {
-	printk("s3c_g3d_get_current_used_mem\n");
+//	printk("s3c_g3d_get_current_used_mem\n");
 	int loop_i;
 	int iAvalable = 0;
 	int iUsed = 0;
@@ -466,7 +467,7 @@ void s3c_g3d_dma_finish(struct s3c2410_dma_chan *dma_ch, void *buf_id,
 
 int s3c_g3d_open(struct inode *inode, struct file *file)
 {
-	printk("s3c_g3d_open\n");
+	printk("g3d_open\n");
 	int *newid;
 
 	newid = (int*)vmalloc(sizeof(int));
@@ -482,7 +483,7 @@ int s3c_g3d_open(struct inode *inode, struct file *file)
 
 int s3c_g3d_release(struct inode *inode, struct file *file)
 {
-	printk("s3c_g3d_release\n");
+	printk("g3d_release\n");
 	int *newid = file->private_data;
 	if(mutex_lock_processID != 0 && mutex_lock_processID == (unsigned int)file->private_data) {
         	mutex_unlock(&mem_sfr_lock);
@@ -497,21 +498,20 @@ int s3c_g3d_release(struct inode *inode, struct file *file)
 
 static unsigned int genMemmapMask(unsigned int uirequestblock)
 {
-	printk("genMemmapMask\n");
+//	printk("genMemmapMask\n");
 	int i;
 	unsigned int uiMemMask = 0;
 
 	for (i = 0 ; i < uirequestblock ; i++)
-{
 		uiMemMask |= (0x1 << i);
-	}
 
 	return uiMemMask;
 }
 
+/*
 void printRemainChunk(void)
 {
-	printk("printRemainChunk\n");
+//	printk("printRemainChunk\n");
 	int loop_i, j = 0;
 		for(loop_i = 0; loop_i < G3D_CHUNK_NUM; loop_i++ ) {
 			if( g3d_bootm[loop_i].in_used == G3D_CHUCNK_AVALIABLE ) {
@@ -520,10 +520,11 @@ void printRemainChunk(void)
 		}
 //	printk("Available Count %d\n", j);
 }
+*/
 
 void low_memory_killer(unsigned int uiRequsetBlock, unsigned int uiMemMask,unsigned int id)
 {
-	printk("low_memory_killer\n");
+//	printk("low_memory_killer\n");
 	alloc_info *s_info = alloc_info_head;
 	alloc_info *k_info = NULL;
 	unsigned int kill_id;
@@ -540,8 +541,8 @@ void low_memory_killer(unsigned int uiRequsetBlock, unsigned int uiMemMask,unsig
 		return;
 	}
 	
-	chunk_start_num = G3D_UI_CHUNK_NUM;
-	chunk_end_num = G3D_CHUNK_NUM;
+	chunk_start_num = G3D_UI_CHUNK_NUM; //3 now
+	chunk_end_num = G3D_CHUNK_NUM; //16 now
 
 	s_info=s_info->next;	// the first s_info is surfaceflinger
 	
@@ -582,7 +583,7 @@ void low_memory_killer(unsigned int uiRequsetBlock, unsigned int uiMemMask,unsig
 
 unsigned long s3c_g3d_available_chunk_size(unsigned int request_size, unsigned int id)
 {
-	printk("s3c_g3d_available_chunk_size\n");
+//	printk("s3c_g3d_available_chunk_size\n");
 	unsigned int loop_i, loop_j;
 
 	unsigned int uiRequsetBlock = (int)(request_size / G3D_CHUNK_SIZE);
@@ -596,13 +597,7 @@ unsigned long s3c_g3d_available_chunk_size(unsigned int request_size, unsigned i
 		uiRequsetBlock += 1;
 	
 
-	if(!alloc_info_head)
-	{
-		enable_lmk = 0;
-		chunk_start_num = 0;
-		chunk_end_num = G3D_UI_CHUNK_NUM;
-	}
-	else if(alloc_info_head->file_desc_id==id) {
+	if ((!alloc_info_head) || (alloc_info_head->file_desc_id==id)) {
 		enable_lmk = 0;
 		chunk_start_num = 0;
 		chunk_end_num = G3D_UI_CHUNK_NUM;
@@ -623,19 +618,19 @@ unsigned long s3c_g3d_available_chunk_size(unsigned int request_size, unsigned i
 		if(enable_lmk) low_memory_killer(uiRequsetBlock,uiMemMask,id);
 
 		mutex_unlock(&mem_alloc_lock);
-		printk("wait 0.%d sec to get releaing memory\n", loop_j);
+		printk("wait 0.%d sec to get releasing memory\n", loop_j);
 		msleep(100);	
 		mutex_lock(&mem_alloc_lock);
 	}
 
-	printk("s3c_g3d_available_chunk_size failed : %s cannot find adequate memory!\n", enable_lmk ? "3D apps":"Surfaceflinger");
+	printk("g3d_available_chunk_size failed : %s cannot find %d memory!\n", enable_lmk ? "3D apps":"Surfaceflinger",request_size);
     
 	return 0;
 }
 
 int check_memStatus(unsigned int id)
 {
-	printk("check_memStatus\n");
+//	printk("check_memStatus\n");
 	alloc_info *s_info = alloc_info_head;
 
 	while(s_info!=NULL)
@@ -649,7 +644,7 @@ int check_memStatus(unsigned int id)
 
 void register_alloc_info(int index,unsigned int uiAllocedMemMap)
 {
-	printk("register_alloc_info\n");
+//	printk("register_alloc_info\n");
 	unsigned int id = g3d_bootm[index].file_desc_id;
 	alloc_info *s_info = alloc_info_head;
 
@@ -688,7 +683,7 @@ void register_alloc_info(int index,unsigned int uiAllocedMemMap)
 
 unsigned long s3c_g3d_reserve_chunk(struct file* filp, unsigned int size)
 {
-	printk("s3c_g3d_reserve_chunk \n");
+//	printk("s3c_g3d_reserve_chunk \n");
 	unsigned int loop_i, loop_j;
 
 	unsigned int uiRequsetBlock = (int)(size / G3D_CHUNK_SIZE);
@@ -700,18 +695,14 @@ unsigned long s3c_g3d_reserve_chunk(struct file* filp, unsigned int size)
 	unsigned int id = (unsigned int)filp->private_data;
 
 	if (size % G3D_CHUNK_SIZE > 0)
-		printk("s3c_g3d_reserve_chunk : wrong estimated reserve memory\n");
+		printk("g3d_reserve_chunk : size not aligned to chunk:%d,%d\n",size,G3D_CHUNK_SIZE);
 
-	if(!alloc_info_head)
-	{
+	if ((!alloc_info_head) || (alloc_info_head->file_desc_id==id)) {
 		chunk_start_num = 0;
 		chunk_end_num = G3D_UI_CHUNK_NUM;
-	}
-	else if(alloc_info_head->file_desc_id==id) {
-		chunk_start_num = 0;
-		chunk_end_num = G3D_UI_CHUNK_NUM;
-	}
-	else{	
+		if ( uiRequsetBlock > G3D_UI_CHUNK_NUM)
+			printk("g3d_reserve_chunk: requsted UI chunk %d > %d max!\n",uiRequsetBlock, G3D_UI_CHUNK_NUM);
+	} else {	
 		chunk_start_num = G3D_UI_CHUNK_NUM;
 		chunk_end_num = G3D_CHUNK_NUM;
 	}
@@ -729,19 +720,19 @@ unsigned long s3c_g3d_reserve_chunk(struct file* filp, unsigned int size)
 			g_uiFreeMemMap &= ~(uiMemMask << loop_i); // remove free chunk block at memory map
 			register_alloc_info(loop_i,uiMemMask << loop_i);
 
-			printRemainChunk();
+			//printRemainChunk();
 			return g3d_bootm[loop_i].phy_addr;
 		}
 	}
 
-	printk("s3c_g3d_reserve_chunk failed : Cannot find adequate memory!\n");
+	printk("g3d_reserve_chunk failed : No %d free memory! Map=%x Mask=%x\n",size,g_uiFreeMemMap,uiMemMask);
     
 	return 0;
 }
 
 void unregister_alloc_info(int index, unsigned int uiAllocedMemMap)
 {
-	printk("unregister_alloc_info\n");
+//	printk("unregister_alloc_info\n");
 	unsigned int id = g3d_bootm[index].file_desc_id;
 	alloc_info *s_info = alloc_info_head;
 	alloc_info *pre_info = NULL;
@@ -795,7 +786,7 @@ void unregister_alloc_info(int index, unsigned int uiAllocedMemMap)
 
 void s3c_g3d_release_chunk(unsigned int phy_addr, int size)
 {
-	printk("s3c_g3d_release_chunk \n");
+//	printk("s3c_g3d_release_chunk \n");
 	unsigned int loop_i, loop_j;
 	struct mm_struct *mm = current->mm;
 
@@ -807,7 +798,7 @@ void s3c_g3d_release_chunk(unsigned int phy_addr, int size)
 
 			if ((g_uiFreeMemMap & (uiMemMask << loop_i)) != 0) // check free memory at memory map
 			{
-				printk("s3c_g3d_release_chunk : memory map is crashed");
+				printk("g3d_release_chunk : memory map is crashed");
 				break;
 			}
 	
@@ -826,16 +817,16 @@ void s3c_g3d_release_chunk(unsigned int phy_addr, int size)
 	}
 
 	if(loop_i >= G3D_CHUNK_NUM)
-		printk("s3c_g3d_release_chunk failed : Cannot find the phys_addr : 0x%p\n", (void*)phy_addr);
+		printk("g3d_release_chunk failed : Cannot find the phys_addr : 0x%p\n", (void*)phy_addr);
 
-	printRemainChunk();	
+	//printRemainChunk();	
 }
 
 static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	u32 val;
 	DECLARE_COMPLETION_ONSTACK(complete);
-	printk("s3c_g3d_ioctl \n");
+//	printk("s3c_g3d_ioctl \n");
 	struct mm_struct *mm = current->mm;
 	struct s3c_3d_mem_alloc param;
 	struct s3c_3d_pm_status param_pm;
@@ -844,7 +835,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 	
 	switch (cmd) {
 	case WAIT_FOR_FLUSH:
-		printk("s3c_g3d_ioctl WAIT_FOR_FLUSH\n");
+//		printk("s3c_g3d_ioctl WAIT_FOR_FLUSH\n");
 		//if fifo has already been flushed, return;
 		val = __raw_readl(s3c_g3d_base+FGGB_PIPESTATE);
 		//printk("read pipestate = 0x%x\n",val);
@@ -852,7 +843,10 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 
 		// enable interrupt
 		interrupt_already_recevied = 0;
+		// 1 0001 0111 0001 1111 means: IRQ for:
+		// PER_FRAG_UNIT0 PIXEL_SHADER0 RASTER_ENGINE,TRIANGLE_SETUP,PRIMITIVE_ENGINE VERTEX_SHADER VERTEX_CACHE,HST_VERTEX,HOST_INTERFACE,HOST_FIFO
 		__raw_writel(0x0001171f,s3c_g3d_base+FGGB_PIPEMASK);
+		// generate pipeline state interrupt
 		__raw_writel(1,s3c_g3d_base+FGGB_INTMASK);
 
 		//printk("wait for flush (arg=0x%lx)\n",arg);
@@ -860,24 +854,26 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 		timer = 1000000;
 
 		while(timer) {
-			wait_event_interruptible_timeout(waitq, (interrupt_already_recevied>0), 1*HZ);
+//			wait_event_interruptible_timeout(waitq, (interrupt_already_recevied>0), 1*HZ);
 
-			__raw_writel(0,s3c_g3d_base+FGGB_INTMASK);
-			interrupt_already_recevied = 0;
+//			interrupt_already_recevied = 0;
 			//if(interrupt_already_recevied==0)interruptible_sleep_on(&waitq);
 			val = __raw_readl(s3c_g3d_base+FGGB_PIPESTATE);
 			//printk("in while read pipestate = 0x%x\n",val);
 			if(val & arg){
 			} else{
+				interrupt_already_recevied = 0;
 				break;
 			}
-			__raw_writel(1,s3c_g3d_base+FGGB_INTMASK);
+//			__raw_writel(1,s3c_g3d_base+FGGB_INTMASK);
 			timer --;
+			wait_event_interruptible_timeout(waitq, (interrupt_already_recevied>0), 1*HZ);
 		}
+		__raw_writel(0,s3c_g3d_base+FGGB_INTMASK);
 		break;
 
 	case GET_CONFIG:
-		printk("s3c_g3d_ioctl GET_CONFIG\n");
+//		printk("s3c_g3d_ioctl GET_CONFIG\n");
 		if (copy_to_user((void *)arg,&g3d_config,sizeof(G3D_CONFIG_STRUCT))) {
 			printk("G3D: copy_to_user failed to get g3d_config\n");
 			return -EFAULT;		
@@ -938,7 +934,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 #endif
 
 	case S3C_3D_MEM_ALLOC:
-		printk("s3c_g3d_ioctl S3C_3D_MEM_ALLOC\n");		
+//		printk("s3c_g3d_ioctl S3C_3D_MEM_ALLOC\n");		
 		mutex_lock(&mem_alloc_lock);
 		if(copy_from_user(&param, (struct s3c_3d_mem_alloc *)arg, sizeof(struct s3c_3d_mem_alloc))){
 			mutex_unlock(&mem_alloc_lock);			
@@ -984,7 +980,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 		break;
 
 	case S3C_3D_MEM_FREE:
-		printk("s3c_g3d_ioctl S3C_3D_MEM_FREE\n");	
+//		printk("s3c_g3d_ioctl S3C_3D_MEM_FREE\n");	
 		mutex_lock(&mem_free_lock);
 		if(copy_from_user(&param, (struct s3c_3d_mem_alloc *)arg, sizeof(struct s3c_3d_mem_alloc))){
 			mutex_unlock(&mem_free_lock);
@@ -1019,21 +1015,21 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 		break;
 
 	case S3C_3D_SFR_LOCK:
-		printk("s3c_g3d_ioctl S3C_3D_SFR_LOCK \n");
+//		printk("s3c_g3d_ioctl S3C_3D_SFR_LOCK \n");
 		mutex_lock(&mem_sfr_lock);
 		mutex_lock_processID = (unsigned int)file->private_data;
 		DEBUG("s3c_g3d_ioctl() : You got a muxtex lock !!\n");
 		break;
 
 	case S3C_3D_SFR_UNLOCK:
-		printk("s3c_g3d_ioctl S3C_3D_SFR_UNLOCK\n");
+//		printk("s3c_g3d_ioctl S3C_3D_SFR_UNLOCK\n");
 		mutex_lock_processID = 0;
 		mutex_unlock(&mem_sfr_lock);
 		DEBUG("s3c_g3d_ioctl() : The muxtex unlock called !!\n");
 		break;
 
 	case S3C_3D_MEM_ALLOC_SHARE:
-		printk("s3c_g3d_ioctl S3C_3D_MEM_ALLOC_SHARE\n");		
+//		printk("s3c_g3d_ioctl S3C_3D_MEM_ALLOC_SHARE\n");		
 		mutex_lock(&mem_alloc_share_lock);
 		if(copy_from_user(&param, (struct s3c_3d_mem_alloc *)arg, sizeof(struct s3c_3d_mem_alloc))){
 			mutex_unlock(&mem_alloc_share_lock);
@@ -1070,7 +1066,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 		break;
 
 	case S3C_3D_MEM_SHARE_FREE:
-		printk("s3c_g3d_ioctl S3C_3D_MEM_SHARE_FREE\n");		
+//		printk("s3c_g3d_ioctl S3C_3D_MEM_SHARE_FREE\n");		
 		mutex_lock(&mem_share_free_lock);
 		if(copy_from_user(&param, (struct s3c_3d_mem_alloc *)arg, sizeof(struct s3c_3d_mem_alloc))){
 			mutex_unlock(&mem_share_free_lock);
@@ -1098,7 +1094,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 		break;
 
 	case S3C_3D_CACHE_INVALID:
-		printk("s3c_g3d_ioctl S3C_3D_CACHE_INVALID\n");
+//		printk("s3c_g3d_ioctl S3C_3D_CACHE_INVALID\n");
 		mutex_lock(&cache_invalid_lock);
 		if(copy_from_user(&param, (struct s3c_3d_mem_alloc *)arg, sizeof(struct s3c_3d_mem_alloc))){
 			printk("ERR: Invalid Cache Error\n");	
@@ -1110,7 +1106,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 		break;
 
 	case S3C_3D_CACHE_CLEAN:
-		printk("s3c_g3d_ioctl S3C_3D_CACHE_CLEAN\n");
+//		printk("s3c_g3d_ioctl S3C_3D_CACHE_CLEAN\n");
 		mutex_lock(&cache_clean_lock);
 		if(copy_from_user(&param, (struct s3c_3d_mem_alloc *)arg, sizeof(struct s3c_3d_mem_alloc))){
 			printk("ERR: Invalid Cache Error\n");	
@@ -1122,7 +1118,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 		break;
 
 	case S3C_3D_CACHE_CLEAN_INVALID:
-		printk("s3c_g3d_ioctl S3C_3D_CACHE_CLEAN_INVALID\n");
+//		printk("s3c_g3d_ioctl S3C_3D_CACHE_CLEAN_INVALID\n");
 		mutex_lock(&cache_clean_invalid_lock);
 		if(copy_from_user(&param, (struct s3c_3d_mem_alloc *)arg, sizeof(struct s3c_3d_mem_alloc))){
 			mutex_unlock(&cache_clean_invalid_lock);
@@ -1134,7 +1130,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 		break;
 
 	case S3C_3D_POWER_INIT:
-		printk("s3c_g3d_ioctl S3C_3D_POWER_INIT\n");
+//		printk("s3c_g3d_ioctl S3C_3D_POWER_INIT\n");
 		if(copy_from_user(&param_pm, (struct s3c_3d_pm_status *)arg, sizeof(struct s3c_3d_pm_status))){
 			printk("ERR: Invalid Cache Error\n");	
 			return -EFAULT;	
@@ -1142,7 +1138,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 		break;
 
 	case S3C_3D_CRITICAL_SECTION:
-		printk("s3c_g3d_ioctl S3C_3D_CRITICAL_SECTION\n");
+//		printk("s3c_g3d_ioctl S3C_3D_CRITICAL_SECTION\n");
 #ifdef USE_G3D_DOMAIN_GATING
 		mutex_lock(&pm_critical_section_lock);
 		if(copy_from_user(&param_pm, (struct s3c_3d_pm_status *)arg, sizeof(struct s3c_3d_pm_status))){
@@ -1173,6 +1169,7 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 					clk_g3d_enable();
 					/*Need here??*/
 					softReset_g3d();
+					g_G3D_SelfPowerOFF=False;	//was on, clearing here
 					// printk("[3D] Power on\n");  
 				}
 				else
@@ -1216,18 +1213,18 @@ static int s3c_g3d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 
 int s3c_g3d_mmap(struct file* filp, struct vm_area_struct *vma)
 {
-	printk("s3c_g3d_mmap\n");
+//	printk("s3c_g3d_mmap\n");
 	unsigned long pageFrameNo, size, phys_addr;
 
 	size = vma->vm_end - vma->vm_start;
 
 	switch (flag) { 
 	case MEM_ALLOC :
-		printk("s3c_g3d_mmap MEM_ALLOC\n");
+//		printk("s3c_g3d_mmap MEM_ALLOC\n");
 		phys_addr = s3c_g3d_reserve_chunk(filp, size);
 
 		if (phys_addr == 0) {
-			printk("There is no reserved memory for G3D!\n");
+			printk("g3d_mmap: no chunk for %ld byte!\n",size);
 			return -EINVAL;
 		}
 
@@ -1239,7 +1236,7 @@ int s3c_g3d_mmap(struct file* filp, struct vm_area_struct *vma)
 		break;
 		
 	case MEM_ALLOC_SHARE :
-		printk("s3c_g3d_mmap MEM_ALLOC_SHARE\n");
+//		printk("s3c_g3d_mmap MEM_ALLOC_SHARE\n");
 //		DEBUG("MMAP_KMALLOC_SHARE : phys addr = 0x%p\n", physical_address);
 		
 		// page frame number of the address for the physical_address to be shared.
@@ -1249,14 +1246,14 @@ int s3c_g3d_mmap(struct file* filp, struct vm_area_struct *vma)
 		break;
 		
 	default :
-		printk("here\n");
+//		printk("here\n");
 
 		// page frame number of the address for a source G2D_SFR_SIZE to be stored at.
 		pageFrameNo = __phys_to_pfn(S3C_G3D_PA);
 //		DEBUG("MMAP : vma->end = 0x%p, vma->start = 0x%p, size = %d\n", vma->vm_end, vma->vm_start, size);
 
 		if(size > S3C6410_SZ_G3D) {
-			printk("The size of G3D_SFR_SIZE mapping is too big!\n");
+			printk("The size %ld of G3D_SFR_SIZE mapping is too big!\n",size);
 			return -EINVAL;
 		}
 		break;
@@ -1279,7 +1276,7 @@ int s3c_g3d_mmap(struct file* filp, struct vm_area_struct *vma)
 
 void garbageCollect(int* newid)
 {
-	printk("garbageCollect\n");
+//	printk("garbageCollect\n");
 	int loop_i;
 
 //      printk("====Garbage Collect is executed====\n");
@@ -1388,10 +1385,7 @@ int s3c_g3d_probe(struct platform_device *pdev)
 #endif /* USE_G3D_DOMAIN_GATING */
 
 	/* device reset */
-	__raw_writel(1,s3c_g3d_base+FGGB_RST);
-	for(i=0;i<1000;i++);
-	__raw_writel(0,s3c_g3d_base+FGGB_RST);
-	for(i=0;i<1000;i++);
+	softReset_g3d();
 
 	G3D_CHUNK_NUM = G3D_RESERVED_MEM_SIZE /SZ_2M;
 
@@ -1446,6 +1440,7 @@ static int s3c_g3d_suspend(struct platform_device *dev, pm_message_t state)
 	else
 	{
 		/*power off*/
+		g_G3D_SelfPowerOFF=False;
 	
 		clk_g3d_disable();
 
@@ -1453,8 +1448,7 @@ static int s3c_g3d_suspend(struct platform_device *dev, pm_message_t state)
 		DOMAIN_POWER_OFF;
 #endif /* USE_G3D_DOMAIN_GATING */
 
-		g_G3D_CriticalFlag=0;
-		g_G3D_SelfPowerOFF=False;
+		// it is 0 now ! g_G3D_CriticalFlag=0;
 	}
     
 	return 0;

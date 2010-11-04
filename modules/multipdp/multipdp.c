@@ -1040,7 +1040,7 @@ static inline int pdp_add_dev(struct pdp_info *dev)
 			return slot;
 		}
 	}
-   EPRINTK("pdp_add_dev() Error ..%d There is no space to make %d \n", dev->id);
+   EPRINTK("pdp_add_dev() Error . There is no space to make %d \n", dev->id);
 	return -ENOSPC;
 }
 
