@@ -71,8 +71,8 @@ EXPORT_SYMBOL(bml_resume_fp);
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING
 #include <plat/power-clock-domain.h>
 
-#ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
 static int domain_hash_map[15]={0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7};
+#ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
 static char *domain_name[] = {"G","V", "I", "P", "F", "S", "ETM", "IROM"}; 
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING_DEBUG */
 
@@ -84,54 +84,61 @@ static void s3c_init_domain_power(void)
 {
 	spin_lock_init(&power_lock);
 
+#ifdef CONFIG_DOMAIN_GATING
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_V, S3C64XX_LP_MODE, S3C64XX_MFC);
-//	s3c_set_normal_cfg(S3C64XX_DOMAIN_G, S3C64XX_LP_MODE, S3C64XX_3D);
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_G, S3C64XX_LP_MODE, S3C64XX_3D);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_LP_MODE, S3C64XX_JPEG);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_LP_MODE, S3C64XX_CAMERA);
-//	s3c_set_normal_cfg(S3C64XX_DOMAIN_P, S3C64XX_LP_MODE, S3C64XX_2D);
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_P, S3C64XX_LP_MODE, S3C64XX_2D);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_P, S3C64XX_LP_MODE, S3C64XX_TVENC);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_P, S3C64XX_LP_MODE, S3C64XX_SCALER);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_ROT);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_POST);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_S, S3C64XX_LP_MODE, S3C64XX_SDMA0);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_S, S3C64XX_LP_MODE, S3C64XX_SDMA1);
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_S, S3C64XX_LP_MODE, S3C64XX_SECURITY);
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_IROM, S3C64XX_LP_MODE, S3C64XX_IROM);
+#endif
+	/* LCD on. */
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_ACTIVE_MODE, S3C64XX_LCD);
+
+	/* ETM on. */
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_ETM, S3C64XX_ACTIVE_MODE, S3C64XX_ETM);
+
 }
 
-int domain_off_check(unsigned int config)
+int domain_off_check(unsigned int domain)
 {
-	if(config == S3C64XX_DOMAIN_V) {
-		if(s3c_domain_off_stat & S3C64XX_DOMAIN_V_MASK)	
-			return 0;
-	}
-	else if(config == S3C64XX_DOMAIN_G) {
-		if(s3c_domain_off_stat & S3C64XX_DOMAIN_G_MASK)
-			return 0;
-	}
-	else if(config == S3C64XX_DOMAIN_I) {
-		if(s3c_domain_off_stat & S3C64XX_DOMAIN_I_MASK)
-			return 0;
-	}
-	else if(config == S3C64XX_DOMAIN_P) {
-		if(s3c_domain_off_stat & S3C64XX_DOMAIN_P_MASK)
-			return 0;
-	}
-	else if(config == S3C64XX_DOMAIN_F) {
-		if(s3c_domain_off_stat & S3C64XX_DOMAIN_F_MASK)
-			return 0;
-	}
-	else if(config == S3C64XX_DOMAIN_S) {
-		if(s3c_domain_off_stat & S3C64XX_DOMAIN_S_MASK)
-			return 0;
-	}
-	else if(config == S3C64XX_DOMAIN_ETM) {
-		if(s3c_domain_off_stat & S3C64XX_DOMAIN_ETM_MASK)
-			return 0;
-	}
-	else if(config == S3C64XX_DOMAIN_IROM) {
-		if(s3c_domain_off_stat & S3C64XX_DOMAIN_IROM_MASK)
-			return 0;
-	}
-	return 1;
+    unsigned int msk;
+    switch( domain ) {
+	case S3C64XX_DOMAIN_V:
+		msk=S3C64XX_DOMAIN_V_MASK; break;
+		
+	case S3C64XX_DOMAIN_G:
+		msk=S3C64XX_DOMAIN_G_MASK; break;
+	
+	case S3C64XX_DOMAIN_I:
+		msk=S3C64XX_DOMAIN_I_MASK; break;
+	
+	case S3C64XX_DOMAIN_P:
+		msk=S3C64XX_DOMAIN_P_MASK; break;
+	
+	case S3C64XX_DOMAIN_F:
+		msk=S3C64XX_DOMAIN_F_MASK; break;
+	
+	case S3C64XX_DOMAIN_S:
+		msk=S3C64XX_DOMAIN_S_MASK; break;
+	
+	case S3C64XX_DOMAIN_ETM:
+		msk=S3C64XX_DOMAIN_ETM_MASK; break;
+	
+	case S3C64XX_DOMAIN_IROM:
+		msk=S3C64XX_DOMAIN_IROM_MASK; break;
+	
+	default:
+	    return 1;
+    }
+    return (s3c_domain_off_stat & msk)?0:1;
 }
 
 EXPORT_SYMBOL(domain_off_check);
@@ -148,8 +155,8 @@ void s3c_set_normal_cfg(unsigned int config, unsigned int flag, unsigned int dev
 			normal_cfg |= (config);
 			__raw_writel(normal_cfg, S3C_NORMAL_CFG);
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
-			printk("===== Domain-%s Power ON NORMAL_CFG : %x \n",
-					domain_name[domain_hash_map[deviceID]], normal_cfg);
+			printk("===== Domain-%s Power ON normal_cfg:%x, off_stat=%x \n",
+					domain_name[domain_hash_map[deviceID]], normal_cfg,s3c_domain_off_stat);
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING_DEBUG */
 		}
 		
@@ -162,12 +169,16 @@ void s3c_set_normal_cfg(unsigned int config, unsigned int flag, unsigned int dev
 				normal_cfg &= (~config);
 				__raw_writel(normal_cfg, S3C_NORMAL_CFG);
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
-				printk("===== Domain-%s Power OFF NORMAL_CFG : %x \n",
-						domain_name[domain_hash_map[deviceID]], normal_cfg);
+				printk("===== Domain-%s Power OFF normal_cfg:%x, off_stat=%x \n",
+						domain_name[domain_hash_map[deviceID]], normal_cfg, s3c_domain_off_stat);
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING_DEBUG */
 			}
 		}
-	}	
+#ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
+		 else printk("===== Domain-%s Power OFF,but domain used by other device! normal_cfg:%x, off_stat=%x \n",
+		    domain_name[domain_hash_map[deviceID]], normal_cfg, s3c_domain_off_stat);
+#endif
+	}
 	spin_unlock(&power_lock);
 
 }
@@ -176,22 +187,18 @@ EXPORT_SYMBOL(s3c_set_normal_cfg);
 int s3c_wait_blk_pwr_ready(unsigned int config)
 {
 	unsigned int blk_pwr_stat;
-	int timeout;
-	int ret = 0;
+	int timeout=20;
 	
 	/* Wait max 20 ms */
-	timeout = 20;
 	while (!((blk_pwr_stat = __raw_readl(S3C_BLK_PWR_STAT)) & config)) {
 		if (timeout == 0) {
 			printk(KERN_ERR "config %x: blk power never ready.\n", config);
-			ret = 1;
-			goto s3c_wait_blk_pwr_ready_end;
+			return 1;
 		}
 		timeout--;
 		mdelay(1);
 	}
-s3c_wait_blk_pwr_ready_end:
-	return ret;
+	return 0;
 }
 EXPORT_SYMBOL(s3c_wait_blk_pwr_ready);
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING */
