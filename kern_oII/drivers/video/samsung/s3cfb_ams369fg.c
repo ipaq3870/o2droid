@@ -2059,7 +2059,7 @@ void s3cfb_init_hw(void)
 
 void s3cfb_display_logo(int win_num)
 {
-	s3c_fb_info_t *fbi = &s3c_fb_info[0];
+/*	s3c_fb_info_t *fbi = &s3c_fb_info[0];
 	u8 *logo_virt_buf;
 	
 	logo_virt_buf = ioremap_nocache(LOGO_MEM_BASE, LOGO_MEM_SIZE);
@@ -2067,8 +2067,9 @@ void s3cfb_display_logo(int win_num)
 	memcpy(fbi->map_cpu_f1, logo_virt_buf, LOGO_MEM_SIZE);	
 
 	iounmap(logo_virt_buf);
+*/
 }
-
+/*
 #include "s3cfb_progress.h"
 
 static int progress = 0;
@@ -2083,7 +2084,7 @@ static void progress_timer_handler(unsigned long data)
 	unsigned short *bar_src, *bar_dst;	
 	int	i, j, p;
 
-	/* 1 * 12 R5G5B5 BMP (Aligned 4 Bytes) */
+	// 1 * 12 R5G5B5 BMP (Aligned 4 Bytes)
 	bar_dst = (unsigned short *)(fbi->map_cpu_f1 + (((320 * 416) + 41) * 2));
 	bar_src = (unsigned short *)(progress_bar + sizeof(progress_bar) - 4);
 
@@ -2108,16 +2109,17 @@ static void progress_timer_handler(unsigned long data)
 
 static unsigned int new_wincon1; 
 static unsigned int old_wincon1; 
-
+*/
 void s3cfb_start_progress(void)
 {
+/*
 	s3c_fb_info_t *fbi = &s3c_fb_info[1];
 	unsigned short *bg_src, *bg_dst;	
 	int	i, j, p;
 	
 	memset(fbi->map_cpu_f1, 0x00, LOGO_MEM_SIZE);	
 
-	/* 320 * 25 R5G5B5 BMP */
+	// 320 * 25 R5G5B5 BMP 
 	bg_dst = (unsigned short *)(fbi->map_cpu_f1 + ((320 * 410) * 2));
 	bg_src = (unsigned short *)(progress_bg + sizeof(progress_bg) - 2);
 
@@ -2146,10 +2148,11 @@ void s3cfb_start_progress(void)
 	add_timer(&progress_timer);
 
 	progress_flag = ON;
+*/
 }
-
 void s3cfb_stop_progress(void)
 {
+/*
 	if (progress_flag == OFF)
 		return;
 
@@ -2157,8 +2160,7 @@ void s3cfb_stop_progress(void)
 #ifdef CONFIG_FB_S3C_BPP_24
 	writel(s3c_fimd.wincon0,    S3C_WINCON0);
 #endif
-	writel(old_wincon1, S3C_WINCON1);
-	
+	writel(old_wincon1, S3C_WINCON1);	
 	progress_flag = OFF;
+*/
 }
-

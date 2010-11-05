@@ -2155,7 +2155,7 @@ int s3cfb_shutdown(struct platform_device *dev)
 
 #else
 
-printk("CONFIG_DOES NOT HAVE_EARLYSUSPEND \n");
+//printk("CONFIG_DOES NOT HAVE_EARLYSUSPEND \n");
 int s3cfb_suspend(struct platform_device *dev, pm_message_t state)
 {
 	return 0;
