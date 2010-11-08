@@ -74,6 +74,7 @@ EXPORT_SYMBOL(bml_resume_fp);
 static int domain_hash_map[15]={0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7};
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
 static char *domain_name[] = {"G","V", "I", "P", "F", "S", "ETM", "IROM"}; 
+static char *domain_module_name[] = {"3D","MFC","JPG","CAM","2D","TV","SCA","ROT","PST","LCD","DM0","DM1","SEC","ETM","IRM"};
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING_DEBUG */
 
 static spinlock_t power_lock;
@@ -84,7 +85,6 @@ static void s3c_init_domain_power(void)
 {
 	spin_lock_init(&power_lock);
 
-#ifdef CONFIG_DOMAIN_GATING
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_V, S3C64XX_LP_MODE, S3C64XX_MFC);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_G, S3C64XX_LP_MODE, S3C64XX_3D);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_LP_MODE, S3C64XX_JPEG);
@@ -98,7 +98,7 @@ static void s3c_init_domain_power(void)
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_S, S3C64XX_LP_MODE, S3C64XX_SDMA1);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_S, S3C64XX_LP_MODE, S3C64XX_SECURITY);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_IROM, S3C64XX_LP_MODE, S3C64XX_IROM);
-#endif
+
 	/* LCD on. */
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_ACTIVE_MODE, S3C64XX_LCD);
 
@@ -106,6 +106,47 @@ static void s3c_init_domain_power(void)
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_ETM, S3C64XX_ACTIVE_MODE, S3C64XX_ETM);
 
 }
+#ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
+int domain_off_check_n(unsigned int domain)
+{
+    unsigned int msk;
+    switch( domain ) {
+	case S3C64XX_DOMAIN_V:
+		msk=S3C64XX_DOMAIN_V_MASK; break;
+		
+	case S3C64XX_DOMAIN_G:
+		msk=S3C64XX_DOMAIN_G_MASK; break;
+	
+	case S3C64XX_DOMAIN_I:
+		msk=S3C64XX_DOMAIN_I_MASK; break;
+	
+	case S3C64XX_DOMAIN_P:
+		msk=S3C64XX_DOMAIN_P_MASK; break;
+	
+	case S3C64XX_DOMAIN_F:
+		msk=S3C64XX_DOMAIN_F_MASK; break;
+	
+	case S3C64XX_DOMAIN_S:
+		msk=S3C64XX_DOMAIN_S_MASK; break;
+	
+	case S3C64XX_DOMAIN_ETM:
+		msk=S3C64XX_DOMAIN_ETM_MASK; break;
+	
+	case S3C64XX_DOMAIN_IROM:
+		msk=S3C64XX_DOMAIN_IROM_MASK; break;
+	
+	default:
+	    return 1;
+    }
+    return (s3c_domain_off_stat & msk);
+}
+
+void print_blocking_modules(unsigned int mask) {
+int i;
+	for (i=0;i<15;i++)
+		if (mask & (1<<i)) printk("%s ",domain_module_name[i]);
+}
+#endif
 
 int domain_off_check(unsigned int domain)
 {
@@ -155,28 +196,34 @@ void s3c_set_normal_cfg(unsigned int config, unsigned int flag, unsigned int dev
 			normal_cfg |= (config);
 			__raw_writel(normal_cfg, S3C_NORMAL_CFG);
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
-			printk("===== Domain-%s Power ON normal_cfg:%x, off_stat=%x \n",
-					domain_name[domain_hash_map[deviceID]], normal_cfg,s3c_domain_off_stat);
+			printk("Domain-%s:%s ON cfg:%x, off_st=%x \n",
+					domain_name[domain_hash_map[deviceID]],domain_module_name[deviceID], normal_cfg,s3c_domain_off_stat);
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING_DEBUG */
 		}
 		
 	}
 	else if(flag == S3C64XX_LP_MODE) {
 		s3c_domain_off_stat &= (~( 1 << deviceID));
+#ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
+		power_off_flag = domain_off_check_n(config);
+		if(power_off_flag == 0) {
+#else
 		power_off_flag = domain_off_check(config);
 		if(power_off_flag == 1) {
+#endif
 			if(normal_cfg & config) {
 				normal_cfg &= (~config);
 				__raw_writel(normal_cfg, S3C_NORMAL_CFG);
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
-				printk("===== Domain-%s Power OFF normal_cfg:%x, off_stat=%x \n",
-						domain_name[domain_hash_map[deviceID]], normal_cfg, s3c_domain_off_stat);
+				printk("Domain-%s:%s OFF cfg:%x, off_st=%x \n",
+						domain_name[domain_hash_map[deviceID]],domain_module_name[deviceID], normal_cfg, s3c_domain_off_stat);
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING_DEBUG */
 			}
 		}
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
-		 else printk("===== Domain-%s Power OFF,but domain used by other device! normal_cfg:%x, off_stat=%x \n",
-		    domain_name[domain_hash_map[deviceID]], normal_cfg, s3c_domain_off_stat);
+		 else { printk("!Domain-%s:%s OFF cfg:%x, off_st=%x Blocking modules: ",
+		    domain_name[domain_hash_map[deviceID]],domain_module_name[deviceID], normal_cfg, s3c_domain_off_stat);
+			print_blocking_modules(power_off_flag); printk("\n"); }
 #endif
 	}
 	spin_unlock(&power_lock);
@@ -187,7 +234,7 @@ EXPORT_SYMBOL(s3c_set_normal_cfg);
 int s3c_wait_blk_pwr_ready(unsigned int config)
 {
 	unsigned int blk_pwr_stat;
-	int timeout=20;
+	int timeout=200;
 	
 	/* Wait max 20 ms */
 	while (!((blk_pwr_stat = __raw_readl(S3C_BLK_PWR_STAT)) & config)) {
@@ -196,8 +243,12 @@ int s3c_wait_blk_pwr_ready(unsigned int config)
 			return 1;
 		}
 		timeout--;
-		mdelay(1);
+		udelay(100);
 	}
+#ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
+if (timeout<200)
+    printk("BLK Power:%x took %d usec\n",config, (200-timeout)*100);
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(s3c_wait_blk_pwr_ready);
@@ -795,15 +846,16 @@ extern unsigned int extra_eint0pend = 0x0;
 
 static int s3c6410_pm_enter(suspend_state_t state)
 {
+
 	unsigned long regs_save[16];
 	unsigned int tmp;
 	unsigned int wakeup_stat = 0x0;
 	unsigned int eint0pend = 0x0;
 
-	/* ensure the debug is initialised (if enabled) */
+	// ensure the debug is initialised (if enabled)
 
 	DBG("s3c6410_pm_enter(%d)\n", state);
-
+/*
 	if (bml_suspend_fp)
 		bml_suspend_fp(NULL, 0, 0);
 
@@ -812,15 +864,15 @@ static int s3c6410_pm_enter(suspend_state_t state)
 		return -EINVAL;
 	}
 
-	/* prepare check area if configured */
+	// prepare check area if configured
 	s3c6410_pm_check_prepare();
 
-	/* store the physical address of the register recovery block */
+	// store the physical address of the register recovery block
 	s3c6410_sleep_save_phys = virt_to_phys(regs_save);
 
 	DBG("s3c6410_sleep_save_phys=0x%08lx\n", s3c6410_sleep_save_phys);
 
-	/* save all necessary core registers not covered by the drivers */
+	// save all necessary core registers not covered by the drivers
 
 	s3c6410_pm_do_save(gpio_save, ARRAY_SIZE(gpio_save));
 	s3c6410_pm_do_save(irq_save, ARRAY_SIZE(irq_save));
@@ -828,17 +880,17 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_pm_do_save(sromc_save, ARRAY_SIZE(sromc_save));
 	s3c6410_pm_do_save(onenand_save, ARRAY_SIZE(onenand_save));
 
-	/* ensure INF_REG0  has the resume address */
+	// ensure INF_REG0  has the resume address
 	__raw_writel(virt_to_phys(s3c6410_cpu_resume), S3C_INFORM0);
 
-	/* set the irq configuration for wake */
+	// set the irq configuration for wake
 	s3c6410_pm_configure_extint();
 
-	/* call cpu specific preperation */
+	// call cpu specific preperation
 
 	pm_cpu_prep();
 
-	/* flush cache back to ram */
+	// flush cache back to ram
 
 	flush_cache_all();
 
@@ -850,14 +902,14 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	tmp &= ~(0x3 << 12);
 	__raw_writel(tmp | (0x1 << 12), S3C64XX_SPCONSLP);
 
-	/* send the cpu to sleep... */
+	// send the cpu to sleep...
 
 	__raw_writel(0xffffffff, S3C64XX_VIC0INTENCLEAR);
 	__raw_writel(0xffffffff, S3C64XX_VIC1INTENCLEAR);
 	__raw_writel(0xffffffff, S3C64XX_VIC0SOFTINTCLEAR);
 	__raw_writel(0xffffffff, S3C64XX_VIC1SOFTINTCLEAR);
 
-	/* Unmask clock gating and block power turn on */
+	// Unmask clock gating and block power turn on
 	__raw_writel(0x43E00041, S3C_HCLK_GATE); 
 	__raw_writel(0xF2040000, S3C_PCLK_GATE);
 	__raw_writel(0x80000011, S3C_SCLK_GATE);
@@ -866,7 +918,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	__raw_writel(0x1, S3C_OSC_STABLE);
 	__raw_writel(0x3, S3C_PWR_STABLE);
 
-	/* Set WFI instruction to SLEEP mode */
+	// Set WFI instruction to SLEEP mode
 
 	tmp = __raw_readl(S3C_PWR_CFG);
 	tmp &= ~(0x3<<5);
@@ -879,25 +931,25 @@ static int s3c6410_pm_enter(suspend_state_t state)
 
 	__raw_writel(0x2, S3C64XX_SLPEN);
 
-	/* Clear WAKEUP_STAT register for next wakeup -jc.lee */
-	/* If this register do not be cleared, Wakeup will be failed */
+	// Clear WAKEUP_STAT register for next wakeup -jc.lee
+	// If this register do not be cleared, Wakeup will be failed
 	__raw_writel(__raw_readl(S3C_WAKEUP_STAT), S3C_WAKEUP_STAT);
 
-	/* s3c6410_cpu_save will also act as our return point from when
-	 * we resume as it saves its own register state, so use the return
-	 * code to differentiate return from save and return from sleep */
+	// s3c6410_cpu_save will also act as our return point from when
+	// we resume as it saves its own register state, so use the return
+	// code to differentiate return from save and return from sleep
 
 	if (s3c6410_cpu_save(regs_save) == 0) {
 		flush_cache_all();
 		pm_cpu_sleep();
 	}
 
-	/* restore the cpu state */
+	// restore the cpu state
 	cpu_init();
 
 	__raw_writel(s3c_eint_mask_val, S3C_EINT_MASK);
 
-	/* restore the system state */
+	// restore the system state
 	s3c6410_pm_do_restore_core(core_save, ARRAY_SIZE(core_save));
 	s3c6410_pm_do_restore(sromc_save, ARRAY_SIZE(sromc_save));
 	s3c6410_pm_do_restore(gpio_save, ARRAY_SIZE(gpio_save));
@@ -924,8 +976,8 @@ static int s3c6410_pm_enter(suspend_state_t state)
 
 	if (bml_resume_fp)
 		bml_resume_fp(NULL, 0);
-
-	/* ok, let's return from sleep */
+*/
+	// ok, let's return from sleep
 	DBG("S3C6410 PM Resume (post-restore)\n");
 	return 0;
 }

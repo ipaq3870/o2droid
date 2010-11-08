@@ -81,29 +81,35 @@ static int suspend_test(int level)
 static int suspend_prepare(void)
 {
 	int error;
+printk("suspend_prepare: start\n");
 
 	if (!suspend_ops || !suspend_ops->enter)
+{	printk("suspend_prepare: !ops or ops->enter\n");
 		return -EPERM;
-
+}
 	pm_prepare_console();
 
 	error = pm_notifier_call_chain(PM_SUSPEND_PREPARE);
 	if (error)
+{	printk("suspend_prepare: notifier chain err:%x\n",error);
 		goto Finish;
-
+}
 	error = usermodehelper_disable();
 	if (error)
+{	printk("suspend_prepare: usermode err:%x\n",error);
 		goto Finish;
-
+}
 	error = suspend_freeze_processes();
 	if (!error)
+{	printk("suspend_prepare: freeze err:%x\n",error);
 		return 0;
-
+}
 	suspend_thaw_processes();
 	usermodehelper_enable();
  Finish:
 	pm_notifier_call_chain(PM_POST_SUSPEND);
 	pm_restore_console();
+printk("suspend_prepare: ok:%x\n",error);
 	return error;
 }
 
@@ -129,10 +135,13 @@ static int suspend_enter(suspend_state_t state)
 {
 	int error;
 
+printk("suspend_enter:start\n");
 	if (suspend_ops->prepare) {
 		error = suspend_ops->prepare();
 		if (error)
+{	printk("suspend_enter: prepare err:%x\n",error);
 			return error;
+}
 	}
 
 	error = dpm_suspend_noirq(PMSG_SUSPEND);
@@ -193,13 +202,17 @@ int suspend_devices_and_enter(suspend_state_t state)
 {
 	int error;
 
+printk("suspend_dev_enter:start state:%x\n",state);
 	if (!suspend_ops)
+{	printk("suspend_dev_enter: no ops :%x\n",state);
 		return -ENOSYS;
-
+}
 	if (suspend_ops->begin) {
 		error = suspend_ops->begin(state);
 		if (error)
+{	printk("suspend_dev_enter: begin err :%x\n",error);
 			goto Close;
+}
 	}
 	suspend_console();
 	suspend_test_start();
@@ -210,11 +223,15 @@ int suspend_devices_and_enter(suspend_state_t state)
 	}
 	suspend_test_finish("suspend devices");
 	if (suspend_test(TEST_DEVICES))
+{	printk("suspend_dev_enter: suspend_test??\n");
 		goto Recover_platform;
+}
+printk("suspend_dev_enter:start\n");
 
 	suspend_enter(state);
 
  Resume_devices:
+printk("suspend_dev_enter:resumed\n");
 	suspend_test_start();
 	dpm_resume_end(PMSG_RESUME);
 	suspend_test_finish("resume devices");
@@ -222,6 +239,7 @@ int suspend_devices_and_enter(suspend_state_t state)
  Close:
 	if (suspend_ops->end)
 		suspend_ops->end();
+printk("suspend_dev_enter:end with:%x\n",error);
 	return error;
 
  Recover_platform:
@@ -259,11 +277,13 @@ int enter_state(suspend_state_t state)
 	int error;
 
 	if (!valid_state(state))
+{	printk("enter_state: state=%x not valid\n",state);
 		return -ENODEV;
-
+}
 	if (!mutex_trylock(&pm_mutex))
+{	printk("enter_state: state=%x pm_mutex busy!\n",state);
 		return -EBUSY;
-
+}
 	printk(KERN_INFO "PM: Syncing filesystems ... ");
 	sys_sync();
 	printk("done.\n");
@@ -298,6 +318,7 @@ int pm_suspend(suspend_state_t state)
 {
 	if (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX)
 		return enter_state(state);
+	printk("pm_suspend: state=%x??\n",state);
 	return -EINVAL;
 }
 EXPORT_SYMBOL(pm_suspend);
