@@ -410,17 +410,28 @@ void s3c_g3d_timer(void)
 {
 //	printk("s3c_g3d_timer\n");
 	if (!g_G3D_PowerInit )
+{
+printk("g3d_timer: no init yet\n");
 		return;
-
+}
 	if (g_G3D_CriticalFlag > 0)
 	{/*now on, so see later to need turn off*/
 		mod_timer(&g3d_pm_timer, jiffies + TIMER_INTERVAL);
 		//why? g_G3D_SelfPowerOFF=False;
+//printk("g3d_timer: CriticalFag%d, freemap:%x\n",g_G3D_CriticalFlag,g_uiFreeMemMap);
+//g3d_alloc_info_dump();
 		return;
 	}
-	if (g_G3D_SelfPowerOFF) return;
+//	if (g_G3D_SelfPowerOFF)
+//{
+//printk("g3d_timer: Selfpoweroff, no gate:%d\n",IS_DOMAIN_POWER_OFF);
+//	 return;
+//}
 	g_G3D_SelfPowerOFF=True;
-	if (IS_DOMAIN_POWER_OFF) return;
+	if (IS_DOMAIN_POWER_OFF) {
+	return;
+}
+//printk("g3d_timer: clk off and gate\n");
 	/*turn off*/
 	clk_g3d_disable();
 	DOMAIN_POWER_OFF;

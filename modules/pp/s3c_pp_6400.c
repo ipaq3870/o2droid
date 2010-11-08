@@ -456,8 +456,7 @@ s3c_pp_state_t post_get_processing_state(void)
 	if (tmp & S3C_VPP_POSTENVID)
 	{
 		state = POST_BUSY;
-	}
-	else
+	}	else
 	{
 		state = POST_IDLE;
 	}
@@ -1546,9 +1545,9 @@ int s3c_pp_probe(struct platform_device *pdev)
 		return -ENOENT;
 	}
 
-#ifndef USE_PP_DOMAIN_GATING
+//#ifdef USE_PP_DOMAIN_GATING
 	clk_pp_enable();
-#endif /* USE_PP_DOMAIN_GATING */
+//#endif /* USE_PP_DOMAIN_GATING */
 
 	init_waitqueue_head(&waitq);
 
