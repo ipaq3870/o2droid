@@ -1987,10 +1987,8 @@ static int s3cfb_suspend_sub(s3c_fb_info_t *fbi)
 
 
 #ifdef USE_LCD_DOMAIN_GATING
-	printk("domain gating?=y \n");
-        s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_LCD);
+//        s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_LCD);
 #endif /* USE_LCD_DOMAIN_GATING */
-	printk("domain gating? \n");
 
 
 

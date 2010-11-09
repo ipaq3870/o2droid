@@ -75,6 +75,7 @@ static int domain_hash_map[15]={0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7};
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
 static char *domain_name[] = {"G","V", "I", "P", "F", "S", "ETM", "IROM"}; 
 static char *domain_module_name[] = {"3D","MFC","JPG","CAM","2D","TV","SCA","ROT","PST","LCD","DM0","DM1","SEC","ETM","IRM"};
+static char *dompowers[] = {"TOP","V","I","P","F","S","ETM","G"};
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING_DEBUG */
 
 static spinlock_t power_lock;
@@ -141,7 +142,14 @@ int domain_off_check_n(unsigned int domain)
     return (s3c_domain_off_stat & msk);
 }
 
-void print_blocking_modules(unsigned int mask) {
+static void print_domains(void) {
+int i;
+unsigned int dom=__raw_readl(S3C_BLK_PWR_STAT);
+	for (i=0;i<8;i++)
+		if (dom & (1<<(i))) printk("%s ",dompowers[i]);
+}
+
+static void print_blocking_modules(unsigned int mask) {
 int i;
 	for (i=0;i<15;i++)
 		if (mask & (1<<i)) printk("%s ",domain_module_name[i]);
@@ -196,8 +204,12 @@ void s3c_set_normal_cfg(unsigned int config, unsigned int flag, unsigned int dev
 			normal_cfg |= (config);
 			__raw_writel(normal_cfg, S3C_NORMAL_CFG);
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
-			printk("Domain-%s:%s ON cfg:%x, off_st=%x \n",
-					domain_name[domain_hash_map[deviceID]],domain_module_name[deviceID], normal_cfg,s3c_domain_off_stat);
+			printk("Domain-%s:%s ON (",
+				domain_name[domain_hash_map[deviceID]],domain_module_name[deviceID]);
+			print_domains();
+			printk(") , modules:");
+			print_blocking_modules(s3c_domain_off_stat);
+			printk("\n");
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING_DEBUG */
 		}
 		
@@ -215,8 +227,12 @@ void s3c_set_normal_cfg(unsigned int config, unsigned int flag, unsigned int dev
 				normal_cfg &= (~config);
 				__raw_writel(normal_cfg, S3C_NORMAL_CFG);
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
-				printk("Domain-%s:%s OFF cfg:%x, off_st=%x \n",
-						domain_name[domain_hash_map[deviceID]],domain_module_name[deviceID], normal_cfg, s3c_domain_off_stat);
+			printk("Domain-%s:%s OFF (",
+				domain_name[domain_hash_map[deviceID]],domain_module_name[deviceID]);
+			print_domains();
+			printk(") , modules:");
+			print_blocking_modules(s3c_domain_off_stat);
+			printk("\n");
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING_DEBUG */
 			}
 		}
@@ -460,7 +476,6 @@ static struct sleep_save onenand_save[] = {
 	SAVE_ITEM(S3C_FLASH_AFIFO_CNT1),
 };
 
-
 #ifdef CONFIG_S3C_PM_DEBUG
 
 #define SAVE_UART(va) \
@@ -513,8 +528,11 @@ static void s3c_pm_debug_init(void)
 
 #define DBG(fmt...) pm_dbg(fmt)
 #else
+#ifdef CONFIG_PM_DEBUG
+#define DBG printk
+#else
 #define DBG(fmt...)
-
+#endif
 #define s3c6410_pm_debug_init() do { } while(0)
 #endif	/* CONFIG_S3C_PM_DEBUG */
 
