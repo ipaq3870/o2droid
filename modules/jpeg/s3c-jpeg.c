@@ -63,6 +63,18 @@
 
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING
 #define USE_JPEG_DOMAIN_GATING
+
+#define DOMAIN_I_ON	do { \
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_ACTIVE_MODE, S3C64XX_JPEG); \
+	if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_I)) {                              \
+		printk(KERN_INFO "s3c_wait_blk_pwr_ready(S3C64XX_BLK_I)\n");     \
+		return -1;                                                       \
+	}                                                                        \
+	} while (0)
+#define DOMAIN_I_OFF	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_LP_MODE, S3C64XX_JPEG);
+#else
+#define DOMAIN_I_ON
+#define DOMAIN_I_OFF
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING */
 
 typedef struct {
@@ -73,22 +85,22 @@ typedef struct {
 
 
 static struct clk		*jpeg_hclk;
-static struct resource	*jpeg_mem;
+static struct resource		*jpeg_mem;
 static void __iomem		*jpeg_base;
-static S3C6400_JPG_CTX	JPGMem;
-static int				irq_no;
-static int				instanceNo = 0;
+static S3C6400_JPG_CTX		JPGMem;
+static int			irq_no;
+static int			instanceNo = 0;
 volatile int			jpg_irq_reason;
 
 DECLARE_WAIT_QUEUE_HEAD(WaitQueue_JPEG);
 
-static void clk_jpeg_enable(void)
+inline void clk_jpeg_enable(void)
 {
 	__raw_writel((__raw_readl(S3C_HCLK_GATE) | 1 << 11), S3C_HCLK_GATE);
 	__raw_writel((__raw_readl(S3C_SCLK_GATE) | 1 << 1), S3C_SCLK_GATE);
 }
 
-static void clk_jpeg_disable(void)
+inline void clk_jpeg_disable(void)
 {
 	__raw_writel((__raw_readl(S3C_HCLK_GATE) & ~(1 << 11)), S3C_HCLK_GATE);
 	__raw_writel((__raw_readl(S3C_SCLK_GATE) & ~(1 << 1)), S3C_SCLK_GATE);
@@ -131,29 +143,42 @@ irqreturn_t s3c_jpeg_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static int s3c_jpeg_suspend(struct platform_device *dev, pm_message_t state)
+{
+// to keep ioctl work
+printk("JPEG suspend\n");
+	LockJPGMutex();
+	if (instanceNo) {
+		clk_jpeg_disable();
+		DOMAIN_I_OFF;
+	}
+	return 0;
+}
+static int s3c_jpeg_resume(struct platform_device *pdev)
+{
+printk("JPEG resume\n");
+	if (instanceNo) {
+		DOMAIN_I_ON;
+		clk_jpeg_enable();
+	}
+// re-enable the ioctl
+	UnlockJPGMutex();
+	return 0;
+}
+
+
 static int s3c_jpeg_open(struct inode *inode, struct file *file)
 {
 	S3C6400_JPG_CTX *JPGRegCtx;
-	DWORD	ret;
-
-#ifdef USE_JPEG_DOMAIN_GATING
-	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_ACTIVE_MODE, S3C64XX_JPEG);
-	if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_I)) {
-		printk(KERN_INFO "s3c_wait_blk_pwr_ready(S3C64XX_BLK_I)\n");
-		return -1;
-	}
-#endif /* USE_JPEG_DOMAIN_GATING */
+//	DWORD	ret;
+	
+	DOMAIN_I_ON;
 
 	clk_jpeg_enable();
 
 	JPEG_LOG_MSG(LOG_TRACE, "s3c_jpeg_open", "JPG_open \r\n");
 
-	ret = LockJPGMutex();
-	if(!ret){
-		JPEG_LOG_MSG(LOG_ERROR, "s3c_jpeg_open", "DD::JPG Mutex Lock Fail\r\n");
-		UnlockJPGMutex();
-		return FALSE;
-	}
+	LockJPGMutex();
 
 	JPGRegCtx = (S3C6400_JPG_CTX *)MemAlloc(sizeof(S3C6400_JPG_CTX));
 	memset(JPGRegCtx, 0x00, sizeof(S3C6400_JPG_CTX));
@@ -178,16 +203,10 @@ static int s3c_jpeg_open(struct inode *inode, struct file *file)
 
 static int s3c_jpeg_release(struct inode *inode, struct file *file)
 {
-	DWORD			ret;
+//	DWORD			ret;
 	S3C6400_JPG_CTX	*JPGRegCtx;
 
 	JPEG_LOG_MSG(LOG_TRACE, "s3c_jpeg_release", "JPG_Close\n");
-
-	ret = LockJPGMutex();
-	if(!ret){
-		JPEG_LOG_MSG(LOG_ERROR, "s3c_jpeg_release", "DD::JPG Mutex Lock Fail\r\n");
-		return FALSE;
-	}
 
 	JPGRegCtx = (S3C6400_JPG_CTX *)file->private_data;
 	if(!JPGRegCtx){
@@ -195,18 +214,19 @@ static int s3c_jpeg_release(struct inode *inode, struct file *file)
 		return FALSE;
 	}
 
+	LockJPGMutex();
+
 	if((--instanceNo) < 0)
 		instanceNo = 0;
 
 	kfree(JPGRegCtx);
+
 	UnlockJPGMutex();
 
-	clk_jpeg_disable();
-	
-#ifdef USE_JPEG_DOMAIN_GATING
-	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_LP_MODE, S3C64XX_JPEG);
-#endif /* USE_JPEG_DOMAIN_GATING */
-
+	if (!instanceNo) {
+		clk_jpeg_disable();
+		DOMAIN_I_OFF;
+	}
 	return 0;
 }
 
@@ -226,24 +246,21 @@ static int s3c_jpeg_ioctl(struct inode *inode, struct file *file, unsigned
 		int cmd, unsigned long arg)
 {
 	S3C6400_JPG_CTX		*JPGRegCtx;
-	s3c_jpeg_t			*s3c_jpeg_buf;
+	s3c_jpeg_t		*s3c_jpeg_buf;
 
 	JPG_DEC_PROC_PARAM	* DecParam;
 	JPG_ENC_PROC_PARAM	* EncParam;
-	BOOL				result = TRUE;
-	DWORD				ret;
+	BOOL			result = TRUE;
+//	DWORD			ret;
 	
-	ret = LockJPGMutex();
-	if(!ret){
-		JPEG_LOG_MSG(LOG_ERROR, "s3c_jpeg_ioctl", "DD::JPG Mutex Lock Fail\r\n");
-		return FALSE;
-	}
-
 	JPGRegCtx = (S3C6400_JPG_CTX *)file->private_data;
 	if(!JPGRegCtx){
 		JPEG_LOG_MSG(LOG_ERROR, "s3c_jpeg_ioctl", "DD::JPG Invalid Input Handle\r\n");
 		return FALSE;
 	}
+
+	LockJPGMutex();
+
 	switch (cmd) 
 	{
 		case IOCTL_JPG_DECODE:
@@ -393,13 +410,7 @@ static int s3c_jpeg_probe(struct platform_device *pdev)
 	HANDLE 			h_Mutex;
 	unsigned int	jpg_clk;
 	
-#ifdef USE_JPEG_DOMAIN_GATING
-	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_ACTIVE_MODE, S3C64XX_JPEG);
-	if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_I)) {
-		printk(KERN_INFO "s3c_wait_blk_pwr_ready(S3C64XX_BLK_I)\n");
-		return -1;
-	}
-#endif /* USE_JPEG_DOMAIN_GATING */
+	DOMAIN_I_ON;
 
 	// JPEG clock enable 
 	jpeg_hclk	= clk_get(NULL, "hclk_jpeg");
@@ -456,11 +467,7 @@ static int s3c_jpeg_probe(struct platform_device *pdev)
 		return FALSE;
 	}
 
-	ret = LockJPGMutex();
-	if (!ret){
-		JPEG_LOG_MSG(LOG_ERROR, "s3c_jpeg_probe", "DD::JPG Mutex Lock Fail\n");
-		return FALSE;
-	}
+	LockJPGMutex();
 
 	// Memory initialization
 	if( !JPGMemMapping(&JPGMem) ){
@@ -484,9 +491,8 @@ static int s3c_jpeg_probe(struct platform_device *pdev)
 
 	clk_jpeg_disable();
 	
-#ifdef USE_JPEG_DOMAIN_GATING
-	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_LP_MODE, S3C64XX_JPEG);
-#endif /* USE_JPEG_DOMAIN_GATING */
+	DOMAIN_I_OFF;
+
 	return 0;
 }
 
@@ -508,8 +514,8 @@ static struct platform_driver s3c_jpeg_driver = {
 	.probe		= s3c_jpeg_probe,
 	.remove		= s3c_jpeg_remove,
 	.shutdown	= NULL,
-	.suspend	= NULL,
-	.resume		= NULL,
+	.suspend	= s3c_jpeg_suspend,
+	.resume		= s3c_jpeg_resume,
 	.driver		= {
 		.owner		= THIS_MODULE,
 		.name		= "s3c-jpeg",
@@ -526,14 +532,11 @@ static int __init s3c_jpeg_init(void)
 
 static void __exit s3c_jpeg_exit(void)
 {
-	DWORD	ret;
+//	DWORD	ret;
 
 	JPEG_LOG_MSG(LOG_TRACE, "s3c_jpeg_exit", "JPG_Deinit\n");
 
-	ret = LockJPGMutex();
-	if(!ret){
-		JPEG_LOG_MSG(LOG_ERROR, "s3c_jpeg_exit", "DD::JPG Mutex Lock Fail\r\n");
-	}
+	LockJPGMutex();
 
 	JPGMemFree(&JPGMem);
 	UnlockJPGMutex();

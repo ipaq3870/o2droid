@@ -63,6 +63,7 @@
 #include <mach/map.h>
 
 #include <plat/power-clock-domain.h>
+#include <plat/regs-clock.h>
 #include <plat/pm.h>
 
 #include "regs_s3c_g2d.h"
@@ -74,7 +75,22 @@
  * Disabling using G2D domain gating temporally.
  */
 #define USE_G2D_DOMAIN_GATING
-#define IS_DOMAIN_POWER_OFF domain_off_check(S3C64XX_DOMAIN_P)
+#define DOMAIN_P_ON do { \
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_P, S3C64XX_ACTIVE_MODE, S3C64XX_2D); \
+	if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_P)) { \
+		return -1; \
+	} \
+} while (0)
+
+#define DOMAIN_P_OFF do { \
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_P, S3C64XX_LP_MODE, S3C64XX_2D); \
+} while (0)
+
+#define IS_DOMAIN_P_OFF domain_off_check(S3C64XX_DOMAIN_P)
+#else
+#define DOMAIN_P_ON
+#define DOMAIN_P_OFF
+#define IS_DOMAIN_P_OFF (0)
 #endif
 
 //#define USE_G2D_MMAP
@@ -95,14 +111,10 @@ static int          g_num_of_nonblock_object = 0;
 #ifdef USE_G2D_DOMAIN_GATING
 #define USE_G2D_TIMER_FOR_CLK
 
-#ifdef USE_G2D_TIMER_FOR_CLK
 static struct timer_list  g_g2d_domain_timer;
 static int g2d_pwr_off_flag = 0;
 //static int g_flag_timer = 0;
 DEFINE_SPINLOCK(g2d_domain_lock);
-#else
-static struct mutex g_g2d_clk_mutex;
-#endif /* USE_G2D_TIMER_FOR_CLK */
 #endif /* USE_G2D_DOMAIN_GATING */
 static struct mutex *h_rot_mutex;
 
@@ -489,7 +501,7 @@ static void s3c_g2d_set_transparent(s3c_g2d_params *params)
 irqreturn_t s3c_g2d_irq(int irq, void *dev_id)
 {
 #ifdef USE_G2D_DOMAIN_GATING
-	if (g_flag_clk_enable == 1)
+	if (g_flag_clk_enable)
 #endif
 	{
 	if(__raw_readl(s3c_g2d_base + S3C_G2D_INTC_PEND_REG) & S3C_G2D_PEND_REG_INTP_CMD_FIN){
@@ -504,12 +516,6 @@ irqreturn_t s3c_g2d_irq(int irq, void *dev_id)
 #ifdef USE_G2D_DOMAIN_GATING
 static int s3c_g2d_clk_enable(void)
 {
-	if (IS_DOMAIN_POWER_OFF) {
-		s3c_set_normal_cfg(S3C64XX_DOMAIN_P, S3C64XX_ACTIVE_MODE, S3C64XX_2D);
-		if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_P)) {
-			return -1;
-		}
-	}
 	if( !g_flag_clk_enable )
 	{
 		clk_enable(s3c_g2d_clock);
@@ -524,13 +530,11 @@ static int s3c_g2d_clk_disable(void)
 	if( g_flag_clk_enable /* && !g_num_of_nonblock_object*/ )
 	{
 		clk_disable(s3c_g2d_clock);
-		s3c_set_normal_cfg(S3C64XX_DOMAIN_P, S3C64XX_LP_MODE, S3C64XX_2D);
 		g_flag_clk_enable = 0;
 	}
 	return 0;
 }
 
-#ifdef USE_G2D_TIMER_FOR_CLK
 void s3c_g2d_domain_timer(void)
 {
 // just when clock is on
@@ -539,9 +543,8 @@ void s3c_g2d_domain_timer(void)
 //if need to gate now
 	if(g2d_pwr_off_flag){
 //		if( g_flag_clk_enable /* && !g_num_of_nonblock_object ) {*/
-                clk_disable(s3c_g2d_clock);
-                s3c_set_normal_cfg(S3C64XX_DOMAIN_P, S3C64XX_LP_MODE, S3C64XX_2D);
-                g_flag_clk_enable = 0;
+                s3c_g2d_clk_disable();
+		DOMAIN_P_OFF;
 //		g_flag_timer = 0;
 //            }
 	
@@ -555,7 +558,6 @@ void s3c_g2d_domain_timer(void)
 
 	spin_unlock(&g2d_domain_lock);
 }
-#endif /* USE_G2D_TIMER_FOR_CLK */
 #endif /* USE_G2D_DOMAIN_GATING */
 
  int s3c_g2d_open(struct inode *inode, struct file *file)
@@ -575,15 +577,6 @@ void s3c_g2d_domain_timer(void)
 
 	if(file->f_flags & O_NONBLOCK)
 		g_num_of_nonblock_object++;
-#ifdef USE_G2D_DOMAIN_GATING		
-#ifndef USE_G2D_TIMER_FOR_CLK
-	if(g_num_of_g2d_object == 1)
-	{
-		mutex_init(&g_g2d_clk_mutex);
-	}
-#endif
-#endif /* USE_G2D_DOMAIN_GATING */
-
 
 	printk("s3c_g2d_open: nb_obj=%d, 2d_obj=%d\n",g_num_of_nonblock_object,g_num_of_g2d_object); 	
 
@@ -608,17 +601,6 @@ int s3c_g2d_release(struct inode *inode, struct file *file)
 
 	if(file->f_flags & O_NONBLOCK)
 		g_num_of_nonblock_object--;
-#ifdef USE_G2D_DOMAIN_GATING
-	s3c_g2d_clk_disable();
-#ifndef USE_G2D_TIMER_FOR_CLK	
-
-	if(g_num_of_g2d_object == 0)
-	{
-		mutex_destroy(&g_g2d_clk_mutex);
-	}
-#endif /* USE_G2D_TIMER_FOR_CLK */
-#endif /* USE_G2D_DOMAIN_GATING */
-
 
 	printk("s3c_g2d_release: nb_obj=%d, 2d_obj=%d\n",g_num_of_nonblock_object,g_num_of_g2d_object); 	
 
@@ -679,20 +661,20 @@ static int s3c_g2d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 	
 	mutex_lock(h_rot_mutex);
 #ifdef USE_G2D_DOMAIN_GATING
-#ifndef USE_G2D_TIMER_FOR_CLK
-	mutex_lock(&g_g2d_clk_mutex);
-	ret = s3c_g2d_clk_enable();
-#else
 	spin_lock(&g2d_domain_lock);
-	g2d_pwr_off_flag = 0;	
-	ret = s3c_g2d_clk_enable();
-	spin_unlock(&g2d_domain_lock);
-#endif	
-#endif /* USE_G2D_DOMAIN_GATING */
-	if(ret != 0){
-		printk(KERN_ERR "\n%s: Waiting for g2d domain-on is timed-out\n", __FUNCTION__);
-		return -EINVAL;
+	g2d_pwr_off_flag = 0;
+	if (!g_flag_clk_enable) {
+	    if (!(__raw_readl(S3C_BLK_PWR_STAT)&S3C64XX_BLK_F) ) {	//lcd switched off!!!
+		mutex_unlock(h_rot_mutex);
+		spin_unlock(&g2d_domain_lock);
+		return -EFAULT;
+	    }
+		DOMAIN_P_ON;
+		s3c_g2d_clk_enable();
 	}
+	spin_unlock(&g2d_domain_lock);
+#endif /* USE_G2D_DOMAIN_GATING */
+
 	switch(cmd)
 	{
 		case S3C_G2D_ROTATOR_0:
@@ -744,16 +726,11 @@ static int s3c_g2d_ioctl(struct inode *inode, struct file *file, unsigned int cm
 err_cmd:
 
 #ifdef USE_G2D_DOMAIN_GATING
-#ifdef USE_G2D_TIMER_FOR_CLK
 		spin_lock(&g2d_domain_lock);
 		g2d_pwr_off_flag = 1;
 //		g_flag_timer = 1;
 		mod_timer(&g_g2d_domain_timer, jiffies + HZ);	
 		spin_unlock(&g2d_domain_lock);
-#else
-		s3c_g2d_clk_disable();
-		mutex_unlock(&g_g2d_clk_mutex);
-#endif /* USE_G2D_TIMER_FOR_CLK */
 #endif /* USE_G2D_DOMAIN_GATING */
 	mutex_unlock(h_rot_mutex);
 
@@ -860,10 +837,8 @@ int s3c_g2d_probe(struct platform_device *pdev)
 	
 	mutex_init(h_rot_mutex);
 #ifdef USE_G2D_DOMAIN_GATING
-#ifdef USE_G2D_TIMER_FOR_CLK
         init_timer(&g_g2d_domain_timer);
         g_g2d_domain_timer.function = (void*) s3c_g2d_domain_timer;
-#endif /* USE_G2D_TIMER_FOR_CLK */
 #endif /* USE_G2D_DOMAIN_GATING */
 
 
@@ -891,27 +866,42 @@ static int s3c_g2d_remove(struct platform_device *dev)
 	return 0;
 }
 
+#ifdef USE_G2D_DOMAIN_GATING
 static int s3c_g2d_suspend(struct platform_device *dev, pm_message_t state)
 {
-// to keep ioctl work
+printk("2D suspend\n");
+	del_timer(&g_g2d_domain_timer);
+// to keep ioctl from work
 	mutex_lock(h_rot_mutex);
-	clk_disable(s3c_g2d_clock);
+	if (g_flag_clk_enable) {
+		s3c_g2d_clk_disable();
+		DOMAIN_P_OFF;
+	}
 	return 0;
 }
 static int s3c_g2d_resume(struct platform_device *pdev)
 {
-	clk_enable(s3c_g2d_clock);
+printk("2D resume\n");
+	DOMAIN_P_ON;
+	s3c_g2d_clk_enable();
+	g2d_pwr_off_flag = 1;
+	mod_timer(&g_g2d_domain_timer, jiffies + HZ);	
 // re-enable the ioctl
 	mutex_unlock(h_rot_mutex);
 	return 0;
 }
-
+#endif
 
 static struct platform_driver s3c_g2d_driver = {
        .probe          = s3c_g2d_probe,
        .remove         = s3c_g2d_remove,
+#ifdef USE_G2D_DOMAIN_GATING
        .suspend        = s3c_g2d_suspend,
        .resume         = s3c_g2d_resume,
+#else
+       .suspend        = NULL,
+       .resume         = NULL,
+#endif
        .driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "s3c-g2d",

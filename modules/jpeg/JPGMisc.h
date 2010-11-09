@@ -34,8 +34,8 @@ typedef unsigned char	UINT8;
 typedef enum {FALSE, TRUE} BOOL;
 
 HANDLE CreateJPGmutex(void);
-DWORD LockJPGMutex(void);
-DWORD UnlockJPGMutex(void);
+void LockJPGMutex(void);
+void UnlockJPGMutex(void);
 void DeleteJPGMutex(void);
 unsigned int get_fb0_addr(void);
 void get_lcd_size(int *width, int *height);

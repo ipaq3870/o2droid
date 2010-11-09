@@ -478,8 +478,9 @@ void s3c_g3d_dma_finish(struct s3c2410_dma_chan *dma_ch, void *buf_id,
 
 int s3c_g3d_open(struct inode *inode, struct file *file)
 {
-	printk("g3d_open\n");
 	int *newid;
+
+	printk("g3d_open\n");
 
 	newid = (int*)vmalloc(sizeof(int));
 	file->private_data = newid;
@@ -494,8 +495,9 @@ int s3c_g3d_open(struct inode *inode, struct file *file)
 
 int s3c_g3d_release(struct inode *inode, struct file *file)
 {
-	printk("g3d_release\n");
 	int *newid = file->private_data;
+
+	printk("g3d_release\n");
 	if(mutex_lock_processID != 0 && mutex_lock_processID == (unsigned int)file->private_data) {
         	mutex_unlock(&mem_sfr_lock);
 	        printk("Abnormal close of pid # %d\n", task_pid_nr(current));        
@@ -1321,7 +1323,6 @@ static struct miscdevice s3c_g3d_dev = {
 int s3c_g3d_probe(struct platform_device *pdev)
 {
 	struct resource *res;
-
 	int		ret;
 	int		size;
 	int		i, loop_i;
@@ -1435,6 +1436,7 @@ err_mem:
 err_clock:
 
 #ifdef USE_G3D_DOMAIN_GATING
+	clk_g3d_disable();
 	DOMAIN_POWER_OFF;
 #endif /* USE_G3D_DOMAIN_GATING */
 
@@ -1444,13 +1446,20 @@ err_clock:
 static int s3c_g3d_suspend(struct platform_device *dev, pm_message_t state)
 {
 	printk("s3c_g3d_suspend.\n");
+	mutex_lock(&pm_critical_section_lock);
 	if(g_G3D_CriticalFlag)
 	{
-		printk("unexpected Suspend : App don't support suspend-mode.\n");
+		mutex_unlock(&pm_critical_section_lock);
+		while (g_G3D_CriticalFlag) {
+			printk("g3d_suspend : wait for !Critical.\n");
+			msleep(1);
+		}
+		mutex_lock(&pm_critical_section_lock);
 	}
 	else
 	{
 		/*power off*/
+		del_timer(&g3d_pm_timer);
 		g_G3D_SelfPowerOFF=False;
 	
 		clk_g3d_disable();
@@ -1499,7 +1508,10 @@ static int s3c_g3d_resume(struct platform_device *pdev)
 		/*power on 3D PM right after 3D APIs are used*/
 		g_G3D_SelfPowerOFF=True;
 	}
-
+#ifndef USE_G3D_DOMAIN_GATING
+	clk_g3d_enable();
+#endif
+	mutex_unlock(&pm_critical_section_lock);
 	return 0;
 }
 
@@ -1531,8 +1543,8 @@ int __init  s3c_g3d_init(void)
 
 void  s3c_g3d_exit(void)
 {
-	printk("s3c_g3d_exit.\n");
     int loop_i;
+	printk("s3c_g3d_exit.\n");
 	platform_driver_unregister(&s3c_g3d_driver);
 
 	for( loop_i = 0; loop_i < G3D_CHUNK_NUM; loop_i++ ){

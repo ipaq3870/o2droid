@@ -58,21 +58,26 @@ HANDLE CreateJPGmutex(void)
 *Function: LockJPGMutex
 *Implementation Notes: lock mutex 
 -----------------------------------------------------------------------------*/
-DWORD LockJPGMutex(void)
+void LockJPGMutex(void)
 {
-    mutex_lock(hMutex);  
-    return 1;
+	if (!mutex_trylock( hMutex )) {
+		printk("JPEG: hMutex already locked,wait...\n");
+		mutex_lock(hMutex);
+		printk("JPEG: hMutex now locked\n");
+	}
 }
 
 /*----------------------------------------------------------------------------
 *Function: UnlockJPGMutex
 *Implementation Notes: unlock mutex
 -----------------------------------------------------------------------------*/
-DWORD UnlockJPGMutex(void)
+void UnlockJPGMutex(void)
 {
-	mutex_unlock(hMutex);
+	if ( mutex_is_locked(hMutex) )
+		mutex_unlock(hMutex);
+	else
+		printk("JPEG: unlock to an open mutex!\n");
 	
-    return 1;
 }
 
 /*----------------------------------------------------------------------------
