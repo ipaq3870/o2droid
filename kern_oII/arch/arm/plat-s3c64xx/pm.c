@@ -873,7 +873,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	// ensure the debug is initialised (if enabled)
 
 	DBG("s3c6410_pm_enter(%d)\n", state);
-/*
+
 	if (bml_suspend_fp)
 		bml_suspend_fp(NULL, 0, 0);
 
@@ -889,7 +889,14 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_sleep_save_phys = virt_to_phys(regs_save);
 
 	DBG("s3c6410_sleep_save_phys=0x%08lx\n", s3c6410_sleep_save_phys);
-
+#if 1
+	tmp = __raw_readl(S3C_PWR_CFG);
+	tmp &= ~(0x3<<5);
+// 00-normal 01-idle 10-stop 11-sleep
+//	tmp |= (2<<5);
+	tmp |= (0x1<<5);
+	__raw_writel(tmp, S3C_PWR_CFG);
+#else
 	// save all necessary core registers not covered by the drivers
 
 	s3c6410_pm_do_save(gpio_save, ARRAY_SIZE(gpio_save));
@@ -900,6 +907,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 
 	// ensure INF_REG0  has the resume address
 	__raw_writel(virt_to_phys(s3c6410_cpu_resume), S3C_INFORM0);
+	__raw_writel(0, S3C_INFORM1);
 
 	// set the irq configuration for wake
 	s3c6410_pm_configure_extint();
@@ -918,6 +926,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 
 	tmp = __raw_readl(S3C64XX_SPCONSLP);
 	tmp &= ~(0x3 << 12);
+// Reset Out: set it output, value 0!
 	__raw_writel(tmp | (0x1 << 12), S3C64XX_SPCONSLP);
 
 	// send the cpu to sleep...
@@ -940,11 +949,14 @@ static int s3c6410_pm_enter(suspend_state_t state)
 
 	tmp = __raw_readl(S3C_PWR_CFG);
 	tmp &= ~(0x3<<5);
+// 00-normal 01-idle 10-stop 11-sleep
+//	tmp |= (2<<5);
 	tmp |= (0x3<<5);
 	__raw_writel(tmp, S3C_PWR_CFG);
 
 	tmp = __raw_readl(S3C_SLEEP_CFG);
 	tmp &= ~(0x61<<0);
+//just bit0 valid, controls the OSC_EN
 	__raw_writel(tmp, S3C_SLEEP_CFG);
 
 	__raw_writel(0x2, S3C64XX_SLPEN);
@@ -991,10 +1003,11 @@ static int s3c6410_pm_enter(suspend_state_t state)
 			__func__, wakeup_stat, eint0pend);
 
 	s3c_config_wakeup_gpio();	
+#endif
 
 	if (bml_resume_fp)
 		bml_resume_fp(NULL, 0);
-*/
+
 	// ok, let's return from sleep
 	DBG("S3C6410 PM Resume (post-restore)\n");
 	return 0;
