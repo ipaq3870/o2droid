@@ -862,6 +862,9 @@ void (*pm_cpu_sleep)(void);
 
 extern unsigned int extra_eint0pend = 0x0;
 
+#define WIN_RET_ADDR 0x50008000
+extern unsigned int s3c6410_windows_code[4];
+
 static int s3c6410_pm_enter(suspend_state_t state)
 {
 
@@ -869,6 +872,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	unsigned int tmp;
 	unsigned int wakeup_stat = 0x0;
 	unsigned int eint0pend = 0x0;
+	unsigned int s3c_rescode_save[4];
 
 	// ensure the debug is initialised (if enabled)
 
@@ -889,7 +893,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_sleep_save_phys = virt_to_phys(regs_save);
 
 	DBG("s3c6410_sleep_save_phys=0x%08lx\n", s3c6410_sleep_save_phys);
-#if 1
+#if 0
 	tmp = __raw_readl(S3C_PWR_CFG);
 	tmp &= ~(0x3<<5);
 // 00-normal 01-idle 10-stop 11-sleep
@@ -907,7 +911,10 @@ static int s3c6410_pm_enter(suspend_state_t state)
 
 	// ensure INF_REG0  has the resume address
 	__raw_writel(virt_to_phys(s3c6410_cpu_resume), S3C_INFORM0);
-	__raw_writel(0, S3C_INFORM1);
+// The bootloader seems to examine the lower 4 bits of INFORM3, and
+// in the case the value is 0xf jump to fix address 0x50008000, otherwise
+// jump to 0x50300000 !!!!!!!!!!!!!!!
+	__raw_writel(0xf, S3C_INFORM3);
 
 	// set the irq configuration for wake
 	s3c6410_pm_configure_extint();
@@ -923,7 +930,14 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_pm_check_store();
 
 	s3c_config_sleep_gpio();	
-
+//phj: Change the bootloader handled memory area content now:
+	s3c_rescode_save[0] = __raw_readl(WIN_RET_ADDR);
+	s3c_rescode_save[1] = __raw_readl(WIN_RET_ADDR+4);
+	s3c_rescode_save[2] =  __raw_readl(WIN_RET_ADDR+8);
+	__raw_writel(s3c6410_windows_code[0],WIN_RET_ADDR);
+	__raw_writel(s3c6410_windows_code[1],WIN_RET_ADDR+4);
+	__raw_writel(s3c6410_windows_code[2],WIN_RET_ADDR+8);
+	
 	tmp = __raw_readl(S3C64XX_SPCONSLP);
 	tmp &= ~(0x3 << 12);
 // Reset Out: set it output, value 0!
@@ -978,6 +992,11 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	cpu_init();
 
 	__raw_writel(s3c_eint_mask_val, S3C_EINT_MASK);
+
+//phj: restore the bootloader handled memory area content now:
+	__raw_writel(s3c_rescode_save[0],WIN_RET_ADDR);
+	__raw_writel(s3c_rescode_save[1],WIN_RET_ADDR+4);
+	__raw_writel(s3c_rescode_save[2],WIN_RET_ADDR+8);
 
 	// restore the system state
 	s3c6410_pm_do_restore_core(core_save, ARRAY_SIZE(core_save));

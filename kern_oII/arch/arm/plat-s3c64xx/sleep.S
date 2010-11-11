@@ -25,7 +25,13 @@
 #define LL_UART (S3C_PA_UART + (0x400 * CONFIG_S3C_LOWLEVEL_UART_PORT))
 
 	.text
-
+/* windows bootloader memory jump */
+	.global	s3c6410_windows_code
+s3c6410_windows_code:
+	ldr	r0, =0x7e00fa00
+	ldr	r2, [r0]
+	mov	pc, r2
+	
 	/* s3c_cpu_save
 	 *
 	 * Save enough processor state to allow the restart of the pm.c
