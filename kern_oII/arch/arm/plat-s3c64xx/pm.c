@@ -862,7 +862,8 @@ void (*pm_cpu_sleep)(void);
 
 extern unsigned int extra_eint0pend = 0x0;
 
-#define WIN_RET_ADDR 0x50008000
+//#define WIN_RET_ADDR 0x50008000
+#define WIN_RET_ADDR 0x50300000
 extern unsigned int s3c6410_windows_code[4];
 
 static int s3c6410_pm_enter(suspend_state_t state)
@@ -914,7 +915,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 // The bootloader seems to examine the lower 4 bits of INFORM3, and
 // in the case the value is 0xf jump to fix address 0x50008000, otherwise
 // jump to 0x50300000 !!!!!!!!!!!!!!!
-	__raw_writel(0xf, S3C_INFORM3);
+	__raw_writel(0x0f, S3C_INFORM3);
 
 	// set the irq configuration for wake
 	s3c6410_pm_configure_extint();
@@ -934,9 +935,11 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c_rescode_save[0] = __raw_readl(WIN_RET_ADDR);
 	s3c_rescode_save[1] = __raw_readl(WIN_RET_ADDR+4);
 	s3c_rescode_save[2] =  __raw_readl(WIN_RET_ADDR+8);
+	s3c_rescode_save[3] =  __raw_readl(WIN_RET_ADDR+12);
 	__raw_writel(s3c6410_windows_code[0],WIN_RET_ADDR);
 	__raw_writel(s3c6410_windows_code[1],WIN_RET_ADDR+4);
 	__raw_writel(s3c6410_windows_code[2],WIN_RET_ADDR+8);
+	__raw_writel(s3c6410_windows_code[3],WIN_RET_ADDR+12);
 	
 	tmp = __raw_readl(S3C64XX_SPCONSLP);
 	tmp &= ~(0x3 << 12);
@@ -997,6 +1000,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	__raw_writel(s3c_rescode_save[0],WIN_RET_ADDR);
 	__raw_writel(s3c_rescode_save[1],WIN_RET_ADDR+4);
 	__raw_writel(s3c_rescode_save[2],WIN_RET_ADDR+8);
+	__raw_writel(s3c_rescode_save[3],WIN_RET_ADDR+12);
 
 	// restore the system state
 	s3c6410_pm_do_restore_core(core_save, ARRAY_SIZE(core_save));

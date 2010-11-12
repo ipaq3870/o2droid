@@ -97,7 +97,7 @@ static void keypad_timer_handler(unsigned long data)
 		while (press_mask_low) {
 			if (press_mask_low & 1) {
 				input_report_key(dev,pdata->keycodes[i],1);
-				DPRINTK("low Pressed  : %d\n",i);
+				DPRINTK("Key Pressed  : %d [%d]\n",i,pdata->keycodes[i]);
 			}
 			press_mask_low >>= 1;
 			i++;
@@ -107,7 +107,7 @@ static void keypad_timer_handler(unsigned long data)
 		while (release_mask_low) {
 			if (release_mask_low & 1) {
 				input_report_key(dev,pdata->keycodes[i],0);
-				DPRINTK("low Released : %d\n",i);
+				DPRINTK("Key Released : %d [%d]\n",i,pdata->keycodes[i]);
 			}
 			release_mask_low >>= 1;
 			i++;

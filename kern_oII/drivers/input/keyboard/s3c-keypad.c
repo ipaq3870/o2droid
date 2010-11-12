@@ -92,7 +92,7 @@ static ssize_t keylock_store(struct device *dev, struct device_attribute *attr, 
 		keylock = 1;
 	else if (strncmp(buf, "0", 1) == 0)
 		keylock = 0;
-	dprintk(DCM_INP, "[KEY] keylock setting is changed : %s\n", keylock ? "on" : "off");
+//	dprintk(DCM_INP, "[KEY] keylock setting is changed : %s\n", keylock ? "on" : "off");
 	return count;
 }
 
@@ -123,7 +123,7 @@ static DEVICE_ATTR(storepid, S_IRUGO | S_IWUSR, storepid_show, storepid_store);
 void earjack_report_key(unsigned int keycode, int value)
 {
     input_report_keypad(s3c_keypad->dev, KEY_SEND, value);
-    dprintk(DCM_INP, "[KEY] earjack key %s\n", value ? "pressed" : "released");   
+//    dprintk(DCM_INP, "[KEY] earjack key %s\n", value ? "pressed" : "released");   
 }
 EXPORT_SYMBOL(earjack_report_key);
 
@@ -177,8 +177,8 @@ static void keypad_timer_handler(unsigned long data)
 		while (press_mask_low) {
 			if (press_mask_low & 1) {
 				input_report_keypad(dev,pdata->keycodes[i],1);
-				dprintk(DCM_INP, "[KEY] L scancode[ %d (0x%x) ] press[%d].\n",  pdata->keycodes[i],pdata->keycodes[i], KEY_PRESSED);	
-				DPRINTK("low Pressed  : %d\n",i);
+//				dprintk(DCM_INP, "[KEY] L scancode[ %d (0x%x) ] press[%d].\n",  pdata->keycodes[i],pdata->keycodes[i], KEY_PRESSED);	
+				DPRINTK("Pressed  : %d [%d]\n",i,pdata->keycodes[i]);
 			}
 			press_mask_low >>= 1;
 			i++;
@@ -188,8 +188,8 @@ static void keypad_timer_handler(unsigned long data)
 		while (release_mask_low) {
 			if (release_mask_low & 1) {
 				input_report_keypad(dev,pdata->keycodes[i],0);
-				dprintk(DCM_INP, "[KEY] L scancode[ %d (0x%x) ] press[%d].\n",  pdata->keycodes[i],pdata->keycodes[i], KEY_RELEASED);	
-				DPRINTK("low Released : %d\n",i);
+//				dprintk(DCM_INP, "[KEY] L scancode[ %d (0x%x) ] press[%d].\n",  pdata->keycodes[i],pdata->keycodes[i], KEY_RELEASED);	
+				DPRINTK("low Released : %d [%d]\n",i,pdata->keycodes[i]);
 			}
 			release_mask_low >>= 1;
 			i++;
@@ -205,7 +205,7 @@ static void keypad_timer_handler(unsigned long data)
 		while (press_mask_high) {
 			if (press_mask_high & 1) {
 				input_report_keypad(dev,pdata->keycodes[i+MAX_KEYMASK_NR],1);
-				dprintk(DCM_INP, "[KEY] H scancode[ %d (0x%x) ] press[%d].\n",  pdata->keycodes[i],pdata->keycodes[i], KEY_PRESSED);	
+//				dprintk(DCM_INP, "[KEY] H scancode[ %d (0x%x) ] press[%d].\n",  pdata->keycodes[i],pdata->keycodes[i], KEY_PRESSED);	
 				DPRINTK("high Pressed  : %d %d\n",pdata->keycodes[i+MAX_KEYMASK_NR],i);
 			}
 			press_mask_high >>= 1;
@@ -216,7 +216,7 @@ static void keypad_timer_handler(unsigned long data)
 		while (release_mask_high) {
 			if (release_mask_high & 1) {
 				input_report_keypad(dev,pdata->keycodes[i+MAX_KEYMASK_NR],0);
-				dprintk(DCM_INP, "[KEY] H scancode[ %d (0x%x) ] press[%d].\n",  pdata->keycodes[i],pdata->keycodes[i], KEY_RELEASED);	
+//				dprintk(DCM_INP, "[KEY] H scancode[ %d (0x%x) ] press[%d].\n",  pdata->keycodes[i],pdata->keycodes[i], KEY_RELEASED);	
 				DPRINTK("high Released : %d\n",pdata->keycodes[i+MAX_KEYMASK_NR]);
 			}
 			release_mask_high >>= 1;

@@ -28,9 +28,11 @@
 /* windows bootloader memory jump */
 	.global	s3c6410_windows_code
 s3c6410_windows_code:
-	ldr	r0, =0x7e00fa00
+	ldr	r0, s3_inform0
 	ldr	r2, [r0]
 	mov	pc, r2
+s3_inform0:
+	.word	0x7e00fa00
 	
 	/* s3c_cpu_save
 	 *
