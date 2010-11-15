@@ -901,9 +901,9 @@ static void dpram_drop_data(dpram_device_t *device)
 }
 	
 static void dpram_nvdata_load(struct _param_nv *param) {
-	// printk(" +---------------------------------------------+\n");
+	printk(" +---------------------------------------------+\n");
 	printk(" |                  LOAD NVDATA                |\n");
-	// printk(" +---------------------------------------------+\n");
+	printk(" +---------------------------------------------+\n");
 	// printk("  - Read from File(\"/efs/nv_data.bin\").\n");
 	// printk("  - Address of NV data(virt): 0x%08x.\n", param->addr);
 	// printk("  - Size of NV data: %d.\n", param->size);
@@ -915,8 +915,9 @@ static void dpram_nvdata_load(struct _param_nv *param) {
 	unsigned int          nPgsPerBlk;
 	unsigned int          nSctsPerPg;
 	BMLVolSpec            stVolSpec;
-
+#endif
 	if (!dump_on) {
+#if 0
 		// printk("[DPRAM] Start getting DGS info.\n");
     
 		if (BML_Open(0) != BML_SUCCESS) {
@@ -947,16 +948,16 @@ static void dpram_nvdata_load(struct _param_nv *param) {
 		//	while(1);
 		} else {
 		}
+#endif 
 		if(*onedram_sem) {
-	 //   		WRITE_TO_DPRAM( 0xF80000 - 0x5000, param->addr, param->size);
+	   		WRITE_TO_DPRAM( 0xF80000 - 0x5000, param->addr, param->size);
 	 //          WRITE_TO_DPRAM( DPRAM_DGS_INFO_BLOCK_OFFSET, aDGSBuf, DPRAM_DGS_INFO_BLOCK_SIZE);   
 		}
 		else
-			    printk("[OneDRAM] %s failed.. sem: %d\n", __func__, *onedram_sem);
+		    printk("[OneDRAM] %s failed.. sem: %d\n", __func__, *onedram_sem);
 	}
 	else
 		dprintk("CP DUMP MODE !!! \n");
-#endif
 }
 
 static void dpram_phone_power_on(void)
@@ -1242,20 +1243,6 @@ print_onedram_status();
 		mdelay(200);
 	}
 
-	static void dpram_mem_rw(struct _mem_param *param)
-	{
-	#if 0
-		/* @LDK@ write */
-		if (param->dir) {
-		WRITE_TO_DPRAM(param->addr, (void *)&param->data, sizeof(param->data));
-	}
-
-	/* @LDK@ read */
-	else {
-		READ_FROM_DPRAM((void *)&param->data, param->addr, sizeof(param->data));
-	}
-#endif
-}
 
 static int dpram_phone_ramdump_on(void)
 {
@@ -1384,43 +1371,46 @@ static void dpram_dump_bs()
 		dprintk("fail to get semaphore\n");
 }
 
-static void dpram_dump_nvdata()
+static void dpram_dump_mem()
 {
-	unsigned int	*pSrcAddr = (unsigned int *)(DPRAM_VBASE + 0xF80000 - 0x5000);
+#define DUMP_BLOCK_SIZE 128
+#define NUM_OF_BLOCKS_TO_DUMP 1
+
+	unsigned int	*vSrcAddr;
+	unsigned int	*pSrcAddr;
 	unsigned int	index, writelen;
 	struct file		*filp_dpram_dump;
-	char			buf_for_dump[2048]; //2KB
-	
-	if(*onedram_sem) {
-		dprintk("NV_data Dump start!!!\n");
-		preempt_enable();
-		old_fs = get_fs();
-		set_fs(KERNEL_DS);
-		filp_dpram_dump = filp_open("/data/nvdata.bin", O_CREAT|O_WRONLY, 0666);
-		if(IS_ERR(filp_dpram_dump))
-			printk("Can't creat /data/nvdata.bin file\n");
+	char			buf_for_dump[DUMP_BLOCK_SIZE];
 
-    	for (index = 0; index < 256; index ++)
+	pSrcAddr = 0x50008000;
+	vSrcAddr = phys_to_virt(pSrcAddr);
+
+	dprintk("Mem Dump start, va: %x, pa: %x\n", vSrcAddr, pSrcAddr );
+	preempt_enable();
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+	filp_dpram_dump = filp_open("/sdcard/mem_dump.bin", O_CREAT|O_WRONLY, 0666);
+	if(IS_ERR(filp_dpram_dump))
+		printk("Can't creat /sdcard/mem_dump.bin file\n");
+
+    	for (index = 0; index < NUM_OF_BLOCKS_TO_DUMP; index ++)
     	{
 	
-			memset(buf_for_dump, 0x0, 2048);
-			memcpy(buf_for_dump, pSrcAddr, 2048);
-			writelen= filp_dpram_dump->f_op->write(filp_dpram_dump, buf_for_dump, 2048, &filp_dpram_dump->f_pos);
+			memset(buf_for_dump, 0x0, DUMP_BLOCK_SIZE);
+			memcpy(buf_for_dump, vSrcAddr, DUMP_BLOCK_SIZE);
+			writelen= filp_dpram_dump->f_op->write(filp_dpram_dump, buf_for_dump, DUMP_BLOCK_SIZE, &filp_dpram_dump->f_pos);
 			if(writelen < 1) {
 				printk("Write Error!!\n");
 				while(1);
 			}
-			pSrcAddr += 512;
+			vSrcAddr += DUMP_BLOCK_SIZE / 4 ;
 		}
 		
 		filp_close(filp_dpram_dump, NULL);
 		set_fs(old_fs);
 		preempt_disable();
 
-		dprintk("DPRAM NV_data Dump done!!!\n");
-	}
-	else
-		dprintk("fail to get semaphore\n");
+		dprintk("RAM Dump done!!!\n");
 }
 
 
@@ -1696,7 +1686,7 @@ boot_complete = 1; //bss
 		{
 			struct _param_nv param;
 			val = copy_from_user((void *)&param, (void *)arg, sizeof(param));
-			//dpram_nvdata_load(&param);
+			dpram_nvdata_load(&param);
 			return 0;
 		}
 		case DPRAM_GET_DGS_INFO: {
@@ -1710,10 +1700,9 @@ boot_complete = 1; //bss
 			return 0;
 
 		case DPRAM_PHONE_OFF:
+			dpram_dump_mem();
+#if 0			
 			print_onedram_status();
-//send_interrupt_to_phone_with_semaphore(INT_COMMAND(INT_MASK_CMD_PHONE_START));
-			print_onedram_status();
-
  
 
 	if(*onedram_sem) {
@@ -1721,8 +1710,6 @@ boot_complete = 1; //bss
 		//hexdump(DPRAM_VBASE + 0xFFF000, DPRAM_DGS_INFO_BLOCK_SIZE);
 	}
 
-	dpram_dump_nvdata();
-#if 0			
 			{
 			        unsigned char reg_buff = 0;
 				if (Get_MAX8698_PM_REG(EN1, &reg_buff)) {
@@ -1752,7 +1739,6 @@ boot_complete = 1; //bss
 
 			}
 #endif
-			//dpram_phone_power_off();
 			return 0;
 
 		case DPRAM_PHONE_RAMDUMP_ON:
