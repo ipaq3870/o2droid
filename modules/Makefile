@@ -11,6 +11,7 @@ subdir-y += rotator
 #subdir-y += camera
 subdir-y += dpram
 subdir-y += multipdp
+subdir-y += param
 
 SUBDIRS := $(subdir-y)
 
