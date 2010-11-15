@@ -1,25 +1,14 @@
 /*
  * param.c
  *
- * Parameter read & save driver on param partition.
+ * Parameter read & save driver on param file.
  *
  * COPYRIGHT(C) Samsung Electronics Co.Ltd. 2006-2010 All Right Reserved.
  *
  * Author: Jeonghwan Min <jeonghwan.min@samsung.com>
  *
- * 20080226. Supprot on BML layer.
+ * modified by Sandor to use /efs/param.bin on GT-I8000 instead of BML partition 
  *
- */
-/*
- * On every write, recalculate checksum and update it
- * Check checksum to decide if a param block is broken
- * On write:
- * if (MB is broken)
- *   write new data to MB
- * else {
- *   copy MB to BB
- *   write new data to MB
- * }
  */
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -31,26 +20,16 @@
 #include <linux/sched.h>
 #include <linux/ctype.h>
 #include <linux/vmalloc.h>
+#include <linux/uaccess.h>
 
 #include <mach/hardware.h>
 #include <mach/param.h>
 
-#include "XsrTypes.h"
-#include "BML.h"
-
-#define PARAM_PART_ID           0x2
-#define SECTOR_BITS		9
-
-#define SPP(volume)		(vs[volume].nSctsPerPg)
-#define SPB(volume)		(vs[volume].nSctsPerPg * vs[volume].nPgsPerBlk)
-
-extern BMLVolSpec		*xsr_get_vol_spec(UINT32 volume);
-extern XSRPartI			*xsr_get_part_spec(UINT32 volume);
-
 #define PARAM_LEN		(32 * 2048)
+#define PARAM_FILE		"/efs/param.bin"
 
-#define BLOCK_OFFSET_MAIN	1
-#define BLOCK_OFFSET_BACKUP	2
+struct file             *filp_param;
+mm_segment_t            old_fs;
 
 int is_valid_param(status_t *status)
 {
@@ -58,242 +37,85 @@ int is_valid_param(status_t *status)
 		(status->param_version == PARAM_VERSION);
 }
 
-int write_param_block(unsigned int dev_id, unsigned char *addr, unsigned block_offset)
-{
-	unsigned int i, err;
-	unsigned int first;
-	unsigned int nBytesReturned = 0;
-	unsigned int nPart[2] = {PARAM_PART_ID, BML_PI_ATTR_RW};
-	unsigned char *pbuf, *buf;
-	BMLVolSpec *vs;
-	XSRPartI *pi;
-
-	if (addr == NULL) {
-		printk(KERN_ERR "%s: wrong address\n", __FUNCTION__);
-		return -EINVAL;
-	}
-
-	buf = vmalloc(PARAM_LEN);
-	if (!buf)
-		return -ENOMEM;
-
-	/* get vol info */
-	vs = xsr_get_vol_spec(0);
-
-	/* get part info */
-	pi = xsr_get_part_spec(0);
-
-	for (i = 0 ; i < pi->nNumOfPartEntry ; i++) {
-		if (pi->stPEntry[i].nID == PARAM_PART_ID) {
-			break;
-		}
-	}
-
-	/* start sector */
-	first = (pi->stPEntry[i].n1stVbn + block_offset) * SPB(0);
-
-	err = BML_IOCtl(0, BML_IOCTL_CHANGE_PART_ATTR,
-			(unsigned char *)&nPart, sizeof(unsigned int) * 2, NULL, 0, &nBytesReturned);
-	if (err!= BML_SUCCESS) {
-		printk(KERN_ERR "%s: ioctl error\n", __FUNCTION__);
-		return -EIO;
-	}
-
-	pbuf = buf;
-
-	for (i = 0 ; i < (SPB(0)/2) ; i += SPP(0))	{
-		err = BML_Read(0, first + i, SPP(0), pbuf, NULL, BML_FLAG_SYNC_OP | BML_FLAG_ECC_ON);
-		if (err != BML_SUCCESS)	{
-			printk(KERN_ERR "%s: read page error\n", __FUNCTION__);
-			return -EIO;
-		}
-		pbuf += (SPP(0) << SECTOR_BITS);
-	}
-
-	/* erase block before write */
-	err = BML_EraseBlk(0, first/SPB(0), BML_FLAG_SYNC_OP);
-	if(err != BML_SUCCESS){
-		printk(KERN_ERR "%s: erase block error\n", __FUNCTION__);
-		err = -EIO;
-		goto fail2;
-	}
-
-	pbuf = buf;
-
-	for (i = 0 ; i < (SPB(0)/2) ; i += SPP(0))	{
-		err = BML_Write(0, first + i, SPP(0), pbuf, NULL, BML_FLAG_SYNC_OP | BML_FLAG_ECC_ON);
-		if (err != BML_SUCCESS)	{
-			printk(KERN_ERR "%s: write page error\n", __FUNCTION__);
-			err = -EIO;
-			goto fail2;
-		}
-		pbuf += (SPP(0) << SECTOR_BITS);
-	}
-
-	for (i = (SPB(0)/2) ; i < SPB(0) ; i += SPP(0))	{
-		err = BML_Write(0, first + i, SPP(0), addr, NULL, BML_FLAG_SYNC_OP | BML_FLAG_ECC_ON);
-		if (err != BML_SUCCESS)	{
-			printk(KERN_ERR "%s: write page error\n", __FUNCTION__);
-			err = -EIO;
-			goto fail2;
-		}
-		addr += (SPP(0) << SECTOR_BITS);
-	}
-
-fail2:
-	nPart[1] = BML_PI_ATTR_RO;
-	err = BML_IOCtl(0, BML_IOCTL_CHANGE_PART_ATTR,
-			(unsigned char *)&nPart, sizeof(unsigned int) * 2, NULL, 0, &nBytesReturned);
-	if (err != BML_SUCCESS) {
-		printk(KERN_ERR "%s: ioctl error\n", __FUNCTION__);
-		err = -EIO;
-		goto fail1;
-	}
-
-	vfree(buf);
-	return 0;
-
-fail1:
-	vfree(buf);
-	return err;
-}
-
-int read_param_block(unsigned int dev_id, unsigned char *addr, unsigned block_offset)
-{
-	unsigned int i, err;
-	unsigned int first;
-	BMLVolSpec *vs;
-	XSRPartI *pi;
-
-	if (addr == NULL){
-		printk(KERN_ERR "%s: wrong address\n", __FUNCTION__);
-		return -EINVAL;
-	}
-
-	/* Get vol info */
-	vs = xsr_get_vol_spec(0);
-
-	/* get part info */
-	pi = xsr_get_part_spec(0);
-
-	for (i = 0 ; i < pi->nNumOfPartEntry ; i++) {
-		if (pi->stPEntry[i].nID == PARAM_PART_ID) {
-			break;
-		}
-	}
-
-	/* Start sector */
-	first = (pi->stPEntry[i].n1stVbn + block_offset) * SPB(0);
-
-	for (i = (SPB(0)/2) ; i < SPB(0) ; i += SPP(0))	{
-		err = BML_Read(0, first + i, SPP(0), addr, NULL, BML_FLAG_SYNC_OP | BML_FLAG_ECC_ON);
-		if (err != BML_SUCCESS)	{
-			printk(KERN_ERR "%s: read page error\n", __FUNCTION__);
-			return -EIO;
-		}
-		addr += (SPP(0) << SECTOR_BITS);
-	}
-
-	return 0;
-}
-
 static status_t param_status;
 
 static int load_param_value(void)
 {
 	unsigned char *addr = NULL;
-	unsigned int err = 0, dev_id = 0;
+	unsigned int ret = 0;
 
 	addr = vmalloc(PARAM_LEN);
 	if (!addr)
 		return -ENOMEM;
 
-	err = BML_Open(dev_id);
-	if (err) {
+        preempt_enable();
+        old_fs = get_fs();
+        set_fs(KERNEL_DS);
+        filp_param = filp_open(PARAM_FILE, O_RDONLY, 0);
+        if (IS_ERR(filp_param)) {
 		printk(KERN_ERR "%s: open error\n", __FUNCTION__);
+		ret = -1;
 		goto fail;
 	}
 
-	err = read_param_block(dev_id, addr, BLOCK_OFFSET_MAIN);
-	if (err) {
+	ret = filp_param->f_op->read(filp_param, addr, PARAM_LEN, &filp_param->f_pos);
+
+	if (ret < 1) {
 		printk(KERN_ERR "%s: read param error\n", __FUNCTION__);
+		ret = -1;
+        	filp_close(filp_param, NULL);
 		goto fail;
 	}
 
 	if (is_valid_param((status_t *)addr)) {
 		memcpy(&param_status, addr, sizeof(status_t));
 	}
-	else {
 
-		printk(KERN_ERR "%s: no param info in first param block\n", __FUNCTION__);
-
-		err = read_param_block(dev_id, addr, BLOCK_OFFSET_BACKUP);
-		if (err) {
-			printk(KERN_ERR "%s: read backup param error\n", __FUNCTION__);
-			goto fail;
-		}
-
-		if (is_valid_param((status_t *)addr)) {
-			memcpy(&param_status, addr, sizeof(status_t));
-		}
-		else {
-			printk(KERN_ERR "%s: no param info in backup param block\n", __FUNCTION__);
-			err = -1;
-		}
-	}
-
+        filp_close(filp_param, NULL);
 fail:
 	vfree(addr);
-	BML_Close(dev_id);
+        set_fs(old_fs);
+        preempt_disable();
 
-	return err;
+	return ret;
 }
 
 int save_param_value(void)
 {
-	unsigned int err = 0, dev_id = 0;
+	unsigned int err = 0;
 	unsigned char *addr = NULL;
 
 	addr = vmalloc(PARAM_LEN);
 	if (!addr)
 		return -ENOMEM;
 
-	err = BML_Open(dev_id);
-	if (err) {
+        preempt_enable();
+        old_fs = get_fs();
+        set_fs(KERNEL_DS);
+        filp_param = filp_open(PARAM_FILE, O_CREAT|O_WRONLY, 0600);
+        if (IS_ERR(filp_param)) {
 		printk(KERN_ERR "%s: open error\n", __FUNCTION__);
+		err = -1;
 		goto fail;
 	}
-
-	// if MAIN is not broken, copy MAIN to BACKUP
-	err = read_param_block(dev_id, addr, BLOCK_OFFSET_MAIN);
-	if (err) {
-		printk(KERN_ERR "%s: read param error\n", __FUNCTION__);
-		goto fail;
-	}
-
-	if (is_valid_param((status_t *)addr)) {
-		err = write_param_block(dev_id, addr, BLOCK_OFFSET_BACKUP);
-		if (err) {
-			printk(KERN_ERR "%s: write backup param error\n", __FUNCTION__);
-			goto fail;
-		}
-	} else
-		printk(KERN_ERR "%s: main block is invalid, not backing up.\n", __FUNCTION__);
 
 
 	// update MAIN
 	memset(addr, 0, PARAM_LEN);
 	memcpy(addr, &param_status, sizeof(status_t));
 
-	err = write_param_block(dev_id, addr, BLOCK_OFFSET_MAIN);
-	if (err) {
-		printk(KERN_ERR "%s: write param error\n", __FUNCTION__);
-		goto fail;
-	}
+        err= filp_param->f_op->write(filp_param, addr, PARAM_LEN, &filp_param->f_pos);
 
+        if(err < 1) {
+		printk(KERN_ERR "%s: write param error\n", __FUNCTION__);
+		err = -1;
+	} 
+
+        filp_close(filp_param, NULL);
 fail:
 	vfree(addr);
-	BML_Close(dev_id);
+        set_fs(old_fs);
+        preempt_disable();
 
 	return err;
 }
@@ -348,6 +170,7 @@ static int param_init(void)
 	int ret;
 
 	ret = load_param_value();
+
 	if (ret < 0) {
 		printk(KERN_ERR "%s -> relocated to default value!\n", __FUNCTION__);
 
@@ -377,14 +200,6 @@ static int param_init(void)
 		param_status.param_list[9].value = NATION_SEL;
 		param_status.param_list[10].ident = __SET_DEFAULT_PARAM;
 		param_status.param_list[10].value = SET_DEFAULT_PARAM;
-#ifdef CONFIG_MACH_CYGNUS
-		param_status.param_list[11].ident = __TSP_FACTORY_CAL_DONE;
-		param_status.param_list[11].value = SET_TSP_FACTORY_CAL;
-#endif
-#ifdef CONFIG_MACH_SATURN
-		param_status.param_list[12].ident = __AUTO_RAMDUMP_MODE;
-		param_status.param_list[12].value = AUTO_RAMDUMP_MODE;
-#endif
 		param_status.param_str_list[0].ident = __VERSION;
 		strlcpy(param_status.param_str_list[0].value,
 			VERSION_LINE, PARAM_STRING_SIZE);
@@ -392,12 +207,6 @@ static int param_init(void)
 		strlcpy(param_status.param_str_list[1].value,
 			COMMAND_LINE, PARAM_STRING_SIZE);
 
-#ifdef CONFIG_MACH_CYGNUS
-		// For Store Cygnus TSP Factory Cal Data
-		param_status.param_str_list[2].ident = __TSP_FACTORY_CAL;
-		strlcpy(param_status.param_str_list[2].value,
-			FACTORY_TSP_CAL, PARAM_STRING_SIZE);
-#endif
 	}
 
 	sec_set_param_value = set_param_value;
