@@ -941,19 +941,16 @@ void s3c_config_wakeup_source(void)
 	 */
 	eint0pend_val= __raw_readl(S3C64XX_EINT0PEND);
 	eint0pend_val |= (0x1 << 25) | (0x1 << 22) | (0x1 << 19) |
-		(0x1 << 17) |(0x1 << 11) | (0x1 << 10) | (0x1 << 9)| (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
+		(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9)| (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
 	__raw_writel(eint0pend_val, S3C64XX_EINT0PEND);
 
-	eint0pend_val = (0x1 << 25) | (0x1 << 22) | (0x1 << 19) |
-		(0x1 << 17)|(0x1 << 11) | (0x1 << 10) | (0x1 << 9)| (0x1 << 6) |(0x1 << 5) | (0x1 << 1) | 0x1;
+//	eint0pend_val = (0x1 << 25) | (0x1 << 22) | (0x1 << 19) |
+//		(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9)| (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
 	__raw_writel(~eint0pend_val, S3C64XX_EINT0MASK);
 
-	__raw_writel((0x0FFFFFFF & ~eint0pend_val), S3C_EINT_MASK);	
+	__raw_writel((0x0FFFFFFF & ~eint0pend_val), S3C_EINT_MASK);
 
-	/* Alarm Wakeup Enable */
-	__raw_writel((__raw_readl(S3C_PWR_CFG) & ~(0x1 << 10)), S3C_PWR_CFG);
+	/* Alarm Wakeup Enable */ /* key & msm wakeup ??*/
+	__raw_writel((__raw_readl(S3C_PWR_CFG) & ~((0x1 << 10)/*|(1<<8)|(1<<9)*/)) , S3C_PWR_CFG);
 }
 EXPORT_SYMBOL(s3c_config_wakeup_source);
-
-
-

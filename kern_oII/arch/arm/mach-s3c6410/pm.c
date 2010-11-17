@@ -53,7 +53,6 @@ void s3c6410_cpu_suspend(void)
 	 * issue a write-buffer drain just in case */
 
 	tmp = 0;
-
 	asm("b 1f\n\t"
 	    ".align 5\n\t"
 	    "1:\n\t"
@@ -68,7 +67,6 @@ void s3c6410_cpu_suspend(void)
 
 static void s3c6410_pm_prepare(void)
 {
-
 }
 
 static int s3c6410_pm_add(struct sys_device *sysdev)

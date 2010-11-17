@@ -860,11 +860,12 @@ void (*pm_cpu_sleep)(void);
  * central control for sleep/resume process
 */
 
-extern unsigned int extra_eint0pend = 0x0;
+//extern unsigned int extra_eint0pend = 0x0;
 
 //#define WIN_RET_ADDR 0x50008000
 #define WIN_RET_ADDR 0x50300000
-extern unsigned int s3c6410_windows_code[4];
+extern unsigned long s3c6410_windows_code[4];
+extern unsigned long windows_off_res;
 
 static int s3c6410_pm_enter(suspend_state_t state)
 {
@@ -873,7 +874,8 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	unsigned int tmp;
 	unsigned int wakeup_stat = 0x0;
 	unsigned int eint0pend = 0x0;
-	unsigned int s3c_rescode_save[4];
+	unsigned long s3c_rescode_save[4];
+	unsigned int saved_normal_cfg;
 
 	// ensure the debug is initialised (if enabled)
 
@@ -910,12 +912,13 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_pm_do_save(sromc_save, ARRAY_SIZE(sromc_save));
 	s3c6410_pm_do_save(onenand_save, ARRAY_SIZE(onenand_save));
 
-	// ensure INF_REG0  has the resume address
+	// ensure INF_REG0  has the resume address. INFORM0-3 lost in hard reset!
 	__raw_writel(virt_to_phys(s3c6410_cpu_resume), S3C_INFORM0);
+	windows_off_res=virt_to_phys(s3c6410_cpu_resume);	// store the return address for eboot
 // The bootloader seems to examine the lower 4 bits of INFORM3, and
 // in the case the value is 0xf jump to fix address 0x50008000, otherwise
 // jump to 0x50300000 !!!!!!!!!!!!!!!
-	__raw_writel(0x0f, S3C_INFORM3);
+	__raw_writel(0x01, S3C_INFORM3);
 
 	// set the irq configuration for wake
 	s3c6410_pm_configure_extint();
@@ -927,23 +930,27 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	// flush cache back to ram
 
 	flush_cache_all();
+// Appnote: must do here?
+	__raw_writel(0x1, S3C_OSC_STABLE);	//1=2^9 cycle
+	__raw_writel(0x3, S3C_PWR_STABLE);	//2=2^^13 cycle
 
 	s3c6410_pm_check_store();
 
 	s3c_config_sleep_gpio();	
+
 //phj: Change the bootloader handled memory area content now:
-	s3c_rescode_save[0] = __raw_readl(WIN_RET_ADDR);
-	s3c_rescode_save[1] = __raw_readl(WIN_RET_ADDR+4);
-	s3c_rescode_save[2] =  __raw_readl(WIN_RET_ADDR+8);
-	s3c_rescode_save[3] =  __raw_readl(WIN_RET_ADDR+12);
-	__raw_writel(s3c6410_windows_code[0],WIN_RET_ADDR);
-	__raw_writel(s3c6410_windows_code[1],WIN_RET_ADDR+4);
-	__raw_writel(s3c6410_windows_code[2],WIN_RET_ADDR+8);
-	__raw_writel(s3c6410_windows_code[3],WIN_RET_ADDR+12);
-	
+	s3c_rescode_save[0] = __raw_readl(phys_to_virt(WIN_RET_ADDR));
+	s3c_rescode_save[1] = __raw_readl(phys_to_virt(WIN_RET_ADDR+4));
+	s3c_rescode_save[2] = __raw_readl(phys_to_virt(WIN_RET_ADDR+8));
+	s3c_rescode_save[3] = __raw_readl(phys_to_virt(WIN_RET_ADDR+12));
+	__raw_writel(s3c6410_windows_code[0],phys_to_virt(WIN_RET_ADDR));
+	__raw_writel(s3c6410_windows_code[1],phys_to_virt(WIN_RET_ADDR+4));
+	__raw_writel(s3c6410_windows_code[2],phys_to_virt(WIN_RET_ADDR+8));
+	__raw_writel(s3c6410_windows_code[3],phys_to_virt(WIN_RET_ADDR+12));
+
 	tmp = __raw_readl(S3C64XX_SPCONSLP);
 	tmp &= ~(0x3 << 12);
-// Reset Out: set it output, value 0!
+// Reset Out: set it output, value 1! ????
 	__raw_writel(tmp | (0x1 << 12), S3C64XX_SPCONSLP);
 
 	// send the cpu to sleep...
@@ -954,33 +961,39 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	__raw_writel(0xffffffff, S3C64XX_VIC1SOFTINTCLEAR);
 
 	// Unmask clock gating and block power turn on
+//MFC TRUST_IRC IROM DDR1 DMC1 (SROM,OneNAND,NFCON.CFCON)
+// AppNote said: bit 22,21,0 must be 1!
 	__raw_writel(0x43E00041, S3C_HCLK_GATE); 
+// GPIO
 	__raw_writel(0xF2040000, S3C_PCLK_GATE);
+// everything is OFF
 	__raw_writel(0x80000011, S3C_SCLK_GATE);
 	__raw_writel(0x00000000, S3C_MEM0_CLK_GATE);
+//AppNote said: the TOP,V,I,P F,S,ETM domain must be ON! ( G not??)
+	saved_normal_cfg=__raw_readl(S3C_NORMAL_CFG)&0x1f600;	//ETM S,F,P,I G,V domains
+	__raw_writel(__raw_readl(S3C_NORMAL_CFG)|0x1f600,S3C_NORMAL_CFG);
+	s3c_wait_blk_pwr_ready(0x7f);		// wait until on 
 
-	__raw_writel(0x1, S3C_OSC_STABLE);
-	__raw_writel(0x3, S3C_PWR_STABLE);
+//ApppNote: do it here! Clear WAKEUP_STAT register for next wakeup -jc.lee
+	// If this register do not be cleared, Wakeup will be failed
+	__raw_writel(__raw_readl(S3C_WAKEUP_STAT), S3C_WAKEUP_STAT);
+//Apnnote: here!
+	tmp = __raw_readl(S3C_SLEEP_CFG);
+	tmp &= ~(0x61<<0);
+//just bit0 valid, controls the OSC_EN, so now switch it off
+	__raw_writel(tmp, S3C_SLEEP_CFG);
 
 	// Set WFI instruction to SLEEP mode
-
 	tmp = __raw_readl(S3C_PWR_CFG);
-	tmp &= ~(0x3<<5);
+//	tmp &= ~(0x3<<5);
 // 00-normal 01-idle 10-stop 11-sleep
 //	tmp |= (2<<5);
 	tmp |= (0x3<<5);
 	__raw_writel(tmp, S3C_PWR_CFG);
 
-	tmp = __raw_readl(S3C_SLEEP_CFG);
-	tmp &= ~(0x61<<0);
-//just bit0 valid, controls the OSC_EN
-	__raw_writel(tmp, S3C_SLEEP_CFG);
-
+// sleep mode controlled by bit0, not automatically by SLEEP mode ???
 	__raw_writel(0x2, S3C64XX_SLPEN);
 
-	// Clear WAKEUP_STAT register for next wakeup -jc.lee
-	// If this register do not be cleared, Wakeup will be failed
-	__raw_writel(__raw_readl(S3C_WAKEUP_STAT), S3C_WAKEUP_STAT);
 
 	// s3c6410_cpu_save will also act as our return point from when
 	// we resume as it saves its own register state, so use the return
@@ -997,10 +1010,12 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	__raw_writel(s3c_eint_mask_val, S3C_EINT_MASK);
 
 //phj: restore the bootloader handled memory area content now:
-	__raw_writel(s3c_rescode_save[0],WIN_RET_ADDR);
-	__raw_writel(s3c_rescode_save[1],WIN_RET_ADDR+4);
-	__raw_writel(s3c_rescode_save[2],WIN_RET_ADDR+8);
-	__raw_writel(s3c_rescode_save[3],WIN_RET_ADDR+12);
+	__raw_writel(s3c_rescode_save[0],phys_to_virt(WIN_RET_ADDR));
+	__raw_writel(s3c_rescode_save[1],phys_to_virt(WIN_RET_ADDR+4));
+	__raw_writel(s3c_rescode_save[2],phys_to_virt(WIN_RET_ADDR+8));
+	__raw_writel(s3c_rescode_save[3],phys_to_virt(WIN_RET_ADDR+12));
+//phj: restore the saved domain power states
+	__raw_writel(__raw_readl(S3C_NORMAL_CFG)|saved_normal_cfg,S3C_NORMAL_CFG);
 
 	// restore the system state
 	s3c6410_pm_do_restore_core(core_save, ARRAY_SIZE(core_save));
@@ -1020,7 +1035,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 
 	s3c6410_pm_check_restore();
 
-	extra_eint0pend = eint0pend;
+//	extra_eint0pend = eint0pend;
 
 	pr_info("%s: WAKEUP_STAT(0x%08x), EINT0PEND(0x%08x)\n",
 			__func__, wakeup_stat, eint0pend);

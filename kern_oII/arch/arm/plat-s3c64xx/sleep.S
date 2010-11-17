@@ -25,15 +25,6 @@
 #define LL_UART (S3C_PA_UART + (0x400 * CONFIG_S3C_LOWLEVEL_UART_PORT))
 
 	.text
-/* windows bootloader memory jump */
-	.global	s3c6410_windows_code
-s3c6410_windows_code:
-	ldr	r0, s3_inform0
-	ldr	r2, [r0]
-	mov	pc, r2
-s3_inform0:
-	.word	0x7e00fa00
-	
 	/* s3c_cpu_save
 	 *
 	 * Save enough processor state to allow the restart of the pm.c
@@ -42,8 +33,8 @@ s3_inform0:
 	 * entry:
 	 *	r0 = pointer to the save block
 	 * exit:
-	 *	r0 = exit code: 1 => stored data
-	 *			0 => resumed from sleep
+	 *	r0 = exit code: 0 => stored data
+	 *			1 => resumed from sleep
 	*/
 
 ENTRY(s3c6410_cpu_save)
@@ -84,8 +75,22 @@ s3c6410_sleep_save_phys:
 	 * bootloader can check for a resumeable image. */
 
 	.word	0x2bedf00d
+/* windows bootloader memory jump */
+	.global	s3c6410_windows_code
+s3c6410_windows_code:
+//	ldr	r0, s3_inform0
+//	ldr	r2, [r0]
+//	mov	pc, r2
+//s3_inform0:
+//	.word	0x7e00fa00
 
-	/* s3c_cpu_reusme
+	ldr	r2,windows_off_res
+	mov	pc,r2
+	nop
+	.global windows_off_res
+windows_off_res:
+	.word	s3c6410_cpu_resume
+	/* s3c_cpu_resume
 	 *
 	 * This is the entry point, stored by whatever method the bootloader
 	 * requires to get the kernel runnign again. This code expects to be
