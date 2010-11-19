@@ -65,7 +65,7 @@ typedef struct pdp_arg {
 #ifdef MULTIPDP_ERROR
 #define EPRINTK(X...) \
 		do { \
-			printk("%s(): ", __FUNCTION__); \
+			printk("[MULTIPDP] [%s] : ", __FUNCTION__); \
 			printk(X); \
 		} while (0)
 #else
@@ -78,7 +78,7 @@ typedef struct pdp_arg {
 #define DPRINTK(N, X...) \
 		do { \
 			if (N <= CONFIG_MULTIPDP_DEBUG) { \
-				printk("%s(): ", __FUNCTION__); \
+				printk("[MULTIPDP] [%s] : ", __FUNCTION__); \
 				printk(X); \
 			} \
 		} while (0)
@@ -152,7 +152,7 @@ struct pdp_info {
 
 		/* Virtual serial interface */
 		struct {
-			struct tty_driver	tty_driver[4];	// CSD, ROUTER, GPS, XGPS
+			struct tty_driver	tty_driver[5];	// CSD, ROUTER, GPS, XGPS, SMD
 			int			refcount;
 			struct tty_struct	*tty_table[1];
 			struct ktermios		*termios[1];
@@ -194,8 +194,7 @@ int fp_vsCSD = 0;
 int fp_vsGPS = 0;
 int fp_vsEXGPS = 0;
 int fp_vsEFS = 0;
-int vnet_start_xmit_flag = 0;
-int vnet_start_xmit_count = 0;
+int fp_vsSMD = 0;
 /*
  * Function declarations
  */
@@ -214,6 +213,7 @@ static struct tty_driver* get_tty_driver_by_id(struct pdp_info *dev)
 		case 8:		index = 1;	break;
 		case 5:		index = 2;	break;
 		case 6:		index = 3;	break;
+		case 25:    index = 4;  break;
 		default:	index = 0;
 	}
 
@@ -229,6 +229,7 @@ static int get_minor_start_index(int id)
 		case 8:		start = 1;	break;
 		case 5:		start = 2;	break;
 		case 6:		start = 3;	break;
+		case 25:    start = 4;  break;
 		default:	start = 0;
 	}
 
@@ -236,6 +237,7 @@ static int get_minor_start_index(int id)
 }
 
 struct wake_lock pdp_wake_lock;
+
 /*
  * DPRAM I/O functions
  */
@@ -436,6 +438,7 @@ static inline int dpram_flush_rx(struct file *filp, size_t count)
 static int dpram_thread(void *data)
 {
 	int ret = 0;
+	unsigned long flag;
 	struct file *filp;
    struct sched_param schedpar;
 
@@ -525,14 +528,12 @@ static int vnet_stop(struct net_device *net)
    DPRINTK(2, "BEGIN\n");
 	netif_stop_queue(net);
 	cancel_work_sync(&dev->vn_dev.xmit_task);
-    if (vnet_start_xmit_flag) { 
-        vnet_start_xmit_flag = 0;
-    }
    DPRINTK(2, "END\n");
 	return 0;
 }
 
 
+int vnet_start_xmit_flag = 0;
 
 static void vnet_defer_xmit(struct work_struct *data)
 {
@@ -618,15 +619,9 @@ static int vnet_start_xmit(struct sk_buff *skb, struct net_device *net)
 	dev->vn_dev.stats.rx_bytes += skb->len;
 #else
    if (vnet_start_xmit_flag != 0) {
-        if (vnet_start_xmit_count > 100000) {
-            vnet_start_xmit_flag = 0;
-            DPRINTK(1, "vnet_start_xmit_count exceed.. clear vnet_start_xmit_flag \n");
-        }
-        EPRINTK("vnet_start_xmit() return -EAGAIN \n");
-        vnet_start_xmit_count++; 
-        return -EAGAIN;
-    }
-    vnet_start_xmit_count = 0;
+       EPRINTK("vnet_start_xmit() return -EAGAIN \n");
+       return -EAGAIN;
+   }
    vnet_start_xmit_flag = 1; 
 	workqueue_data = (unsigned long)skb;
 	PREPARE_WORK(&dev->vn_dev.xmit_task,vnet_defer_xmit);
@@ -780,6 +775,10 @@ static int vs_open(struct tty_struct *tty, struct file *filp)
          fp_vsEFS = 1;
          break; 
 
+      case 25 : 
+         fp_vsSMD = 1;
+         break; 
+
 		default:
 			break;
 	}
@@ -814,7 +813,11 @@ static void vs_close(struct tty_struct *tty, struct file *filp)
       case 8 : 
          fp_vsEFS = 0;
          break;
-         
+
+       case 25 : 
+         fp_vsSMD = 0;
+         break; 
+        
 		default:
 			break;
 	}
@@ -879,7 +882,7 @@ static int vs_read(struct pdp_info *dev, size_t len, int vs_id)
             size = dpram_read(dpram_filp, prx_buf, len);
             DPRINTK(1, "multipdp_thread request read size : %d readed size %d, count : %d\n",len ,size,count);
 
-            if ((dev->id == 1 && !fp_vsCSD) || (dev->id == 5 && !fp_vsGPS) || (dev->id == 8 && !fp_vsEFS)){
+            if ((dev->id == 1 && !fp_vsCSD) || (dev->id == 5 && !fp_vsGPS) || (dev->id == 8 && !fp_vsEFS)|| (dev->id == 25 && !fp_vsSMD)){
                 EPRINTK("vs_read : %s, discard data.\n", dev->vs_dev.tty->name);
             }
             else {
@@ -907,7 +910,7 @@ static int vs_read(struct pdp_info *dev, size_t len, int vs_id)
 				return retval;
 
             if(retval > 0){
-                if((dev->id == 1 && !fp_vsCSD) || (dev->id == 5 && !fp_vsGPS) || (dev->id == 8 && !fp_vsEFS)) {
+                if((dev->id == 1 && !fp_vsCSD) || (dev->id == 5 && !fp_vsGPS) || (dev->id == 8 && !fp_vsEFS)|| (dev->id == 25 && !fp_vsSMD)) {
         			EPRINTK("vs_read : %s, discard data.\n", dev->vs_dev.tty->name);
         		}
         		else {
@@ -1040,7 +1043,7 @@ static inline int pdp_add_dev(struct pdp_info *dev)
 			return slot;
 		}
 	}
-   EPRINTK("pdp_add_dev() Error . There is no space to make %d \n", dev->id);
+   EPRINTK("pdp_add_dev() Error ..%d There is no space to make %d \n", dev->id);
 	return -ENOSPC;
 }
 
@@ -1113,10 +1116,11 @@ static int pdp_mux(struct pdp_info *dev, const void *data, size_t len   )
 		DPRINTK(1, "hdr->id: %d, hdr->len: %d\n", hdr->id, hdr->len);
 
 		wake_lock_timeout(&pdp_wake_lock, 12*HZ/2);
+
 		ret = dpram_write(dpram_filp, tx_buf, hdr->len + 2, 
 				  dev->type == DEV_TYPE_NET ? 1 : 0);
 		if (ret < 0) {
-			// EPRINTK(1, "dpram_write() failed: %d\n", ret);
+			DPRINTK(1, "dpram_write() failed: %d\n", ret);
 			return ret;
 		}
 		buf += nbytes;
@@ -1446,7 +1450,7 @@ static int multipdp_proc_read(char *page, char **start, off_t off,
 
 	mutex_lock(&pdp_lock);
 
-	p += sprintf(p, "modified multipdp driver on 20070205\n");
+	p += sprintf(p, "modified multipdp driver on 20070205");
 	for (len = 0; len < MAX_PDP_CONTEXT; len++) {
 		struct pdp_info *dev = pdp_table[len];
 		if (!dev) continue;
@@ -1480,12 +1484,14 @@ static int __init multipdp_init(void)
 {
 	int ret;
 
-	wake_lock_init(&pdp_wake_lock, WAKE_LOCK_SUSPEND, "MULTI_PDP");	
-	pdp_arg_t pdp_args[4] = {
+	wake_lock_init(&pdp_wake_lock, WAKE_LOCK_SUSPEND, "MULTI_PDP");
+
+	pdp_arg_t pdp_args[5] = {
 		{ .id = 1, .ifname = "ttyCSD" },
 		{ .id = 8, .ifname = "ttyEFS" },
 		{ .id = 5, .ifname = "ttyGPS" },
 		{ .id = 6, .ifname = "ttyXTRA" },
+		{ .id = 25, .ifname = "ttySMD" },
 	};
 
 
@@ -1507,7 +1513,7 @@ static int __init multipdp_init(void)
 	}
 
 	/* create serial device for Circuit Switched Data */
-	for (ret = 0; ret < 4; ret++) {
+	for (ret = 0; ret < 5; ret++) {
 		if (pdp_activate(&pdp_args[ret], DEV_TYPE_SERIAL, DEV_FLAG_STICKY) < 0) {
 			EPRINTK("failed to create a serial device for %s\n", pdp_args[ret].ifname);
 		}
