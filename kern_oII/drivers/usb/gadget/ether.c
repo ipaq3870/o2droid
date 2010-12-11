@@ -147,8 +147,10 @@ static inline bool has_rndis(void)
  * used with CDC Ethernet, Linux 2.4 hosts will need updates to choose
  * the non-RNDIS configuration.
  */
-#define RNDIS_VENDOR_NUM	0x0525	/* NetChip */
-#define RNDIS_PRODUCT_NUM	0xa4a2	/* Ethernet/RNDIS Gadget */
+//#define RNDIS_VENDOR_NUM	0x0525	/* NetChip */
+//#define RNDIS_PRODUCT_NUM	0xa4a2	/* Ethernet/RNDIS Gadget */
+#define RNDIS_VENDOR_NUM	0x04e8	/* NetChip */
+#define RNDIS_PRODUCT_NUM	0x6785	/* Ethernet/RNDIS Gadget */
 
 /*-------------------------------------------------------------------------*/
 

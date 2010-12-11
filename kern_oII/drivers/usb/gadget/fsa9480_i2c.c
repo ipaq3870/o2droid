@@ -18,17 +18,6 @@ extern struct device *switch_dev;
 //extern ftm_sleep;
 unsigned char ftm_sleep = 1;
 
-#define GPIO_USB_SEL		GPIO_CP_USB_ON
-#define GPIO_USB_SEL_AF		GPIO_CP_USB_ON_AF
-
-#define GPIO_I2C0_SCL		GPIO_AP_SCL
-#define GPIO_I2C0_SCL_AF	GPIO_AP_SCL_AF
-
-#define GPIO_I2C0_SDA		GPIO_AP_SDA
-#define GPIO_I2C0_SDA_AF	GPIO_AP_SDA_AF
-
-#define GPIO_JACK_INT_N		GPIO_INTB
-#define GPIO_JACK_INT_N_AF	GPIO_INTB_AF
 
 #define FSA9480_UART 	1
 #define FSA9480_USB 	2
@@ -85,7 +74,7 @@ void get_usb_serial(char *usb_serial_number)
 
 	serial_number = (system_serial_high << 16) + (system_serial_low >> 16);
 
-	sprintf(temp_serial_number,"6500%08x",serial_number);
+	sprintf(temp_serial_number,"8000%08x",serial_number);
 	strcpy(usb_serial_number,temp_serial_number);
 }
 

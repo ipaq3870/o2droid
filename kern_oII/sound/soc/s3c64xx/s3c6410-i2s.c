@@ -30,6 +30,7 @@
 #include <plat/s3c6410-dma.h>
 #endif
 
+#include <mach/dma.h>
 #include <plat/dma.h>
 
 #include "s3c-pcm.h"

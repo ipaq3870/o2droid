@@ -58,8 +58,8 @@ enum dma_ch {
 	DMACH_SPI0_OUT,
 	DMACH_SPI1_IN,
 	DMACH_SPI1_OUT,
-	DMACH_SPI2_IN,
-	DMACH_SPI2_OUT,
+//	DMACH_SPI2_IN,
+//	DMACH_SPI2_OUT,
 	DMACH_AC97_PCM_OUT,
 	DMACH_AC97_PCM_IN,
 	DMACH_AC97_MIC_IN,
@@ -308,7 +308,7 @@ struct s3c_sg_list {
  * request a dma channel exclusivley
 */
 
-extern int s3c2410_dma_request(dmach_t channel,//unsigned int channel,
+extern int s3c2410_dma_request(unsigned int channel,
 				struct s3c2410_dma_client *, void *dev);
 
 
@@ -334,7 +334,7 @@ extern int s3c2410_dma_setflags(unsigned int channel,
  * free the dma channel (will also abort any outstanding operations)
 */
 
-extern int s3c2410_dma_free(dmach_t channel, struct s3c2410_dma_client *); //OLD unsigned int channel,
+extern int s3c2410_dma_free(unsigned int channel, struct s3c2410_dma_client *);
 
 
 /* s3c2410_dma_enqueue
@@ -355,15 +355,14 @@ extern int s3c2410_dma_enqueue_sg(unsigned int channel, void *id,
  * configure the dma channel
 */
 
-extern int s3c2410_dma_config(unsigned int channel, int xferunit, int dcon);
+extern int s3c2410_dma_config(unsigned int channel, int xferunitint);
 
 /* s3c2410_dma_devconfig
  *
  * configure the device we're talking to
 */
 
-extern int s3c2410_dma_devconfig(int channel, enum s3c2410_dmasrc source,
-				 int hwcfg, unsigned long devaddr);
+extern int s3c2410_dma_devconfig(int channel, enum s3c2410_dmasrc source, unsigned long devaddr);
 
 /* s3c2410_dma_getposition
  *

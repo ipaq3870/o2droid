@@ -35,6 +35,7 @@
 #include <asm/dma.h>
 #include <mach/map.h>
 #include <mach/hardware.h>
+#include <mach/dma.h>
 #include <plat/dma.h>
 
 #include "s3c_mem.h"

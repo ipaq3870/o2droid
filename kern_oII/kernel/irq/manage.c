@@ -934,14 +934,14 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
 	 * the _first_ irqaction (sigh).  That can cause oopsing, but
 	 * the behavior is classified as "will not fix" so we need to
 	 * start nudging drivers away from using that idiom.
-	 */
+	 //
 	if ((irqflags & (IRQF_SHARED|IRQF_DISABLED)) ==
 					(IRQF_SHARED|IRQF_DISABLED)) {
 		pr_warning(
 		  "IRQ %d/%s: IRQF_DISABLED is not guaranteed on shared IRQs\n",
 			irq, devname);
 	}
-
+    */
 #ifdef CONFIG_LOCKDEP
 	/*
 	 * Lockdep wants atomic interrupt handlers:

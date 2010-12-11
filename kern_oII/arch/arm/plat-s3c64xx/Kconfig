@@ -142,3 +142,10 @@ config S3C64XX_DOMAIN_GATING_DEBUG
 	default n
 	help
 	  s3c64xx domain gating debug message enable / disable
+
+config SPI_S3C6410
+	bool "Support S3C64XX SPI interface"
+	depends on SPI
+	default y
+	help
+	  s3c64xx SPI interface handling enable

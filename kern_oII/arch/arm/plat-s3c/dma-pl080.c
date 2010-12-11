@@ -32,10 +32,9 @@
 #include <asm/dma.h>
 
 #include <plat/regs-clock.h>
+#include <mach/dma.h>
+#include <plat/dma.h>
 #include <mach/map.h>
-//#include <plat/dma.h>
-#include <mach/s3c-dma.h>
-#include <plat/s3c-dma.h>
 
 /* io map for dma */
 static void __iomem 		*dma_base;
@@ -738,13 +737,13 @@ static irqreturn_t s3c_dma_irq(int irq, void *devpw)
 					s3c2410_dma_ctrl(chan->index | DMACH_LOW_LEVEL, S3C2410_DMAOP_STOP);
 				}
 			}
-			s3c_clear_interrupts(chan->dma_con->number, chan->number);
-
 		}
 
 next_channel:
 		tmp >>= 1;
 	}
+	
+	s3c_clear_interrupts(chan->dma_con->number, chan->number);
 	
 	return IRQ_HANDLED;
 }
@@ -789,7 +788,7 @@ int s3c2410_dma_request(unsigned int channel,
 		chan->irq_claimed = 1;
 		local_irq_restore(flags);
 
-		err = request_irq(chan->irq, s3c_dma_irq, IRQF_SHARED ,
+		err = request_irq(chan->irq, s3c_dma_irq, IRQF_DISABLED|IRQF_SHARED,
 				  client->name, (void *) chan->dma_con);
 
 		local_irq_save(flags);
@@ -906,7 +905,9 @@ static int s3c_dma_dostop(struct s3c2410_dma_chan *chan)
 
 	local_irq_save(flags);
 
-	s3c_dma_flush_fifo(chan);
+    //Commenting out this function call(as its causing freeze) and even without this it adheres to  
+    //ARM Primecell 080's disabling a DMA channel and losing data in the FIFO method 
+	//s3c_dma_flush_fifo(chan);
 	
 	s3c_dma_call_op(chan, S3C2410_DMAOP_STOP);
 
@@ -1056,10 +1057,9 @@ EXPORT_SYMBOL(s3c2410_dma_ctrl);
  * xfersize:     size of unit in bytes (1,2,4)
  * dcon:         base value of the DCONx register
  */
-int s3c2410_dma_config(dmach_t channel,
-		       int xferunit,
-		       int dcon)
+int s3c2410_dma_config(dmach_t channel, int xferunit)
 {
+	int dcon = 0;
 	struct s3c2410_dma_chan *chan = lookup_dma_channel(channel);
 
 	pr_debug("%s: chan=%d, xfer_unit=%d, dcon=%08x\n",
@@ -1177,7 +1177,6 @@ EXPORT_SYMBOL(s3c2410_dma_set_buffdone_fn);
 
 int s3c2410_dma_devconfig(int channel,
 			  enum s3c2410_dmasrc source,
-			  int hwcfg,
 			  unsigned long devaddr)
 {
 	unsigned long tmp;

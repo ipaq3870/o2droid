@@ -303,6 +303,7 @@ struct clk clk_dout_mpll = {
 
 static struct clk *clkset_spi_mmc_list[] = {
 	&clk_mout_epll.clk,
+	&clk_mout_epll.clk,
 	&clk_dout_mpll,
 	&clk_fin_epll,
 	&clk_27m,

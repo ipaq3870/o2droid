@@ -34,6 +34,7 @@
 #include <asm/dma.h>
 #include <asm/io.h>
 #include <mach/hardware.h>
+#include <mach/dma.h>
 #include <plat/dma.h>
 #include <mach/audio.h>
 
@@ -257,18 +258,18 @@ static int s3c24xx_pcm_hw_params(struct snd_pcm_substream *substream,
 #else
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		s3c2410_dma_devconfig(prtd->params->channel,
-				S3C2410_DMASRC_MEM, 0,
+				S3C2410_DMASRC_MEM,
 				prtd->params->dma_addr);
 
 		s3c2410_dma_config(prtd->params->channel,
-				prtd->params->dma_size, 0);
+				prtd->params->dma_size);
 	} else {
 		s3c2410_dma_devconfig(prtd->params->channel,
-				S3C2410_DMASRC_HW, 0,
+				S3C2410_DMASRC_HW,
 				prtd->params->dma_addr);		
 
 		s3c2410_dma_config(prtd->params->channel,
-				prtd->params->dma_size, 0);
+				prtd->params->dma_size);
 	}
 #endif
 

@@ -25,7 +25,7 @@
 #include <mach/hardware.h>
 #include <mach/map.h>
 
-#include <plat/regs-spi.h>
+//#include <plat/regs-spi.h>
 #include <plat/devs.h>
 #include <plat/adc.h>
 #include <plat/adcts.h>
@@ -423,6 +423,7 @@ struct platform_device s3c_device_tvenc = {
 
 EXPORT_SYMBOL(s3c_device_tvenc);
 
+#if 0
 /* board infomation for Hall mouse */
 static struct spi_board_info s3c6410_spi_board_info[] = {
 	{
@@ -468,7 +469,7 @@ struct platform_device s3c_device_spi0 = {
 	}
 };
 EXPORT_SYMBOL(s3c_device_spi0);
-
+#endif
 
 /* TV scaler */
 static struct resource s3c_tvscaler_resource[] = {

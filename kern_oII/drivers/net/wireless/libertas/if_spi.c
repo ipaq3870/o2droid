@@ -268,7 +268,7 @@ static int spu_wait_for_u16(struct if_spi_card *card, u16 reg,
 			u16 target_mask, u16 target)
 {
 	int err;
-	unsigned long timeout = jiffies + 5*HZ;
+	unsigned long timeout = jiffies + 15*HZ;
 	while (1) {
 		u16 val;
 		err = spu_read_u16(card, reg, &val);
@@ -296,8 +296,9 @@ static int spu_wait_for_u16(struct if_spi_card *card, u16 reg,
 static int spu_wait_for_u32(struct if_spi_card *card, u32 reg, u32 target)
 {
 	int err, try;
-	for (try = 0; try < 4; ++try) {
-		u32 val = 0;
+	u32 val = 0;
+	for (try = 0; try < 12; ++try) {
+
 		err = spu_read_u32(card, reg, &val);
 		if (err)
 			return err;
@@ -305,6 +306,7 @@ static int spu_wait_for_u32(struct if_spi_card *card, u32 reg, u32 target)
 			return 0;
 		mdelay(100);
 	}
+	lbs_pr_err("%s: timeout wait for %x, last=%x\n",__func__, target, val);
 	return -ETIMEDOUT;
 }
 

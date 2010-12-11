@@ -83,11 +83,11 @@ void s3c6410_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
 
 	end = S3C64XX_GPH(6 + width);
 
-	s3c_gpio_cfgpin(S3C64XX_GPC(5), S3C_GPIO_SFN(3));
-	s3c_gpio_cfgpin(S3C64XX_GPC(4), S3C_GPIO_SFN(3));
+//	s3c_gpio_cfgpin(S3C64XX_GPC(5), S3C_GPIO_SFN(3));
+//	s3c_gpio_cfgpin(S3C64XX_GPC(4), S3C_GPIO_SFN(3));
 
-	s3c_gpio_setpull(S3C64XX_GPC(5), S3C_GPIO_PULL_NONE);
-	s3c_gpio_setpull(S3C64XX_GPC(4), S3C_GPIO_PULL_NONE);
+//	s3c_gpio_setpull(S3C64XX_GPC(5), S3C_GPIO_PULL_NONE);
+//	s3c_gpio_setpull(S3C64XX_GPC(4), S3C_GPIO_PULL_NONE);
 
 	for (gpio = S3C64XX_GPH(6); gpio < end; gpio++) {
 		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
@@ -106,7 +106,7 @@ void s3c6410_setup_sdhci0_cfg_card(struct platform_device *dev,
 	writel(S3C64XX_SDHCI_CONTROL4_DRIVE_9mA, r + S3C64XX_SDHCI_CONTROL4); //orig:2
 
 	ctrl2 = readl(r + S3C_SDHCI_CONTROL2);
-	printk("external sd: %x \n", ctrl2);
+//	printk("external sd: %x \n", ctrl2);
 	ctrl2 &= S3C_SDHCI_CTRL2_SELBASECLK_MASK;
 	ctrl2 |= (S3C64XX_SDHCI_CTRL2_ENSTAASYNCCLR |
 		S3C64XX_SDHCI_CTRL2_ENCMDCNFMSK |
@@ -128,7 +128,7 @@ void s3c6410_setup_sdhci0_cfg_card(struct platform_device *dev,
 	}
 	//printk(KERN_DEBUG"%s:%s[%d]: ios->clock = %d CTRL 2=%08x, 3=%08x\n", __func__,
 	//		dev->name, dev->id, ios->clock, ctrl2, ctrl3);
-	printk("setting up external sd clock: %d \n", ios->clock);
+//	printk("setting up external sd clock: %d \n", ios->clock);
 	writel(ctrl2, r + S3C_SDHCI_CONTROL2);
 	writel(ctrl3, r + S3C_SDHCI_CONTROL3);
 } 
@@ -163,7 +163,7 @@ void s3c6410_setup_sdhci1_cfg_card(struct platform_device *dev,
 	}
 	//printk(KERN_DEBUG"%s:%s[%d]: ios->clock = %d CTRL 2=%08x, 3=%08x\n", __func__,
 	//		dev->name, dev->id, ios->clock, ctrl2, ctrl3);
-	printk("setting up internal sd clock: %d \n", ios->clock);
+//	printk("setting up internal sd clock: %d \n", ios->clock);
 	writel(ctrl2, r + S3C_SDHCI_CONTROL2);
 	writel(ctrl3, r + S3C_SDHCI_CONTROL3);
 }
