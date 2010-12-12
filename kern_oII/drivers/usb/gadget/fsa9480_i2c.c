@@ -18,7 +18,6 @@ extern struct device *switch_dev;
 //extern ftm_sleep;
 unsigned char ftm_sleep = 1;
 
-
 #define FSA9480_UART 	1
 #define FSA9480_USB 	2
 
@@ -81,7 +80,7 @@ void get_usb_serial(char *usb_serial_number)
 
 int available_PM_Set(void)
 {
-	DEBUG_FSA9480("[FSA9480]%s ", __func__);
+	DEBUG_FSA9480("[FSA9480]%s\n", __func__);
 	if(driver_find("max8698", &i2c_bus_type))
 		return 1;
 	return 0;

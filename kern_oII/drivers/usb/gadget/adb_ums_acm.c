@@ -101,8 +101,8 @@ static struct android_dev *_android_dev;
 /* String Table */
 static struct usb_string strings_dev[] = {
 	/* These dummy values should be overridden by platform data */
-	[STRING_MANUFACTURER_IDX].s = "SAMSUNG",
-	[STRING_PRODUCT_IDX].s = "SAMSUNG_Android",
+	[STRING_MANUFACTURER_IDX].s = "Samsung Electronics",
+	[STRING_PRODUCT_IDX].s = "GT-I8000",
 	[STRING_SERIAL_IDX].s = "S3C6410_Android",
 	{  }			/* end of list */
 };
@@ -334,7 +334,7 @@ static void enable_adb(struct android_dev *dev, int enable)
 			dev->cdev->desc.bDeviceProtocol = device_desc.bDeviceProtocol;
 		}
 
-#if 0
+#if 1 //bss
 		/* force reenumeration */
 		if (dev->cdev && dev->cdev->gadget &&
 				//the following means that usb device already enumerated by host
