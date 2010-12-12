@@ -49,7 +49,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/vmalloc.h>
 
-//#include <mach/dma.h>
+#include <mach/dma.h>
 #include <mach/hardware.h>
 #include <mach/map.h>
 #include <plat/dma.h>
