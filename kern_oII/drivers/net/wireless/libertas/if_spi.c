@@ -310,6 +310,7 @@ static int spu_wait_for_u32(struct if_spi_card *card, u32 reg, u32 target)
 			lbs_pr_err("%s: timeout wait for %x, last=%x\n",__func__, target, val);
 			return -ETIMEDOUT;
 		}
+	}
 }
 
 static int spu_set_interrupt_mode(struct if_spi_card *card,
@@ -1077,27 +1078,22 @@ static int __devinit if_spi_probe(struct spi_device *spi)
 	err = spu_get_chip_revision(card, &card->card_id, &card->card_rev);
 	if (err)
 		goto free_card;
-
+    //phj: disable interrupts
+	spu_set_interrupt_mode(card, 1, 0);
+	printk("Marwell 86xx: id:%x rev:%x spi:%d spi_cs:%d\n",
+		card->card_id, card->card_rev,spi->master->bus_num, spi->chip_select);
 	/* Firmware load */
 	err = spu_read_u32(card, IF_SPI_SCRATCH_4_REG, &scratch);
 	if (err)
 		goto free_card;
 	if (scratch == SUCCESSFUL_FW_DOWNLOAD_MAGIC)
-		lbs_deb_spi("Firmware is already loaded for "
-			    "Marvell WLAN 802.11 adapter\n");
+		lbs_deb_spi("Firmware is already loaded\n");
 	else {
 		err = if_spi_calculate_fw_names(card->card_id,
 				card->helper_fw_name, card->main_fw_name);
 		if (err)
 			goto free_card;
 
-		lbs_deb_spi("Initializing FW for Marvell WLAN 802.11 adapter "
-				"(chip_id = 0x%04x, chip_rev = 0x%02x) "
-				"attached to SPI bus_num %d, chip_select %d. "
-				"spi->max_speed_hz=%d\n",
-				card->card_id, card->card_rev,
-				spi->master->bus_num, spi->chip_select,
-				spi->max_speed_hz);
 		err = if_spi_prog_helper_firmware(card);
 		if (err)
 			goto free_card;
