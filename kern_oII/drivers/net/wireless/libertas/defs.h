@@ -207,9 +207,9 @@ static inline void lbs_deb_hex(unsigned int grp, const char *prompt, u8 *buf, in
 #define POW_ADAPT_DEFAULT_P0 13
 #define POW_ADAPT_DEFAULT_P1 15
 #define POW_ADAPT_DEFAULT_P2 18
-#define TPC_DEFAULT_P0 5
-#define TPC_DEFAULT_P1 10
-#define TPC_DEFAULT_P2 13
+#define TPC_DEFAULT_P0 13
+#define TPC_DEFAULT_P1 16
+#define TPC_DEFAULT_P2 20
 
 /** TxPD status */
 

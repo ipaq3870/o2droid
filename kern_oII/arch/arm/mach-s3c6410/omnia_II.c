@@ -232,21 +232,27 @@ static struct platform_device sec_device_headset = {
         },
 };
 
+struct platform_device sec_device_rfkill = {
+		.name = "bt_rfkill",
+			.id = -1,
+};
 
-// Libertas Wlan setup
+struct platform_device sec_device_btsleep = {
+		.name = "bt_sleep",
+			.id = -1,
+};
+
+
+// Libertas SPI Wlan setup
 static int libertas_setup(struct spi_device *spi)
-{
+{ 	unsigned int reg;
+
 	// Setup GPIOs
-	s3c_gpio_cfgpin(GPIO_HOST_WAKE, S3C_GPIO_SFN(GPIO_HOST_WAKE_AF));
-	s3c_gpio_setpull(GPIO_HOST_WAKE_AF, S3C_GPIO_PULL_UP); 
-	set_irq_type(GPIO_HOST_WAKE, IRQ_TYPE_EDGE_FALLING); 
+//	gpio_set_value(GPIO_BT_nRST, GPIO_LEVEL_LOW);
 
-	s3c_gpio_cfgpin(GPIO_BT_EN, S3C_GPIO_SFN(GPIO_BT_EN_AF));
-	s3c_gpio_cfgpin(GPIO_WLAN_nRST, S3C_GPIO_SFN(GPIO_WLAN_nRST_AF));
-	s3c_gpio_cfgpin(GPIO_WLAN_SPI_nCS, S3C_GPIO_SFN(1)); // Output
-
-	s3c_gpio_cfgpin(GPIO_BT_nRST, S3C_GPIO_SFN(GPIO_BT_nRST_AF));
-	gpio_set_value(GPIO_BT_nRST, GPIO_LEVEL_LOW);
+       reg = __raw_readl(S3C64XX_SPCON);
+       reg |= (3 << 18) | (3 << 28);
+       __raw_writel(reg, S3C64XX_SPCON);
 
 	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_HIGH);
 	gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_HIGH); 	
@@ -263,14 +269,16 @@ printk("Sanya: Power on wlan\n");
 
 static int libertas_teardown(struct spi_device *spi)
 {
-	gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_LOW); 	
-	mdelay(10);
+	if (gpio_get_value(GPIO_BT_nRST)==0)
+		gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_LOW);
+
 	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_LOW);
+	
 	return 0;
 }
 
 static struct libertas_spi_platform_data libertas_spi_pdata = {
-        .use_dummy_writes       = 1,
+        .use_dummy_writes       = 0,
 	.setup = libertas_setup,
 	.teardown = libertas_teardown,
 };
@@ -289,8 +297,8 @@ static struct spi_board_info s3c6410_spi_board_info[] = {
 	{
                 .modalias		= "libertas_spi",
                 .mode			= SPI_MODE_0,
-                .max_speed_hz   	= 50000000,
-//                .max_speed_hz		= 32000000,
+//                .max_speed_hz   	= 48000000,
+                .max_speed_hz   	= 24000000,
                 .bus_num		= 1,
 		.irq			= IRQ_EINT(1),
                 .chip_select		= 0,
@@ -303,6 +311,18 @@ static struct spi_board_info s3c6410_spi_board_info[] = {
 #define ARRAY_AND_SIZE(x)        (x), ARRAY_SIZE(x)
 static void __init init_spi(void)
 {
+	s3c_gpio_cfgpin(GPIO_HOST_WAKE, S3C_GPIO_SFN(GPIO_HOST_WAKE_AF));
+	s3c_gpio_setpull(GPIO_HOST_WAKE_AF, S3C_GPIO_PULL_UP); 
+	set_irq_type(GPIO_HOST_WAKE, IRQ_TYPE_EDGE_FALLING); 
+
+	s3c_gpio_cfgpin(GPIO_BT_EN, S3C_GPIO_SFN(GPIO_BT_EN_AF));
+	s3c_gpio_cfgpin(GPIO_BT_nRST, S3C_GPIO_SFN(GPIO_BT_nRST_AF));
+	s3c_gpio_cfgpin(GPIO_WLAN_nRST, S3C_GPIO_SFN(GPIO_WLAN_nRST_AF));
+	s3c_gpio_cfgpin(GPIO_WLAN_SPI_nCS, S3C_GPIO_SFN(1)); // Output
+
+	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_LOW);
+	gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_LOW); 	
+	
 //	s3c64xx_spi_set_info(1, S3C64XX_SPI_SRCCLK_PCLK, 1);
 	s3c64xx_spi_set_info(1, S3C64XX_SPI_SRCCLK_SPIBUS, 1);
 	spi_register_board_info(ARRAY_AND_SIZE(s3c6410_spi_board_info));
@@ -608,6 +628,8 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 	&s3c_device_adcts,
 #endif
 	&sec_device_battery,
+	&sec_device_rfkill,   //BT POWER ON-OFF
+//	&sec_device_btsleep,  //BT SLEEP-AWAKE
 	&sec_device_fuelgauge,
 	&s3c64xx_device_spi1,
 };

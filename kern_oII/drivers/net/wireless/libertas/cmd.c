@@ -75,6 +75,27 @@ static u8 is_command_allowed_in_ps(u16 cmd)
 	return 0;
 }
 
+int lbs_set_antenna(struct lbs_private *priv, int *md, int set) {
+	struct cmd_ds_802_11_rf_antenna cmd;
+	int ret;
+
+	lbs_deb_enter(LBS_DEB_CMD);
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd.action = cpu_to_le16(set?CMD_ACT_SET:CMD_ACT_GET);
+	cmd.hdr.size = cpu_to_le16(sizeof(cmd));
+	cmd.antennamode = set?cpu_to_le16(*md):0;
+
+	ret = lbs_cmd_with_response(priv, CMD_802_11_RF_ANTENNA, &cmd);
+	if (!set) {
+		*md=le16_to_cpu(cmd.antennamode);
+	}
+	//lbs_deb_cmd
+	printk("%s_RF_ANTENNA: %d\n",set?"SET":"GET", cmd.antennamode);
+	lbs_deb_leave(LBS_DEB_CMD);
+	return ret;
+}
+
 /**
  *  @brief Updates the hardware details like MAC address and regulatory region
  *
@@ -109,13 +130,6 @@ int lbs_update_hw_spec(struct lbs_private *priv)
 	 * CF card    firmware 5.0.16p0:   cap 0x00000303
 	 * USB dongle firmware 5.110.17p2: cap 0x00000303
 	 */
-	lbs_pr_info("%pM, fw %u.%u.%up%u, cap 0x%08x\n",
-		cmd.permanentaddr,
-		priv->fwrelease >> 24 & 0xff,
-		priv->fwrelease >> 16 & 0xff,
-		priv->fwrelease >>  8 & 0xff,
-		priv->fwrelease       & 0xff,
-		priv->fwcapinfo);
 	lbs_deb_cmd("GET_HW_SPEC: hardware interface 0x%x, hardware spec 0x%04x\n",
 		    cmd.hwifversion, cmd.version);
 
@@ -152,9 +166,16 @@ int lbs_update_hw_spec(struct lbs_private *priv)
 
 	/* if it's unidentified region code, use the default (USA) */
 	if (i >= MRVDRV_MAX_REGION_CODE) {
-		priv->regioncode = 0x10;
-		lbs_pr_info("unidentified region code; using the default (USA)\n");
+		priv->regioncode = 0x30;
+		lbs_pr_info("unidentified region code; using the default (ETSI)\n");
 	}
+	printk("%pM, fw %u.%u.%up%u, cap 0x%08x ant=%d region:%x\n",
+		cmd.permanentaddr,
+		priv->fwrelease >> 24 & 0xff,
+		priv->fwrelease >> 16 & 0xff,
+		priv->fwrelease >>  8 & 0xff,
+		priv->fwrelease       & 0xff,
+		priv->fwcapinfo,cmd.nr_antenna,priv->regioncode);
 
 	if (priv->current_addr[0] == 0xff)
 		memmove(priv->current_addr, cmd.permanentaddr, ETH_ALEN);

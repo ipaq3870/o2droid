@@ -26,6 +26,8 @@ int __lbs_cmd(struct lbs_private *priv, uint16_t command,
 	      int (*callback)(struct lbs_private *, unsigned long, struct cmd_header *),
 	      unsigned long callback_arg);
 
+int lbs_set_antenna(struct lbs_private *priv, int *md, int set);
+
 int lbs_set_power_adapt_cfg(struct lbs_private *priv, int enable, int8_t p0,
 		int8_t p1, int8_t p2);
 

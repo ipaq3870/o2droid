@@ -1010,7 +1010,15 @@ static int lbs_setup_firmware(struct lbs_private *priv)
 	ret = lbs_update_hw_spec(priv);
 	if (ret)
 		goto done;
-
+	
+	lbs_set_antenna(priv,&ret,0);
+	printk("RF_ANT: %d, set to 3\n",ret);
+	ret=0xffff;
+	lbs_set_antenna(priv,&ret,1);
+	lbs_set_antenna(priv,&ret,0);
+	printk("RF_ANT after: %d\n",ret);
+	
+	
 	/* Read power levels if available */
 	ret = lbs_get_tx_power(priv, &curlevel, &minlevel, &maxlevel);
 	if (ret == 0) {
@@ -1018,7 +1026,7 @@ static int lbs_setup_firmware(struct lbs_private *priv)
 		priv->txpower_min = minlevel;
 		priv->txpower_max = maxlevel;
 	}
-
+printk("txpower:%d min:%d max:%d\n",curlevel,minlevel,maxlevel);
 	lbs_set_mac_control(priv);
 done:
 	lbs_deb_leave_args(LBS_DEB_FW, "ret %d", ret);

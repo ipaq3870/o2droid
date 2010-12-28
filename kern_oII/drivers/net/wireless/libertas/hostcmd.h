@@ -465,6 +465,7 @@ struct cmd_ds_802_11_rf_tx_power {
 } __attribute__ ((packed));
 
 struct cmd_ds_802_11_rf_antenna {
+	struct cmd_header hdr;
 	__le16 action;
 
 	/* Number of antennas or 0xffff(diversity) */
