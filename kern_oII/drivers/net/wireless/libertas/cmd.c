@@ -75,6 +75,7 @@ static u8 is_command_allowed_in_ps(u16 cmd)
 	return 0;
 }
 
+/*
 int lbs_set_antenna(struct lbs_private *priv, int *md, int set) {
 	struct cmd_ds_802_11_rf_antenna cmd;
 	int ret;
@@ -95,6 +96,7 @@ int lbs_set_antenna(struct lbs_private *priv, int *md, int set) {
 	lbs_deb_leave(LBS_DEB_CMD);
 	return ret;
 }
+*/
 
 /**
  *  @brief Updates the hardware details like MAC address and regulatory region
