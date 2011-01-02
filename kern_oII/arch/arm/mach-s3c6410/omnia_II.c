@@ -248,11 +248,9 @@ static int libertas_setup(struct spi_device *spi)
 { 	unsigned int reg;
 
 	// Setup GPIOs
-//	gpio_set_value(GPIO_BT_nRST, GPIO_LEVEL_LOW);
-
-       reg = __raw_readl(S3C64XX_SPCON);
-       reg |= (3 << 18) | (3 << 28);
-       __raw_writel(reg, S3C64XX_SPCON);
+//       reg = __raw_readl(S3C64XX_SPCON);
+//       reg |= (3 << 18) | (3 << 28);
+//       __raw_writel(reg, S3C64XX_SPCON);
 
 	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_HIGH);
 	gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_HIGH); 	
@@ -269,11 +267,10 @@ printk("Sanya: Power on wlan\n");
 
 static int libertas_teardown(struct spi_device *spi)
 {
-	if (gpio_get_value(GPIO_BT_nRST)==0)
+	if (gpio_get_value(GPIO_BT_nRST)==0) {
 		gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_LOW);
-
+	}
 	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_LOW);
-	
 	return 0;
 }
 

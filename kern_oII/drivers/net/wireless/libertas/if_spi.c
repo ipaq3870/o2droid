@@ -268,7 +268,7 @@ static int spu_wait_for_u16(struct if_spi_card *card, u16 reg,
 			u16 target_mask, u16 target)
 {
 	int err;
-	unsigned long timeout = jiffies + 3*HZ;
+	unsigned long timeout = jiffies + 5*HZ;
 	while (1) {
 		u16 val;
 		err = spu_read_u16(card, reg, &val);
@@ -296,21 +296,16 @@ static int spu_wait_for_u16(struct if_spi_card *card, u16 reg,
 static int spu_wait_for_u32(struct if_spi_card *card, u32 reg, u32 target)
 {
 	int err, try;
-	u32 val;
-	unsigned long timeout = jiffies + 3*HZ;
-	while (1) {
-
+	u32 val = 0;
+	for (try = 0; try < 4; ++try) {
 		err = spu_read_u32(card, reg, &val);
 		if (err)
 			return err;
 		if (val == target)
 			return 0;
-		udelay(1000);
-		if (time_after(jiffies, timeout)) {
-			lbs_pr_err("%s: timeout wait for %x, last=%x\n",__func__, target, val);
-			return -ETIMEDOUT;
-		}
+		mdelay(100);
 	}
+	return -ETIMEDOUT;
 }
 
 static int spu_set_interrupt_mode(struct if_spi_card *card,
@@ -395,9 +390,8 @@ static int spu_init(struct if_spi_card *card, int use_dummy_writes)
 
 	/* We have to start up in timed delay mode so that we can safely
 	 * read the Delay Read Register. */
-#if 1
 	card->use_dummy_writes = 0;
-	err = spu_set_bus_mode(card,
+	err = spu_set_bus_mode(card, 
 				IF_SPI_BUS_MODE_SPI_CLOCK_PHASE_RISING |
 				IF_SPI_BUS_MODE_DELAY_METHOD_TIMED |
 				IF_SPI_BUS_MODE_16_BIT_ADDRESS_16_BIT_DATA);
@@ -414,26 +408,14 @@ static int spu_init(struct if_spi_card *card, int use_dummy_writes)
 	/* If dummy clock delay mode has been requested, switch to it now */
 	if (use_dummy_writes) {
 		card->use_dummy_writes = 1;
-		err = spu_set_bus_mode(card,
+		err = spu_set_bus_mode(card, 
 				IF_SPI_BUS_MODE_SPI_CLOCK_PHASE_RISING |
 				IF_SPI_BUS_MODE_DELAY_METHOD_DUMMY_CLOCK |
 				IF_SPI_BUS_MODE_16_BIT_ADDRESS_16_BIT_DATA);
 		if (err)
 			return err;
 	}
-#else
-{
-	u16 md;
-	u32 id;
-	card->use_dummy_writes = 1;
-	card->spu_port_delay = 0xe0;
-	card->spu_reg_delay = 0x60;
-	spu_read_u16(card, IF_SPI_SPU_BUS_MODE_REG, &md);
-	spu_read_u32(card, IF_SPI_DEVICEID_CTRL_REG,&id);
-	spu_read_u32(card, IF_SPI_DELAY_READ_REG, &delay);
-	printk("Windows Mode: %x delay:%x id=%x\n",md,delay,id);
-}
-#endif
+
 	lbs_deb_spi("Initialized SPU unit. "
 		    "spu_port_delay=0x%04lx, spu_reg_delay=0x%04lx\n",
 		    card->spu_port_delay, card->spu_reg_delay);
@@ -881,16 +863,14 @@ static int lbs_spi_thread(void *data)
 			goto err;
 		}
 
-		if (hiStatus & IF_SPI_HIST_CMD_UPLOAD_RDY) {
+		if (hiStatus & IF_SPI_HIST_CMD_UPLOAD_RDY)
 			err = if_spi_c2h_cmd(card);
 			if (err)
 				goto err;
-		}
-		if (hiStatus & IF_SPI_HIST_RX_UPLOAD_RDY) {
+		if (hiStatus & IF_SPI_HIST_RX_UPLOAD_RDY)
 			err = if_spi_c2h_data(card);
 			if (err)
 				goto err;
-		}
 
 		/* workaround: in PS mode, the card does not set the Command
 		 * Download Ready bit, but it sets TX Download Ready. */
@@ -1038,8 +1018,7 @@ static int if_spi_calculate_fw_names(u16 card_id,
 	}
 	if (i == ARRAY_SIZE(chip_id_to_device_name)) {
 		lbs_pr_err("Unsupported chip_id: 0x%02x\n", card_id);
-		i--;
-		//return -EAFNOSUPPORT;
+		return -EAFNOSUPPORT;
 	}
 	snprintf(helper_fw, IF_SPI_FW_NAME_MAX, "libertas/gspi%d_hlp.bin",
 		 chip_id_to_device_name[i].name);
@@ -1094,24 +1073,27 @@ static int __devinit if_spi_probe(struct spi_device *spi)
 	err = spu_get_chip_revision(card, &card->card_id, &card->card_rev);
 	if (err)
 		goto free_card;
-    //phj: disable interrupts
-	spu_set_interrupt_mode(card, 1, 0);
-	spu_write_u16(card, IF_SPI_CARD_INT_CAUSE_REG, IF_SPI_CIC_HOST_EVENT);
-	err = spu_read_u32(card, IF_SPI_SCRATCH_4_REG, &scratch);
-	printk("Marwell 86xx: id:%x rev:%x spi:%d spi_cs:%d FW:%x\n",
-		card->card_id, card->card_rev,spi->master->bus_num, spi->chip_select,scratch);
+
 	/* Firmware load */
-//	err = spu_read_u32(card, IF_SPI_SCRATCH_4_REG, &scratch);
+	err = spu_read_u32(card, IF_SPI_SCRATCH_4_REG, &scratch);
 	if (err)
 		goto free_card;
 	if (scratch == SUCCESSFUL_FW_DOWNLOAD_MAGIC)
-		lbs_deb_spi("Firmware is already loaded\n");
+		lbs_deb_spi("Firmware is already loaded for "
+			    "Marvell WLAN 802.11 adapter\n");
 	else {
 		err = if_spi_calculate_fw_names(card->card_id,
 				card->helper_fw_name, card->main_fw_name);
 		if (err)
 			goto free_card;
 
+		lbs_deb_spi("Initializing FW for Marvell WLAN 802.11 adapter "
+				"(chip_id = 0x%04x, chip_rev = 0x%02x) "
+				"attached to SPI bus_num %d, chip_select %d. "
+				"spi->max_speed_hz=%d\n",
+				card->card_id, card->card_rev,
+				spi->master->bus_num, spi->chip_select,
+				spi->max_speed_hz);
 		err = if_spi_prog_helper_firmware(card);
 		if (err)
 			goto free_card;

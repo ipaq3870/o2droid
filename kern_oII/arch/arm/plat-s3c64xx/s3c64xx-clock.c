@@ -286,8 +286,6 @@ static unsigned long s3c64xx_clk_doutmpll_get_rate(struct clk *clk)
 {
 	unsigned long rate = clk_get_rate(clk->parent);
 
-	printk(KERN_DEBUG "%s: parent is %ld\n", __func__, rate);
-
 	if (__raw_readl(S3C_CLK_DIV0) & S3C6400_CLKDIV0_MPLL_MASK)
 		rate /= 2;
 

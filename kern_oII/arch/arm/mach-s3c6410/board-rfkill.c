@@ -21,8 +21,6 @@
 #include <linux/rfkill.h>
 #include <linux/delay.h>
 #include <asm/gpio.h>
-//#include <mach/gpio.h>
-//#include <mach/saturn.h>	/*Updated by kumar.gvs 22 Apr 2009*/
 #include <plat/gpio-cfg.h>
 #include <plat/egpio.h>
 #include <linux/wakelock.h>
@@ -48,7 +46,7 @@ extern void s3c_setup_uart_cfg_gpio(unsigned char port);
 extern void s3c_reset_uart_cfg_gpio(unsigned char port);
 
 static struct rfkill *bt_rfk;
-static const char bt_name[] = "bcm4325";
+static const char bt_name[] = "CSR-bc06";
 
 static int bluetooth_set_power(void *data, enum rfkill_user_states state)
 {
@@ -143,8 +141,7 @@ static int bluetooth_set_power(void *data, enum rfkill_user_states state)
 
 static void bt_host_wake_work_func(struct work_struct *ignored)
 {
-    wake_lock_timeout(&rfkill_wake_lock, 5*HZ);
-
+        wake_lock_timeout(&rfkill_wake_lock, 5*HZ);
 	enable_irq(IRQ_BT_HOST_WAKE);
 }
 static DECLARE_WORK(bt_host_wake_work, bt_host_wake_work_func);
@@ -185,7 +182,8 @@ static int __init saturn_rfkill_probe(struct platform_device *pdev)
 	//BT Host Wake IRQ
 	irq = IRQ_BT_HOST_WAKE;
 
-	set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
+	//set_irq_type(irq, IRQ_TYPE_EDGE_BOTH);
+	set_irq_type(irq, IRQ_TYPE_EDGE_RISING);	
 	ret = request_irq(irq, bt_host_wake_irq_handler, 0, "bt_host_wake_irq_handler", NULL);
 	if(ret < 0)
 		printk("[BT] Request_irq failed \n");
@@ -193,7 +191,7 @@ static int __init saturn_rfkill_probe(struct platform_device *pdev)
 //	enable_irq(IRQ_BT_HOST_WAKE);
 
 	//RFKILL init - default to bluetooth off
-//	rfkill_switch_all(RFKILL_TYPE_BLUETOOTH, RFKILL_USER_STATE_SOFT_BLOCKED);
+	//rfkill_switch_all(RFKILL_TYPE_BLUETOOTH, RFKILL_USER_STATE_SOFT_BLOCKED);
 
 	bt_rfk = rfkill_alloc(bt_name, &pdev->dev, RFKILL_TYPE_BLUETOOTH,
 			                                  &bt_rfkill_ops, NULL);

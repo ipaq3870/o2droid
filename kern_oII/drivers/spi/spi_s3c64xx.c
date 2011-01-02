@@ -303,7 +303,6 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
 		}
 	}
 
-//printk("Sanya:enable_data_path:  chcfg: %x, modecfg: %x, xfer->len: %d \n", chcfg, modecfg, xfer->len);
 	writel(modecfg, regs + S3C64XX_SPI_MODE_CFG);
 	writel(chcfg, regs + S3C64XX_SPI_CH_CFG);
 }
@@ -423,7 +422,6 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 	val = readl(regs + S3C64XX_SPI_CLK_CFG);
 	val &= ~S3C64XX_SPI_ENCLK_ENABLE;
 	writel(val, regs + S3C64XX_SPI_CLK_CFG);
-//printk("Sanya: S3C64XX_SPI_CLK_CFG: %x\n", val);
 
 	/* Set Polarity and Phase */
 	val = readl(regs + S3C64XX_SPI_CH_CFG);
@@ -438,7 +436,6 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 		val |= S3C64XX_SPI_CPHA_B;
 
 	writel(val, regs + S3C64XX_SPI_CH_CFG);
-//printk("Sanya: S3C64XX_SPI_CH_CFG: %x\n", val);
 
 	/* Set Channel & DMA Mode */
 	val = readl(regs + S3C64XX_SPI_MODE_CFG);
@@ -461,7 +458,6 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 	}
 
 	writel(val, regs + S3C64XX_SPI_MODE_CFG);
-//printk("Sanya: S3C64XX_SPI_MODE_CFG: %x\n", val);
 
 	/* Configure Clock */
 	val = readl(regs + S3C64XX_SPI_CLK_CFG);
@@ -469,13 +465,11 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 	val |= ((clk_get_rate(sdd->src_clk) / sdd->cur_speed / 2 - 1)
 			& S3C64XX_SPI_PSR_MASK);
 	writel(val, regs + S3C64XX_SPI_CLK_CFG);
-//printk("Sanya: S3C64XX_SPI_CLK_CFG: %x\n", val);
 
 	/* Enable Clock */
 	val = readl(regs + S3C64XX_SPI_CLK_CFG);
 	val |= S3C64XX_SPI_ENCLK_ENABLE;
 	writel(val, regs + S3C64XX_SPI_CLK_CFG);
-//printk("Sanya: S3C64XX_SPI_CLK_CFG: %x\n", val);
 }
 
 static void s3c64xx_spi_dma_rxcb(struct s3c2410_dma_chan *chan, void *buf_id,

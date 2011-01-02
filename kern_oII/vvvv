@@ -41,3 +41,7 @@ sound/soc/s3c64xx/s3c6410-i2s.h
 sound/soc/s3c64xx/s3c-pcm.c
 sound/soc/s3c64xx/s3c-pcm.h
 sound/soc/s3c64xx/s3c-pcm-sol.c
+
+drivers/net/wireless/libertas/if_spi.c
+drivers/spi/spi_s3c64xx.c
+arch/arm/plat-s3c64xx/dev-spi.c

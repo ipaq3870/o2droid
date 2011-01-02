@@ -473,8 +473,8 @@ static void s3c_serial_pm(struct uart_port *port, unsigned int level,
 #define MAX_CLKS (8)
 
 static struct s3c_uart_clksrc tmp_clksrc = {
-	//.name		= "uclk1",
-	.name		= "pclk",
+	.name		= "uclk1",
+//	.name		= "pclk",
 	.min_baud	= 0,
 	.max_baud	= 0,
 	.divisor	= 1,
@@ -576,14 +576,14 @@ static unsigned int s3c_serial_getclk(struct uart_port *port,
 
 			clkp->divisor = src.divisor;
 		}
-
+#if 0
 		if (strcmp(clkp->name, "uclk1") == 0) {
 			uclk1 = clk_get(NULL, clkp->name);
 			clk_set_parent(uclk1, clk_get(NULL, "dout_mpll"));	
 			clk_set_rate(uclk1, 133000000);	
 			clk_put(uclk1);
 		}
-
+#endif
 		s3c_serial_calcbaud(res, port, clkp, baud);
 		best = res;
 		resptr = best + 1;
