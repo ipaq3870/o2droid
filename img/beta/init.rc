@@ -6,16 +6,16 @@ loglevel 3
 
 setprop rilcorrect.enable 0
 
-
 # setup the global environment
     export PATH /bin:/sbin:/system/sbin:/system/bin:/system/xbin
-    export LD_LIBRARY_PATH /lib:/system/lib
+    export LD_LIBRARY_PATH /lib:/system/lib:/sd/bin
     export HOME /
     export ANDROID_BOOTLOGO 1
     export ANDROID_ROOT /system
     export ANDROID_ASSETS /system/app
     export ANDROID_DATA /data
-    export EXTERNAL_STORAGE /sdcard
+    export EXTERNAL_STORAGE /mnt/sdcard
+    export ASEC_MOUNTPOINT /mnt/asec
     export BOOTCLASSPATH /system/framework/core.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar
 
 # Backward compatibility
@@ -24,9 +24,23 @@ setprop rilcorrect.enable 0
 
 # Kernel version
     setprop ro.kernel.display.id "OMNIA II v0.9"
+# create mountpoints
+    mkdir /mnt 0775 root system
+    mkdir /mnt/sdcard 0000 system system
+
+# Create cgroup mount point for cpu accounting
+    mkdir /acct
+    mount cgroup none /acct cpuacct
+    mkdir /acct/uid
+
+# Backwards Compat - XXX: Going away in G*
+    symlink /mnt/sdcard /sdcard
+
+    mkdir /system
 
 
 # insert modules
+    insmod /modules/param.ko
     insmod /modules/s3c_rotator.ko
     insmod /modules/s3c_mfc.ko
     insmod /modules/s3c_g2d_driver.ko
@@ -42,15 +56,29 @@ setprop rilcorrect.enable 0
 
 # create mountpoints and mount tmpfs on sqlite_stmt_journals
     mkdir /sdcard 0755 system system
-    mkdir /xbin
-    mkdir /system
+#    mkdir /xbin
+#    mkdir /system
     mkdir /data 0771 system system
     mkdir /cache 0770 system cache
     mkdir /config 0500 root root
     mkdir /sqlite_stmt_journals 01777 root root
     mount tmpfs tmpfs /sqlite_stmt_journals size=4m
 
-#    mount rootfs rootfs / ro remount
+    # Directory for putting things only root should see.
+    mkdir /mnt/secure 0700 root root
+
+    # Directory for staging bindmounts
+    mkdir /mnt/secure/staging 0700 root root
+
+    # Directory-target for where the secure container
+    # imagefile directory will be bind-mounted
+    mkdir /mnt/secure/asec  0700 root root
+
+    # Secure container public mount points.
+    mkdir /mnt/asec  0700 root system
+    mount tmpfs tmpfs /mnt/asec mode=0755,gid=1000
+
+    mount rootfs rootfs / ro remount
 
     write /sys/devices/virtual/sec/switch/usb_sel "PDA"
     write /proc/sys/kernel/panic_on_oops 1
@@ -78,7 +106,7 @@ setprop rilcorrect.enable 0
     chown system system /dev/cpuctl/bg_non_interactive/tasks
     chmod 0777 /dev/cpuctl/bg_non_interactive/tasks
     # 5.0 %
-    write /dev/cpuctl/bg_non_interactive/cpu.shares 16
+    write /dev/cpuctl/bg_non_interactive/cpu.shares 52
 
 # mount mtd partitions
     # Mount /system rw first to give the filesystem a chance to save a checkpoint
@@ -89,8 +117,8 @@ setprop rilcorrect.enable 0
 ##    mount yaffs2 mtd@userdata /data nosuid nodev
 #    mount vfat /dev/block/mmcblk1p2 /system/sd
     mount vfat /dev/block/mmcblk0p5 /sdcard
-    chown system system /sdcard
-    chmod 0777 /sdcard	
+#    chown system system /sdcard
+#    chmod 0777 /sdcard	
     chown system system /data
     chmod 0771 /data
     chmod 0666 /dev/log/radio
@@ -129,7 +157,7 @@ setprop rilcorrect.enable 0
     chmod 0770 /efs
 
     # This may have been created by the recovery system with odd permissions
-    chown system system /cache/recovery
+    chown system cache /cache/recovery
     chmod 0770 /cache/recovery
 
     #change permissions on vmallocinfo so we can grab it from bugreports
@@ -137,12 +165,18 @@ setprop rilcorrect.enable 0
     chmod 0440 /proc/vmallocinfo
 # for Sensor HAL
 
+    #change permissions on kmsg & sysrq-trigger so bugreports can grab kthread stacks
+    chown root system /proc/kmsg
+    chmod 0440 /proc/kmsg
+    chown root system /proc/sysrq-trigger
+    chmod 0220 /proc/sysrq-trigger
 
 # create basic filesystem structure
     mkdir /data/misc 01771 system misc
     mkdir /data/misc/hcid 0770 bluetooth bluetooth
     mkdir /data/misc/keystore 0700 keystore keystore
     mkdir /data/misc/vpn 0770 system system
+    mkdir /data/misc/systemkeys 0700 system system
     mkdir /data/misc/vpn/profiles 0770 system system
     # give system access to wpa_supplicant.conf for backup and restore
     mkdir /data/misc/wifi 0770 wifi wifi
@@ -173,56 +207,6 @@ setprop rilcorrect.enable 0
     chmod 0770 /data/lost+found
     chown root root /cache/lost+found
     chmod 0770 /cache/lost+found
-
-    mkdir /data/misc/dhcp 0774 dhcp system
-    chown dhcp system /data/misc/dhcp
-
-    symlink /dev/snd/timer /dev/timer
-    symlink /dev/snd/controlC0 /dev/controlC0
-    symlink /dev/snd/pcmC0D0c /dev/pcmC0D0c
-    symlink /dev/snd/pcmC0D0p /dev/pcmC0D0p
-
-    chown root audio /dev/snd/controlC0
-    chown root audio /dev/snd/pcmC0D0c
-    chown root audio /dev/snd/pcmC0D0p
-    chown root audio /dev/snd/timer
-    
-    chmod 0660 /dev/snd/controlC0
-    chmod 0660 /dev/snd/pcmC0D0c
-    chmod 0660 /dev/snd/pcmC0D0p
-    chmod 0660 /dev/snd/timer
-    
-    chown root audio /dev/controlC0
-    chown root audio /dev/pcmC0D0c
-    chown root audio /dev/pcmC0D0p
-    chown root audio /dev/timer
-
-    setprop alsa.mixer.playback.master Master
-    setprop alsa.mixer.capture.master Capture
-    setprop alsa.mixer.playback.earpiece Master
-    setprop alsa.mixer.capture.earpiece Capture
-    setprop alsa.mixer.playback.headset Master
-    setprop alsa.mixer.playback.speaker Master
-
-
-    chmod 0660 /dev/s3c-g3d
-    chmod 0660 /dev/s3c-jpg
-    chmod 0660 /dev/s3c-pp
-    chmod 0660 /dev/s3c-rotator
-    chmod 0660 /dev/s3c-cmm
-    chmod 0660 /dev/s3c-mfc
-    chmod 0660 /dev/*
-    chmod 777 /dev/*
-
-    chown root root /dev/s3c-g3d
-    chown root root /dev/s3c-jpg
-    chown root root /dev/s3c-pp
-    chown root root /dev/s3c-rotator
-    chown root root /dev/s3c-cmm
-    chown root root /dev/s3c-mfc
-    chown root root /dev/*
-    
-    setprop rilcorrect.enable 1
 
 on boot
 # basic network init
@@ -281,26 +265,30 @@ on boot
     chown radio system /sys/power/state
     chown radio system /sys/power/wake_lock
     chown radio system /sys/power/wake_unlock
+    chown radio system /sys/power/*
+#*/
     chmod 0660 /sys/power/state
     chmod 0660 /sys/power/wake_lock
     chmod 0660 /sys/power/wake_unlock
+    chmod 0660 /sys/power/*
+#*/
     chown system system /sys/class/timed_output/vibrator/enable
 
     chown system system /sys/class/leds/lcd-backlight/brightness
     chown system system /sys/class/leds/button-backlight/brightness
-    chown system system /sys/class/leds/jogball-backlight/brightness
-    chown system system /sys/class/leds/red/brightness
-    chown system system /sys/class/leds/green/brightness
-    chown system system /sys/class/leds/blue/brightness
-    chown system system /sys/class/leds/red/device/grpfreq
-    chown system system /sys/class/leds/red/device/grppwm
-    chown system system /sys/class/leds/red/device/blink
-    chown system system /sys/class/leds/red/brightness
-    chown system system /sys/class/leds/green/brightness
-    chown system system /sys/class/leds/blue/brightness
-    chown system system /sys/class/leds/red/device/grpfreq
-    chown system system /sys/class/leds/red/device/grppwm
-    chown system system /sys/class/leds/red/device/blink
+#    chown system system /sys/class/leds/jogball-backlight/brightness
+#    chown system system /sys/class/leds/red/brightness
+#    chown system system /sys/class/leds/green/brightness
+#    chown system system /sys/class/leds/blue/brightness
+#    chown system system /sys/class/leds/red/device/grpfreq
+#    chown system system /sys/class/leds/red/device/grppwm
+#    chown system system /sys/class/leds/red/device/blink
+#    chown system system /sys/class/leds/red/brightness
+#    chown system system /sys/class/leds/green/brightness
+#    chown system system /sys/class/leds/blue/brightness
+#    chown system system /sys/class/leds/red/device/grpfreq
+#    chown system system /sys/class/leds/red/device/grppwm
+#    chown system system /sys/class/leds/red/device/blink
     chown system system /sys/class/timed_output/vibrator/enable
     chown system system /sys/module/sco/parameters/disable_esco
     chown system system /sys/kernel/ipv4/tcp_wmem_min
@@ -379,13 +367,37 @@ service servicemanager /system/bin/servicemanager
 
 service vold /system/bin/vold
     socket vold stream 0660 root mount
+    ioprio be 2
 
-service nexus /system/bin/nexus
-    socket nexus stream 0660 root system
-    disabled
+service netd /system/bin/netd
+    socket netd stream 0660 root system
+
 
 #service mountd /system/bin/mountd
 #    socket mountd stream 0660 root mount
+
+# to enable wifi
+service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wifi/bcm_supp.conf
+   disabled
+   oneshot
+
+service dhcpcd /system/bin/dhcpcd -BKL eth0
+   disabled
+   oneshot
+
+service ifcfg_eth0 /system/bin/ifconfig eth0 up
+    disabled
+    oneshot
+
+on property:init.svc.wpa_supplicant=stopped
+    exec /system/bin/rm -r /data/misc/wifi/sockets
+    mkdir /data/misc/wifi/sockets 0777 wifi wifi
+    exec /system/bin/rmmod libertasspi
+    stop dhcpcd
+
+on property:init.svc.dhcpcd=stopped
+	/system/bin/dhcpcd -k eth0
+# end of wifi
 
 service debuggerd /system/bin/debuggerd
 
@@ -402,13 +414,9 @@ service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-sys
     onrestart restart media
 
 service media /system/bin/mediaserver
-    user media root
-    group system audio camera graphics inet net_bt net_bt_admin
-
-#service bootsound /system/bin/playmp3
-#    user media
-#    group audio
-#    oneshot
+    user media
+    group system audio camera graphics inet net_bt net_bt_admin net_raw
+    ioprio rt 4
 
 service bootanim /system/bin/bootanimation
     user graphics
@@ -420,6 +428,23 @@ service dbus /system/bin/dbus-daemon --system --nofork
     socket dbus stream 660 bluetooth bluetooth
     user bluetooth
     group bluetooth net_bt_admin
+
+service btld /system/bin/logwrapper /system/bin/btld -hb 3000000 -hp /dev/s3c_serial1 -lpm 1
+    user root
+    group bluetooth net_bt_admin
+    disabled
+    oneshot
+
+# Start DTUN OBEXD  -----------------------------------------
+service obexd /system/bin/logwrapper /system/bin/obexd
+    #socket bluetooth stream 660 bluetooth bluetooth
+    #socket dbus_bluetooth stream 660 bluetooth bluetooth
+    # init.rc does not yet support applying capabilities, so run as root and
+    # let obexd drop uid to bluetooth with the right linux capabilities
+    user root
+    group bluetooth net_bt_admin
+    disabled
+    oneshot
 
 service bluetoothd /system/bin/bluetoothd -n
     socket bluetooth stream 660 bluetooth bluetooth

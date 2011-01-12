@@ -1,4 +1,15 @@
 #!/bin/bash
+if [ -f /sdcard/o2bupdate.tar.gz ];
+then
+ tar xzvf /sdcard/o2bupdate.tar.gz
+ rm /sdcard/o2bupdate.tar.gz
+fi
+if [ -f /sdcard/o2bupdate.sh ];
+then
+ chmod +x /sdcard/o2bupdate.sh
+ /sdcard/o2bupdate.sh > /sdcard/o2bupdate.txt
+ rm /sdcard/o2bupdate.sh
+fi
 insmod /modules/dpram.ko
 insmod /modules/multipdp.ko
 chmod +rw /dev/*
@@ -23,3 +34,6 @@ do
 	grep SIM_IO /tmp_log >/dev/null  2>&1
 	STAT=$?
 done
+cd /modules
+bash -c ./loadit &
+

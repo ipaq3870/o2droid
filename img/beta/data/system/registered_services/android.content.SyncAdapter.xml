@@ -1,5 +1,0 @@
-<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<services>
-<service uid="10012" authority="calendar" accountType="com.google" />
-<service uid="10003" authority="com.android.contacts" accountType="com.android.exchange" />
-</services>
