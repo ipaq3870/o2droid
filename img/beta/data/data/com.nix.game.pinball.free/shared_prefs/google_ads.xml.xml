@@ -1,6 +1,0 @@
-<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<map>
-<int name="fetch_latency" value="-1" />
-<null name="click_string" />
-<int name="click_latency" value="-1" />
-</map>
