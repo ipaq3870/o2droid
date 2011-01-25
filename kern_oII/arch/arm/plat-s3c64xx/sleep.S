@@ -75,21 +75,7 @@ s3c6410_sleep_save_phys:
 	 * bootloader can check for a resumeable image. */
 
 	.word	0x2bedf00d
-/* windows bootloader memory jump */
-	.global	s3c6410_windows_code
-s3c6410_windows_code:
-//	ldr	r0, s3_inform0
-//	ldr	r2, [r0]
-//	mov	pc, r2
-//s3_inform0:
-//	.word	0x7e00fa00
 
-	ldr	r2,windows_off_res
-	mov	pc,r2
-	nop
-	.global windows_off_res
-windows_off_res:
-	.word	s3c6410_cpu_resume
 	/* s3c_cpu_resume
 	 *
 	 * This is the entry point, stored by whatever method the bootloader
