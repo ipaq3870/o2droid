@@ -71,9 +71,9 @@ EXPORT_SYMBOL(bml_resume_fp);
 #include <plat/power-clock-domain.h>
 
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING
-
-static int domain_hash_map[15]={0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7};
+static int domain_shift_map[15]={10, 9, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15, 16, 17};
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
+static int domain_hash_map[15]={0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7};
 static char *domain_name[] = {"G","V", "I", "P", "F", "S", "ETM", "IROM"}; 
 static char *domain_module_name[] = {"3D","MFC","JPG","CAM","2D","TV","SCA","ROT","PST","LCD","DM0","DM1","SEC","ETM","IRM"};
 static char *dompowers[] = {"TOP","V","I","P","F","S","ETM","G"};
@@ -81,11 +81,36 @@ static char *dompowers[] = {"TOP","V","I","P","F","S","ETM","G"};
 
 static spinlock_t power_lock;
 
-static unsigned int s3c_domain_off_stat = 0x1FFC;
+//static unsigned int s3c_domain_off_stat = 0x1FFC;	// SECURITY,DMA1,DMA0,LCD,POST,ROT,SCALER,TVENC,2D,CAMERA,JPEG
+static unsigned int s3c_domain_off_stat = 0;
 
+static void s3c_init_dompower(unsigned int device, int down) {
+	unsigned int domain = 1 << domain_shift_map[device];
+	s3c_set_normal_cfg(domain, S3C64XX_ACTIVE_MODE, device);
+	if (down)
+		s3c_set_normal_cfg(domain, S3C64XX_LP_MODE, device);
+}
 static void s3c_init_domain_power(void)
 {
 	spin_lock_init(&power_lock);
+
+	s3c_init_dompower(S3C64XX_MFC,		1);
+	s3c_init_dompower(S3C64XX_3D,		0);
+	s3c_init_dompower(S3C64XX_JPEG,		1);
+	s3c_init_dompower(S3C64XX_CAMERA,	1);
+	s3c_init_dompower(S3C64XX_2D,		0);
+	s3c_init_dompower(S3C64XX_TVENC,	1);
+	s3c_init_dompower(S3C64XX_SCALER,	1);
+	s3c_init_dompower(S3C64XX_ROT,		1);
+	s3c_init_dompower(S3C64XX_POST,		1);
+	s3c_init_dompower(S3C64XX_SDMA0,	1);
+	s3c_init_dompower(S3C64XX_SDMA1,	1);
+	s3c_init_dompower(S3C64XX_SECURITY,	1);
+	s3c_init_dompower(S3C64XX_IROM,		0);
+	s3c_init_dompower(S3C64XX_LCD,		0);
+	s3c_init_dompower(S3C64XX_ETM,		0);
+
+/*
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_V, S3C64XX_LP_MODE, S3C64XX_MFC);
 //	s3c_set_normal_cfg(S3C64XX_DOMAIN_G, S3C64XX_LP_MODE, S3C64XX_3D);
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_I, S3C64XX_LP_MODE, S3C64XX_JPEG);
@@ -99,12 +124,12 @@ static void s3c_init_domain_power(void)
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_S, S3C64XX_LP_MODE, S3C64XX_SDMA1);
 //	s3c_set_normal_cfg(S3C64XX_DOMAIN_S, S3C64XX_LP_MODE, S3C64XX_SECURITY);
 //	s3c_set_normal_cfg(S3C64XX_DOMAIN_IROM, S3C64XX_LP_MODE, S3C64XX_IROM);
-	/* LCD on. */
+	// LCD on. 
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_ACTIVE_MODE, S3C64XX_LCD);
 
-	/* ETM on. */
+	// ETM on.
 	s3c_set_normal_cfg(S3C64XX_DOMAIN_ETM, S3C64XX_ACTIVE_MODE, S3C64XX_ETM);
-
+*/
 }
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
 int domain_off_check_n(unsigned int domain)
@@ -199,7 +224,7 @@ void s3c_set_normal_cfg(unsigned int config, unsigned int flag, unsigned int dev
 	normal_cfg = __raw_readl(S3C_NORMAL_CFG);
 	if(flag == S3C64XX_ACTIVE_MODE) {
 		s3c_domain_off_stat |= (1 << deviceID);
-		if(!(normal_cfg & config)) {
+		if(!(normal_cfg & config)) { // not active yet
 			normal_cfg |= (config);
 			__raw_writel(normal_cfg, S3C_NORMAL_CFG);
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
@@ -217,12 +242,12 @@ void s3c_set_normal_cfg(unsigned int config, unsigned int flag, unsigned int dev
 		s3c_domain_off_stat &= (~( 1 << deviceID));
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
 		power_off_flag = domain_off_check_n(config);
-		if(power_off_flag == 0) {
+		if(power_off_flag == 0) {	//0=domain free
 #else
-		power_off_flag = domain_off_check(config);
-		if(power_off_flag == 1) {
+		power_off_flag = domain_off_check(config); //!0=domain free
+		if(power_off_flag == 1) {	//
 #endif
-			if(normal_cfg & config) {
+			if(normal_cfg & config) {	// was active
 				normal_cfg &= (~config);
 				__raw_writel(normal_cfg, S3C_NORMAL_CFG);
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING_DEBUG
@@ -949,6 +974,45 @@ PFW 0x7e00Fa04 1 0xF
 	
 	DBG(" resume address: %x \n", virt_to_phys(s3c6410_cpu_resume)); //5040f4a0
 	printk("SLEEP: resume address WINMO = %x \n", __raw_readl(phys_to_virt(0x50008000))); //resume addres =e59b0004
+	DBG(" S3C_APLL_LOCK = %x \n", __raw_readl(S3C_APLL_LOCK));
+	DBG(" S3C_MPLL_LOCK = %x \n", __raw_readl(S3C_MPLL_LOCK));
+	DBG(" S3C_EPLL_LOCK = %x \n", __raw_readl(S3C_EPLL_LOCK));
+	DBG(" S3C_APLL_CON = %x \n", __raw_readl(S3C_APLL_CON));
+	DBG(" S3C_MPLL_CON = %x \n", __raw_readl(S3C_MPLL_CON));
+	DBG(" S3C_EPLL_CON0 = %x \n", __raw_readl(S3C_EPLL_CON0));
+	DBG(" S3C_EPLL_CON1 = %x \n", __raw_readl(S3C_EPLL_CON1));
+	DBG(" S3C_CLK_SRC = %x \n", __raw_readl(S3C_CLK_SRC));
+	DBG(" S3C_CLK_DIV0 = %x \n", __raw_readl(S3C_CLK_DIV0));
+	DBG(" S3C_CLK_DIV1 = %x \n", __raw_readl(S3C_CLK_DIV1));
+	DBG(" S3C_CLK_DIV2 = %x \n", __raw_readl(S3C_CLK_DIV2));
+	DBG(" S3C_CLK_OUT = %x \n", __raw_readl(S3C_CLK_OUT));
+	DBG(" S3C_HCLK_GATE = %x \n", __raw_readl(S3C_HCLK_GATE));	
+	DBG(" S3C_PCLK_GATE = %x \n", __raw_readl(S3C_PCLK_GATE));
+	DBG(" S3C_SCLK_GATE = %x \n", __raw_readl(S3C_SCLK_GATE));
+	DBG(" S3C_MEM0_CLK_GATE = %x \n", __raw_readl(S3C_MEM0_CLK_GATE));
+	DBG(" S3C_MEM_SYS_CFG = %x \n", __raw_readl(S3C_MEM_SYS_CFG));
+	DBG(" S3C_MEM_CFG_STAT = %x \n", __raw_readl(S3C_MEM_CFG_STAT));
+	DBG(" S3C_QOS_OVERRIDE1 = %x \n", __raw_readl(S3C_QOS_OVERRIDE1));
+	DBG(" S3C_PWR_CFG = %x \n", __raw_readl(S3C_PWR_CFG));
+	DBG(" S3C_EINT_MASK = %x \n", __raw_readl(S3C_EINT_MASK));
+	DBG(" S3C_STOP_CFG = %x \n", __raw_readl(S3C_STOP_CFG));
+	DBG(" S3C_SLEEP_CFG = %x \n", __raw_readl(S3C_SLEEP_CFG));
+	DBG(" S3C_NORMAL_CFG = %x \n", __raw_readl(S3C_NORMAL_CFG));
+	DBG(" S3C_STOP_MEM_CFG = %x \n", __raw_readl(S3C_STOP_MEM_CFG));
+	DBG(" S3C_OSC_FREQ = %x \n", __raw_readl(S3C_OSC_FREQ));
+	DBG(" S3C_OSC_STABLE = %x \n", __raw_readl(S3C_OSC_STABLE));
+	DBG(" S3C_PWR_STABLE = %x \n", __raw_readl(S3C_PWR_STABLE));
+	DBG(" S3C_MISC_CON = %x \n", __raw_readl(S3C_MISC_CON));
+	DBG(" S3C_OTHERS = %x \n", __raw_readl(S3C_OTHERS));
+	DBG(" S3C_RST_STAT = %x \n", __raw_readl(S3C_RST_STAT));
+	DBG(" S3C_WAKEUP_STAT = %x \n", __raw_readl(S3C_WAKEUP_STAT));
+	DBG(" S3C_BLK_PWR_STAT = %x \n", __raw_readl(S3C_BLK_PWR_STAT));
+	DBG(" S3C_INFORM0 = %x \n", __raw_readl(S3C_INFORM0));
+	DBG(" S3C_INFORM1 = %x \n", __raw_readl(S3C_INFORM1));
+	DBG(" S3C_INFORM2 = %x \n", __raw_readl(S3C_INFORM2));
+	DBG(" S3C64XX_SPCONSLP = %x \n", __raw_readl(S3C64XX_SPCONSLP));
+	DBG(" S3C64XX_SLPEN = %x \n", __raw_readl(S3C64XX_SLPEN));
+
 /*	__raw_writel(0xe59515e0, (phys_to_virt(0x50300000))); //PFW 0x50300000 1 0xe59f1658
 	__raw_writel(0xe5910000, (phys_to_virt(0x50300004))); //PFW 0x50300004 1 0xe5910000
 	__raw_writel(0xe1a0f000, (phys_to_virt(0x50300008)));// PFW 0x50300008 1 0xe1a0f000
@@ -1054,44 +1118,6 @@ PFW 0x7e00Fa04 1 0xF
 	DBG(" payload = %x \n", __raw_readl(phys_to_virt(0x50300004)));
 	DBG(" payload = %x \n", __raw_readl(phys_to_virt(0x50300008)));
 	DBG(" resume addres after = %x \n", __raw_readl(phys_to_virt(0x5030000c))); //resume addres = 5040f4a0
-	DBG(" S3C_APLL_LOCK = %x \n", __raw_readl(S3C_APLL_LOCK));
-	DBG(" S3C_MPLL_LOCK = %x \n", __raw_readl(S3C_MPLL_LOCK));
-	DBG(" S3C_EPLL_LOCK = %x \n", __raw_readl(S3C_EPLL_LOCK));
-	DBG(" S3C_APLL_CON = %x \n", __raw_readl(S3C_APLL_CON));
-	DBG(" S3C_MPLL_CON = %x \n", __raw_readl(S3C_MPLL_CON));
-	DBG(" S3C_EPLL_CON0 = %x \n", __raw_readl(S3C_EPLL_CON0));
-	DBG(" S3C_EPLL_CON1 = %x \n", __raw_readl(S3C_EPLL_CON1));
-	DBG(" S3C_CLK_SRC = %x \n", __raw_readl(S3C_CLK_SRC));
-	DBG(" S3C_CLK_DIV0 = %x \n", __raw_readl(S3C_CLK_DIV0));
-	DBG(" S3C_CLK_DIV1 = %x \n", __raw_readl(S3C_CLK_DIV1));
-	DBG(" S3C_CLK_DIV2 = %x \n", __raw_readl(S3C_CLK_DIV2));
-	DBG(" S3C_CLK_OUT = %x \n", __raw_readl(S3C_CLK_OUT));
-	DBG(" S3C_HCLK_GATE = %x \n", __raw_readl(S3C_HCLK_GATE));	
-	DBG(" S3C_PCLK_GATE = %x \n", __raw_readl(S3C_PCLK_GATE));
-	DBG(" S3C_SCLK_GATE = %x \n", __raw_readl(S3C_SCLK_GATE));
-	DBG(" S3C_MEM0_CLK_GATE = %x \n", __raw_readl(S3C_MEM0_CLK_GATE));
-	DBG(" S3C_MEM_SYS_CFG = %x \n", __raw_readl(S3C_MEM_SYS_CFG));
-	DBG(" S3C_MEM_CFG_STAT = %x \n", __raw_readl(S3C_MEM_CFG_STAT));
-	DBG(" S3C_QOS_OVERRIDE1 = %x \n", __raw_readl(S3C_QOS_OVERRIDE1));
-	DBG(" S3C_PWR_CFG = %x \n", __raw_readl(S3C_PWR_CFG));
-	DBG(" S3C_EINT_MASK = %x \n", __raw_readl(S3C_EINT_MASK));
-	DBG(" S3C_STOP_CFG = %x \n", __raw_readl(S3C_STOP_CFG));
-	DBG(" S3C_SLEEP_CFG = %x \n", __raw_readl(S3C_SLEEP_CFG));
-	DBG(" S3C_NORMAL_CFG = %x \n", __raw_readl(S3C_NORMAL_CFG));
-	DBG(" S3C_STOP_MEM_CFG = %x \n", __raw_readl(S3C_STOP_MEM_CFG));
-	DBG(" S3C_OSC_FREQ = %x \n", __raw_readl(S3C_OSC_FREQ));
-	DBG(" S3C_OSC_STABLE = %x \n", __raw_readl(S3C_OSC_STABLE));
-	DBG(" S3C_PWR_STABLE = %x \n", __raw_readl(S3C_PWR_STABLE));
-	DBG(" S3C_MISC_CON = %x \n", __raw_readl(S3C_MISC_CON));
-	DBG(" S3C_OTHERS = %x \n", __raw_readl(S3C_OTHERS));
-	DBG(" S3C_RST_STAT = %x \n", __raw_readl(S3C_RST_STAT));
-	DBG(" S3C_WAKEUP_STAT = %x \n", __raw_readl(S3C_WAKEUP_STAT));
-	DBG(" S3C_BLK_PWR_STAT = %x \n", __raw_readl(S3C_BLK_PWR_STAT));
-	DBG(" S3C_INFORM0 = %x \n", __raw_readl(S3C_INFORM0));
-	DBG(" S3C_INFORM1 = %x \n", __raw_readl(S3C_INFORM1));
-	DBG(" S3C_INFORM2 = %x \n", __raw_readl(S3C_INFORM2));
-	DBG(" S3C64XX_SPCONSLP = %x \n", __raw_readl(S3C64XX_SPCONSLP));
-	DBG(" S3C64XX_SLPEN = %x \n", __raw_readl(S3C64XX_SLPEN));
 
 
 	// call cpu specific preperation
@@ -1122,7 +1148,7 @@ PFW 0x7e00Fa04 1 0xF
 	__raw_writel(0x00000000, S3C_SCLK_GATE); //WINMO
 	__raw_writel(0x00000000, S3C_MEM0_CLK_GATE);//??
 
-	__raw_writel(__raw_readl(S3C_NORMAL_CFG)|0x1f600,S3C_NORMAL_CFG);
+	__raw_writel(__raw_readl(S3C_NORMAL_CFG)|0x1f600,S3C_NORMAL_CFG); // all domain,except IROM
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING
 	s3c_wait_blk_pwr_ready(0x7f);		// wait until on 
 #endif
