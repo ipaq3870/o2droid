@@ -2135,6 +2135,198 @@ static int lbs_set_wap(struct net_device *dev, struct iw_request_info *info,
 	return ret;
 }
 
+static int lbs_format_ssid(char* ssid_buf, int buf_len, char* ssid,
+		int ssid_len)
+{
+	int i;
+	char c;
+	char *p = ssid_buf;
+
+	if (ssid_len > 32) ssid_len = 32;
+
+	for (i = 0; i < ssid_len; i++) {
+		if ((p - ssid_buf) >= buf_len-1)
+			break;
+
+		c = ssid[i];
+		if (c == '\\') {
+			*p++ = '\\';
+			*p++ = '\\';
+		} else if (isprint(c)) {
+			*p++ = (char)c;
+		} else {
+			p += snprintf(p, p-ssid_buf, "\\x%02X", c);
+		}
+	}
+
+	if ((p - ssid_buf) >= buf_len)
+		p--;
+
+	*p = '\0';
+
+	return p - ssid_buf;
+}
+
+static void lbs_priv_get_rssi(struct lbs_private *priv,	union iwreq_data *wrqu,
+		char *extra)
+{
+	char ssidbuf[SSID_FMT_BUF_LEN];
+	int rssi;
+	char * resp = extra;
+
+	rssi = CAL_RSSI(priv->SNR[TYPE_BEACON][TYPE_NOAVG],
+					priv->NF[TYPE_BEACON][TYPE_NOAVG]);
+
+	lbs_format_ssid(
+			ssidbuf,
+			sizeof(ssidbuf),
+			priv->curbssparams.ssid,
+			priv->curbssparams.ssid_len);
+
+	resp += snprintf(resp, MAX_WX_STRING,
+			"%s rssi %d",
+			ssidbuf,
+			rssi);
+
+	wrqu->data.length = resp - extra + 1;
+}
+
+static char *lbs_iw_priv_param(char *extra, int startindex)
+{
+	char *p = extra + startindex;
+
+	while ((*p != '\0') && (*p == ' '))
+		p++;
+
+	if (*p == '\0')
+		return NULL;
+	else
+		return p;
+}
+
+#define CMD_START		"START"
+#define CMD_STOP		"STOP"
+#define CMD_RSSI		"RSSI"
+#define CMD_LINKSPEED	"LINKSPEED"
+#define CMD_RSSI 		"RSSI"
+#define CMD_MACADDR		"MACADDR"
+#define CMD_POWERMODE	"POWERMODE"
+
+#define RESP_OK			"OK"
+#define RESP_FAIL		"FAIL"
+
+static int lbs_iw_set_priv(struct net_device *dev, struct iw_request_info *info,
+        struct iw_point *wrq, char *ext)
+{
+	int ret = 0;
+	struct lbs_private *priv = dev->ml_priv;
+	union iwreq_data *dwrq = (union iwreq_data *)wrq;
+	struct iw_param vwrq;
+
+	char * extra = NULL;
+
+
+	if (!(extra = kmalloc(wrq->length, GFP_KERNEL))) {
+		ret = -ENOMEM;
+		goto _ret_no_data;
+	}
+
+	if (copy_from_user(extra, wrq->pointer, wrq->length)) {
+		ret = -EFAULT;
+		goto _ret_no_data;
+	}
+
+	lbs_deb_enter_args(LBS_DEB_WEXT, "%s priv rq = %s\n", dev->name, extra);
+
+	mutex_lock(&priv->lock);
+
+	if (wrq->length && extra) {
+		if (strnicmp(extra, CMD_RSSI, strlen(CMD_RSSI)) == 0)
+		{
+			if ((priv->connect_status == LBS_CONNECTED ||
+				priv->mesh_connect_status == LBS_CONNECTED)) {
+				lbs_priv_get_rssi(priv, dwrq, extra);
+			} else {
+				dwrq->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
+				dwrq->data.length++;
+			}
+		}
+		else if (strnicmp(extra, CMD_LINKSPEED, strlen(CMD_LINKSPEED)) == 0) {
+			if ((priv->connect_status == LBS_CONNECTED ||
+				priv->mesh_connect_status == LBS_CONNECTED)) {
+					lbs_get_rate(dev, NULL, &vwrq, NULL);
+					dwrq->data.length = snprintf(
+							extra, MAX_WX_STRING, "LinkSpeed %d",
+							vwrq.value / 1000000);
+					dwrq->data.length++;
+			} else {
+				dwrq->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
+				dwrq->data.length++;
+			}
+		}
+		else if (strnicmp(extra, CMD_MACADDR, strlen(CMD_MACADDR)) == 0) {
+			dwrq->data.length = snprintf(
+					extra,
+					MAX_WX_STRING,
+					"Macaddr = %02x.%02x.%02x.%02x.%02x.%02x",
+					priv->current_addr[0],
+					priv->current_addr[1],
+					priv->current_addr[2],
+					priv->current_addr[3],
+					priv->current_addr[4],
+					priv->current_addr[5]);
+			dwrq->data.length++;
+		}
+/*
+		PS is broken in current driver
+
+ 		else if (strnicmp(extra, CMD_POWERMODE, strlen(CMD_POWERMODE)) == 0) {
+
+			char * param= lbs_iw_priv_param(extra, strlen(CMD_POWERMODE));
+			if (param != NULL)
+			{
+				struct iw_param p;
+
+				p.disabled = *param == '1' ? 0 : 1;
+				p.flags = 0;
+				p.value = 0;
+				lbs_set_power(dev, NULL, &p, NULL);
+				dwrq->data.length = snprintf(extra, MAX_WX_STRING, RESP_OK);
+			} else {
+				dwrq->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
+			}
+			dwrq->data.length++;
+		}
+*/
+		else {
+			/*
+			 * Some commands are not implemented or shouldn't be like the
+			 * various filters and partially START and STOP (wpa_supplicant
+			 * will take care of them).
+			 * Just pretend to have processed the command and leave a message
+			 * to track the call in case we missed something important!
+			 */
+			lbs_pr_info("Unknown PRIVATE command %s, ignored\n", extra);
+			dwrq->data.length = snprintf(extra, MAX_WX_STRING, RESP_OK);
+			dwrq->data.length++;
+		}
+	}
+
+	if (extra) {
+		if (copy_to_user(wrq->pointer, extra, wrq->length))
+			ret = -EFAULT;
+	}
+
+_ret_no_data:
+	mutex_unlock(&priv->lock);
+
+	if (extra)
+		kfree(extra);
+	lbs_deb_leave(LBS_DEB_WEXT);
+	return ret;
+}
+
+
 /*
  * iwconfig settable callbacks
  */
@@ -2151,7 +2343,7 @@ static const iw_handler lbs_handler[] = {
 	(iw_handler) NULL,	/* SIOCGIWSENS */
 	(iw_handler) NULL,	/* SIOCSIWRANGE */
 	(iw_handler) lbs_get_range,	/* SIOCGIWRANGE */
-	(iw_handler) NULL,	/* SIOCSIWPRIV */
+	(iw_handler) lbs_iw_set_priv,	/* SIOCSIWPRIV */
 	(iw_handler) NULL,	/* SIOCGIWPRIV */
 	(iw_handler) NULL,	/* SIOCSIWSTATS */
 	(iw_handler) NULL,	/* SIOCGIWSTATS */
@@ -2253,6 +2445,10 @@ static const iw_handler mesh_wlan_handler[] = {
 	(iw_handler) lbs_get_encodeext,/* SIOCGIWENCODEEXT */
 	(iw_handler) NULL,		/* SIOCSIWPMKSA */
 };
+/*
+ * iwpriv settable callbacks
+ */
+
 struct iw_handler_def lbs_handler_def = {
 	.num_standard	= ARRAY_SIZE(lbs_handler),
 	.standard	= (iw_handler *) lbs_handler,
