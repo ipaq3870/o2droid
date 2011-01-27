@@ -110,6 +110,7 @@ static int          g_num_of_nonblock_object = 0;
 
 #ifdef USE_G2D_DOMAIN_GATING
 #define USE_G2D_TIMER_FOR_CLK
+#define SLEEPTIME 5*HZ
 
 static struct timer_list  g_g2d_domain_timer;
 static int g2d_pwr_off_flag = 0;
@@ -552,7 +553,7 @@ void s3c_g2d_domain_timer(void)
 //otherwise wait until can gate
 	else {
 //		if( g_flag_clk_enable /* && !g_num_of_nonblock_object && g_flag_timer*/ ) {
-		  mod_timer(&g_g2d_domain_timer, jiffies + HZ);		
+		  mod_timer(&g_g2d_domain_timer, jiffies + SLEEPTIME);		
 //		}
 	}
 
@@ -729,7 +730,7 @@ err_cmd:
 		spin_lock(&g2d_domain_lock);
 		g2d_pwr_off_flag = 1;
 //		g_flag_timer = 1;
-		mod_timer(&g_g2d_domain_timer, jiffies + HZ);	
+		mod_timer(&g_g2d_domain_timer, jiffies + SLEEPTIME);	
 		spin_unlock(&g2d_domain_lock);
 #endif /* USE_G2D_DOMAIN_GATING */
 	mutex_unlock(h_rot_mutex);
@@ -885,7 +886,7 @@ printk("2D resume\n");
 	DOMAIN_P_ON;
 	s3c_g2d_clk_enable();
 	g2d_pwr_off_flag = 1;
-	mod_timer(&g_g2d_domain_timer, jiffies + HZ);	
+	mod_timer(&g_g2d_domain_timer, jiffies + SLEEPTIME);	
 // re-enable the ioctl
 	mutex_unlock(h_rot_mutex);
 	return 0;

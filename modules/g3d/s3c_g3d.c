@@ -207,7 +207,8 @@ static void Free_3D_ChunkMem(void* virtAddr,  int ithMem)
 #define G3D_CHUCNK_AVALIABLE	0
 #define G3D_CHUCNK_RESERVED		1
 
-#define TIMER_INTERVAL HZ/4
+//#define TIMER_INTERVAL HZ/4
+#define TIMER_INTERVAL 5*HZ
 
 typedef struct {
 	int		size;
@@ -1459,7 +1460,9 @@ static int s3c_g3d_suspend(struct platform_device *dev, pm_message_t state)
 	else
 	{
 		/*power off*/
+#ifdef USE_G3D_DOMAIN_GATING
 		del_timer(&g3d_pm_timer);
+#endif
 		g_G3D_SelfPowerOFF=False;
 	
 		clk_g3d_disable();
