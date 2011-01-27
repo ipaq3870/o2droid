@@ -218,7 +218,8 @@ static unsigned long calculate_average_adc(adc_channel_type channel, int adc)
 	total_adc = adc_sample[channel].total_adc;
 
 	if (adc < 0 || adc == 0) {
-		dev_err(dev, "%s: invalid adc : %d\n", __func__, adc);
+		if (adc<0)
+			dev_err(dev, "%s: invalid adc : %d\n", __func__, adc);
 		adc = adc_sample[channel].average_adc;
 	}
 
@@ -510,18 +511,20 @@ static void s3c_set_chg_en(int enable)
 	if (enable) {
 		if (chg_en_val == GPIO_LEVEL_HIGH) {
 			gpio_set_value_ex(gpio_chg_en, GPIO_LEVEL_LOW);
-			dev_info(dev, "%s: gpio_chg_en(0)\n", __func__);
+//			dev_info(dev, "%s: gpio_chg_en(0)\n", __func__);
 			s3c_set_time_for_charging(1);
 		}
 	} else {
 		if (chg_en_val == GPIO_LEVEL_LOW) {
 			gpio_set_value_ex(gpio_chg_en, GPIO_LEVEL_HIGH);
-			dev_info(dev, "%s: gpio_chg_en(1)\n", __func__);
+//			dev_info(dev, "%s: gpio_chg_en(1)\n", __func__);
 			s3c_set_time_for_charging(0);
 			s3c_bat_info.bat_info.batt_is_recharging = 0;
 		}
 	}
 	s3c_bat_info.bat_info.charging_enabled = enable;
+	dev_info(dev, "%s: charging %sbled\n", __func__,enable?"ena":"disa");
+
 }
 
 static void s3c_temp_control(int mode) {
