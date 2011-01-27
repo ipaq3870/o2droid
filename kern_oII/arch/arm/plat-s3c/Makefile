@@ -18,7 +18,7 @@ else
 obj-y				+= time.o
 endif
 obj-y				+= clock.o
-obj-y				+= pwm-clock.o
+#obj-y				+= pwm-clock.o
 obj-y				+= gpio.o
 obj-y				+= gpio-config.o
 
@@ -47,7 +47,7 @@ obj-$(CONFIG_S3C_DEV_I2C1)		+= dev-i2c1.o
 obj-$(CONFIG_SND_S3C64XX_SOC_I2S)	+= dev-audio.o
 #obj-y					+= dev-i2s.o
 obj-$(CONFIG_S3C_DEV_FB)		+= dev-fb.o
-//obj-$(CONFIG_S3C_DEV_USB_HOST)	+= dev-usb.o
+#obj-$(CONFIG_S3C_DEV_USB_HOST)	+= dev-usb.o
 obj-$(CONFIG_TOUCHSCREEN_S3C)		+= dev-ts.o
 obj-$(CONFIG_TOUCHSCREEN_M_S3C)		+= dev-ts.o
-//obj-$(CONFIG_S3C_DEV_USB_HSOTG)	+= dev-usb-hsotg.o
+#obj-$(CONFIG_S3C_DEV_USB_HSOTG)	+= dev-usb-hsotg.o

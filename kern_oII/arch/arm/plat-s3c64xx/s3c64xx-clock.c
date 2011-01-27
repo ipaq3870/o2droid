@@ -763,16 +763,12 @@ void __init_or_cpufreq s3c64xx_setup_clocks(void)
 	printk(KERN_DEBUG "%s: registering clocks\n", __func__);
 
 	a = 0;
-#if 0
-	//a =  (32 << 16) + (1 << 8) + 3;  //bss 48MHz
-	a =  (16 << 16) + (1 << 8) + 3;  //bss 24MHz
-	writel(a , S3C_EPLL_CON0);	 //bss 
-	writel(0 , S3C_EPLL_CON1);	 //bss
-
-	a = 0;
-	a =  (266 << 16) + (3 << 8) + 2; //bss 266MHz
-	writel(a , S3C_MPLL_CON);	 //bss
-	writel(0x3510, S3C_CLK_DIV0);	 //bss
+#if 1
+#define PCLK_DIV_RATIO_BIT                12
+#define PCLK_DIV_MASK                     (0xf<<PCLK_DIV_RATIO_BIT)
+    clkdiv0 = __raw_readl(S3C_CLK_DIV0); //bss
+    a=(clkdiv0 & ~(PCLK_DIV_MASK)) | (3 << PCLK_DIV_RATIO_BIT); //bss pclk to (3: 66MHz, 7: 33MHz )
+    writel(a, S3C_CLK_DIV0);         //bss
 #endif 
 
 	clkdiv0 = __raw_readl(S3C_CLK_DIV0);

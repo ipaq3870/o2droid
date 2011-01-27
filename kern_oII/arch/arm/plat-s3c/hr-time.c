@@ -58,7 +58,7 @@ static inline void sec_tick_set_autoreset(void)
 	unsigned long tcon;
 
 	tcon  = __raw_readl(S3C_TCON);
-	tcon |= (1<<22);
+	tcon |= S3C_TCON_T4RELOAD;
 	__raw_writel(tcon, S3C_TCON);
 }
 
@@ -67,7 +67,7 @@ static inline void sec_tick_remove_autoreset(void)
 	unsigned long tcon;	
 
 	tcon  = __raw_readl(S3C_TCON);
-	tcon &= ~(1<<22);
+	tcon &= ~S3C_TCON_T4RELOAD;
 	__raw_writel(tcon, S3C_TCON);
 }
 
@@ -92,16 +92,16 @@ static void sec_tick_timer_start(unsigned long load_val,
 	tcnt--;
 	__raw_writel(tcnt, S3C_TCNTB(4));
 
-	tcfg1 &= ~S3C_TCFG1_MUX4_MASK;
-	tcfg1 |= S3C_TCFG1_MUX4_DIV1;
+	tcfg1 &= ~(S3C_TCFG1_MUX4_MASK | S3C_TCFG1_MUX3_MASK);
+	tcfg1 |= S3C_TCFG1_MUX4_DIV1 | S3C_TCFG1_MUX3_DIV1;
 
 	tcfg0 &= ~S3C_TCFG_PRESCALER1_MASK;
 	tcfg0 |= (0) << S3C_TCFG_PRESCALER1_SHIFT;
 		
-	__raw_writel(tcfg1, S3C_TCFG1);
-	__raw_writel(tcfg0, S3C_TCFG0);
+	__raw_writel(tcfg1, S3C_TCFG1);		// 3,4 timer divider= 1/2
+	__raw_writel(tcfg0, S3C_TCFG0);		// 3,4 prescaler = 0
 
-	tcon &= ~(7<<20);
+	tcon &= ~(S3C_TCON_T4RELOAD|S3C_TCON_T4MANUALUPD|S3C_TCON_T4START);
 	
 	tcon |= S3C_TCON_T4MANUALUPD;
 
@@ -123,7 +123,7 @@ static inline void sec_tick_timer_stop(void)
 	unsigned long tcon;
 
 	tcon  = __raw_readl(S3C_TCON);
-	tcon &= ~(1<<20);
+	tcon &= ~S3C_TCON_T4START;
 	__raw_writel(tcon, S3C_TCON);
 }
 
@@ -137,8 +137,8 @@ static void sec_sched_timer_start(unsigned long load_val,
 	unsigned long tcstat;
 
 	tcstat = __raw_readl(S3C_TINT_CSTAT);
-	tcstat |=  0x04;
-	__raw_writel(tcstat, S3C_TINT_CSTAT);
+	tcstat |=  0x08;
+	__raw_writel(tcstat, S3C_TINT_CSTAT);	//timer3
 
 	tcon  = __raw_readl(S3C_TCON);
 	tcfg1 = __raw_readl(S3C_TCFG1);
@@ -146,23 +146,23 @@ static void sec_sched_timer_start(unsigned long load_val,
 		
 	tcnt = load_val;
 	tcnt--;
-	__raw_writel(tcnt, S3C_TCNTB(2));
-	__raw_writel(tcnt, S3C_TCMPB(2));	
+	__raw_writel(tcnt, S3C_TCNTB(3));
+	__raw_writel(tcnt, S3C_TCMPB(3));	
 	
-	tcon &= ~(0x0b<<12);
+	tcon &= ~( S3C_TCON_T3RELOAD|S3C_TCON_T3MANUALUPD|S3C_TCON_T3START );
 	
 	if (autoreset) 
-		tcon |= S3C_TCON_T2RELOAD;
+		tcon |= S3C_TCON_T3RELOAD;
 
-	tcon |= S3C_TCON_T2MANUALUPD;
+	tcon |= S3C_TCON_T3MANUALUPD;
 
 	__raw_writel(tcon, S3C_TCON);
 	
 
 	
 	/* start the timer running */
-	tcon |= S3C_TCON_T2START;
-	tcon &= ~S3C_TCON_T2MANUALUPD;
+	tcon |= S3C_TCON_T3START;
+	tcon &= ~S3C_TCON_T3MANUALUPD;
 	__raw_writel(tcon, S3C_TCON);
 
 }
@@ -240,34 +240,34 @@ static void __init  sec_init_dynamic_tick_timer(unsigned long rate)
 
 /*
  * ---------------------------------------------------------------------------
- * PWM timer 2 ... free running 32-bit clock source and scheduler clock
+ * PWM timer 3 ... free running 32-bit clock source and scheduler clock
  * ---------------------------------------------------------------------------
  */
  
-static unsigned long sec_mpu_timer2_overflows;
+static unsigned long sec_mpu_timer3_overflows;
 
-irqreturn_t sec_mpu_timer2_interrupt(int irq, void *dev_id)
+irqreturn_t sec_mpu_timer3_interrupt(int irq, void *dev_id)
 {
-	sec_mpu_timer2_overflows++;
+	sec_mpu_timer3_overflows++;
 
 	return IRQ_HANDLED;
 }
 
-struct irqaction sec_timer2_irq = {
-	.name		= "pwm_timer2",
+struct irqaction sec_timer3_irq = {
+	.name		= "pwm_timer3",
 	.flags		= IRQF_DISABLED ,
-	.handler	= sec_mpu_timer2_interrupt,
+	.handler	= sec_mpu_timer3_interrupt,
 };
 
 
 static cycle_t sec_sched_timer_read(void)
 {
 
-	return (cycle_t)~__raw_readl(S3C_TIMERREG(0x2c));
+	return (cycle_t)~__raw_readl(S3C_TIMERREG(0x38));	//timer3 observ. reg
 }
 
 struct clocksource clocksource_sec= {
-	.name		= "clock_source_timer2",
+	.name		= "clock_source_timer3",
 	.rating		= 300,
 	.read		= sec_sched_timer_read,
 	.mask		= CLOCKSOURCE_MASK(32),
@@ -386,7 +386,7 @@ static void sec_timer_setup(void)
 static void __init sec_dynamic_timer_init(void)
 {
 	sec_dynamic_timer_setup();
-	setup_irq(IRQ_TIMER2, &sec_timer2_irq);	
+	setup_irq(IRQ_TIMER3, &sec_timer3_irq);	
 	setup_irq(IRQ_TIMER4, &sec_tick_timer_irq);
 }
 

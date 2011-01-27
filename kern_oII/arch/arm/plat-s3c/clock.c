@@ -271,14 +271,6 @@ struct clk clk_f = {
 	.ctrlbit	= 0,
 };
 
-struct clk clk_h = {
-	.name		= "hclk",
-	.id		= -1,
-	.rate		= 0,
-	.parent		= NULL,
-	.ctrlbit	= 0,
-	.set_rate	= clk_default_setrate,
-};
 
 struct clk clk_hx2 = {
 	.name       	= "hclkx2",
@@ -286,6 +278,16 @@ struct clk clk_hx2 = {
 	.rate       	= 0,
 	.parent     	= NULL,
 	.ctrlbit    	= 0,
+	.set_rate	= clk_default_setrate,
+};
+
+struct clk clk_h = {
+	.name		= "hclk",
+	.id		= -1,
+	.rate		= 0,
+//	.parent		= NULL,
+	.parent		= &clk_hx2,
+	.ctrlbit	= 0,
 	.set_rate	= clk_default_setrate,
 };
 
@@ -301,7 +303,8 @@ struct clk clk_p = {
 	.name		= "pclk",
 	.id		= -1,
 	.rate		= 0,
-	.parent		= NULL,
+//	.parent		= NULL,
+	.parent		= &clk_hx2,
 	.ctrlbit	= 0,
 	.set_rate	= clk_default_setrate,
 };
