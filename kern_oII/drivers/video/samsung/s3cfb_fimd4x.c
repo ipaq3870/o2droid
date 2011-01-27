@@ -1965,7 +1965,7 @@ int lcd_late_resume = 1;
 static int s3cfb_suspend_sub(s3c_fb_info_t *fbi)
 {
 
-	printk("s3cfb_suspend_sub  \n");
+//	printk("s3cfb_suspend_sub  \n");
         s3c6410_pm_do_save(s3c_lcd_save, ARRAY_SIZE(s3c_lcd_save));
 
         /* for Idle Current GPIO Setting */
@@ -1997,7 +1997,7 @@ static int s3cfb_suspend_sub(s3c_fb_info_t *fbi)
 
 static int s3cfb_resume_sub(s3c_fb_info_t *fbi)
 {
-	printk("s3cfb_resume_sub \n");
+//	printk("s3cfb_resume_sub \n");
 #ifdef USE_LCD_DOMAIN_GATING
         s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_ACTIVE_MODE, S3C64XX_LCD);
         if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_F)) {
@@ -2043,7 +2043,7 @@ void s3cfb_early_suspend(struct early_suspend *h)
 	//standby_on();
 	s3c_fb_info_t *info = container_of(h, s3c_fb_info_t, early_suspend);
 	
-	printk("#%s\n", __func__);
+//	printk("#%s\n", __func__);
 	
 	lcd_late_resume = 0;
 
@@ -2057,7 +2057,7 @@ void s3cfb_late_resume(struct early_suspend *h)
 {
 	s3c_fb_info_t *info = container_of(h, s3c_fb_info_t, early_suspend);
 
-	printk("#%s\n", __func__);
+//	printk("#%s\n", __func__);
 
 	if (lcd_pm_status == 0) {
 		s3cfb_resume_sub(info);
@@ -2074,7 +2074,7 @@ int s3cfb_suspend(struct platform_device *dev, pm_message_t state)
 	struct fb_info *fbinfo = platform_get_drvdata(dev);
 	s3c_fb_info_t *info = fbinfo->par;
 	
-	printk("#%s\n", __func__);
+//	printk("#%s\n", __func__);
 
 	if (lcd_pm_status != 0) {
 		s3cfb_suspend_sub(info);
@@ -2093,7 +2093,7 @@ int s3cfb_resume(struct platform_device *dev)
 	struct fb_info *fbinfo = platform_get_drvdata(dev);
 	s3c_fb_info_t *info = fbinfo->par;
 
-	printk("#%s\n", __func__);
+//	printk("#%s\n", __func__);
 
 	s3cfb_resume_sub(info);
 
@@ -2120,7 +2120,7 @@ int s3cfb_shutdown(struct platform_device *dev)
  */
 int s3cfb_suspend(struct platform_device *dev, pm_message_t state)
 {
-	printk("s3cfb_suspend \n");
+//	printk("s3cfb_suspend \n");
 	struct fb_info *fbinfo = platform_get_drvdata(dev);
 	s3c_fb_info_t *info = fbinfo->par;
 	
