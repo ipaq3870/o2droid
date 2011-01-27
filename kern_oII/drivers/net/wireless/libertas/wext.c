@@ -712,6 +712,7 @@ static int lbs_set_power(struct net_device *dev, struct iw_request_info *info,
 
 	lbs_deb_enter(LBS_DEB_WEXT);
 
+
 	if (!priv->ps_supported) {
 		if (vwrq->disabled)
 			return 0;
@@ -2135,6 +2136,17 @@ static int lbs_set_wap(struct net_device *dev, struct iw_request_info *info,
 	return ret;
 }
 
+#define CMD_START		"START"
+#define CMD_STOP		"STOP"
+#define CMD_RSSI		"RSSI"
+#define CMD_LINKSPEED	"LINKSPEED"
+#define CMD_RSSI 		"RSSI"
+#define CMD_MACADDR		"MACADDR"
+#define CMD_POWERMODE	"POWERMODE"
+
+#define RESP_OK			"OK"
+#define RESP_FAIL		"FAIL"
+
 static int lbs_format_ssid(char* ssid_buf, int buf_len, char* ssid,
 		int ssid_len)
 {
@@ -2174,21 +2186,64 @@ static void lbs_priv_get_rssi(struct lbs_private *priv,	union iwreq_data *wrqu,
 	int rssi;
 	char * resp = extra;
 
-	rssi = CAL_RSSI(priv->SNR[TYPE_BEACON][TYPE_NOAVG],
-					priv->NF[TYPE_BEACON][TYPE_NOAVG]);
+	if ((priv->connect_status == LBS_CONNECTED ||
+		priv->mesh_connect_status == LBS_CONNECTED))
+	{
+		rssi = CAL_RSSI(priv->SNR[TYPE_BEACON][TYPE_NOAVG],
+						priv->NF[TYPE_BEACON][TYPE_NOAVG]);
 
-	lbs_format_ssid(
-			ssidbuf,
-			sizeof(ssidbuf),
-			priv->curbssparams.ssid,
-			priv->curbssparams.ssid_len);
+		lbs_format_ssid(
+				ssidbuf,
+				sizeof(ssidbuf),
+				priv->curbssparams.ssid,
+				priv->curbssparams.ssid_len);
 
-	resp += snprintf(resp, MAX_WX_STRING,
-			"%s rssi %d",
-			ssidbuf,
-			rssi);
+		resp += snprintf(resp, MAX_WX_STRING,
+				"%s rssi %d",
+				ssidbuf,
+				rssi);
 
-	wrqu->data.length = resp - extra + 1;
+		wrqu->data.length = resp - extra + 1;
+	} else {
+		wrqu->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
+	}
+	wrqu->data.length++;
+}
+
+static void lbs_priv_get_rate(struct lbs_private *priv, union iwreq_data *wrqu,
+		char *extra)
+{
+	struct iw_param vwrq;
+
+	if ((priv->connect_status == LBS_CONNECTED ||
+		priv->mesh_connect_status == LBS_CONNECTED))
+	{
+		lbs_get_rate(priv->dev, NULL, &vwrq, NULL);
+		wrqu->data.length = snprintf(
+				extra, MAX_WX_STRING, "LinkSpeed %d",
+				vwrq.value / 1000000);
+	} else {
+		wrqu->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
+	}
+	wrqu->data.length++;
+}
+
+static void lbs_priv_get_macaddr(struct lbs_private *priv, union iwreq_data *wrqu,
+		char *extra)
+{
+	mutex_lock(&priv->lock);
+	wrqu->data.length = snprintf(
+			extra,
+			MAX_WX_STRING,
+			"Macaddr = %02x.%02x.%02x.%02x.%02x.%02x",
+			priv->current_addr[0],
+			priv->current_addr[1],
+			priv->current_addr[2],
+			priv->current_addr[3],
+			priv->current_addr[4],
+			priv->current_addr[5]);
+	wrqu->data.length++;
+	mutex_unlock(&priv->lock);
 }
 
 static char *lbs_iw_priv_param(char *extra, int startindex)
@@ -2204,16 +2259,24 @@ static char *lbs_iw_priv_param(char *extra, int startindex)
 		return p;
 }
 
-#define CMD_START		"START"
-#define CMD_STOP		"STOP"
-#define CMD_RSSI		"RSSI"
-#define CMD_LINKSPEED	"LINKSPEED"
-#define CMD_RSSI 		"RSSI"
-#define CMD_MACADDR		"MACADDR"
-#define CMD_POWERMODE	"POWERMODE"
+static void lbs_priv_set_ps(struct lbs_private *priv, union iwreq_data *wrqu,
+		char *extra)
+{
+	struct iw_param p;
 
-#define RESP_OK			"OK"
-#define RESP_FAIL		"FAIL"
+	char * param= lbs_iw_priv_param(extra, strlen(CMD_POWERMODE));
+	if (param != NULL)
+	{
+		p.disabled = *param == '1' ? 0 : 1;
+		p.flags = 0;
+		p.value = 0;
+		lbs_set_power(priv->dev, NULL, &p, NULL);
+		wrqu->data.length = snprintf(extra, MAX_WX_STRING, RESP_OK);
+	} else {
+		wrqu->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
+	}
+	wrqu->data.length++;
+}
 
 static int lbs_iw_set_priv(struct net_device *dev, struct iw_request_info *info,
         struct iw_point *wrq, char *ext)
@@ -2221,7 +2284,6 @@ static int lbs_iw_set_priv(struct net_device *dev, struct iw_request_info *info,
 	int ret = 0;
 	struct lbs_private *priv = dev->ml_priv;
 	union iwreq_data *dwrq = (union iwreq_data *)wrq;
-	struct iw_param vwrq;
 
 	char * extra = NULL;
 
@@ -2238,66 +2300,21 @@ static int lbs_iw_set_priv(struct net_device *dev, struct iw_request_info *info,
 
 	lbs_deb_enter_args(LBS_DEB_WEXT, "%s priv rq = %s\n", dev->name, extra);
 
-	mutex_lock(&priv->lock);
-
 	if (wrq->length && extra) {
-		if (strnicmp(extra, CMD_RSSI, strlen(CMD_RSSI)) == 0)
+ 		if (strnicmp(extra, CMD_RSSI, strlen(CMD_RSSI)) == 0)
 		{
-			if ((priv->connect_status == LBS_CONNECTED ||
-				priv->mesh_connect_status == LBS_CONNECTED)) {
-				lbs_priv_get_rssi(priv, dwrq, extra);
-			} else {
-				dwrq->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
-				dwrq->data.length++;
-			}
+			lbs_priv_get_rssi(priv, dwrq, extra);
 		}
 		else if (strnicmp(extra, CMD_LINKSPEED, strlen(CMD_LINKSPEED)) == 0) {
-			if ((priv->connect_status == LBS_CONNECTED ||
-				priv->mesh_connect_status == LBS_CONNECTED)) {
-					lbs_get_rate(dev, NULL, &vwrq, NULL);
-					dwrq->data.length = snprintf(
-							extra, MAX_WX_STRING, "LinkSpeed %d",
-							vwrq.value / 1000000);
-					dwrq->data.length++;
-			} else {
-				dwrq->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
-				dwrq->data.length++;
-			}
+			lbs_priv_get_rate(priv, dwrq, extra);
 		}
 		else if (strnicmp(extra, CMD_MACADDR, strlen(CMD_MACADDR)) == 0) {
-			dwrq->data.length = snprintf(
-					extra,
-					MAX_WX_STRING,
-					"Macaddr = %02x.%02x.%02x.%02x.%02x.%02x",
-					priv->current_addr[0],
-					priv->current_addr[1],
-					priv->current_addr[2],
-					priv->current_addr[3],
-					priv->current_addr[4],
-					priv->current_addr[5]);
-			dwrq->data.length++;
+			lbs_priv_get_macaddr(priv, dwrq, extra);
 		}
-/*
-		PS is broken in current driver
-
- 		else if (strnicmp(extra, CMD_POWERMODE, strlen(CMD_POWERMODE)) == 0) {
-
-			char * param= lbs_iw_priv_param(extra, strlen(CMD_POWERMODE));
-			if (param != NULL)
-			{
-				struct iw_param p;
-
-				p.disabled = *param == '1' ? 0 : 1;
-				p.flags = 0;
-				p.value = 0;
-				lbs_set_power(dev, NULL, &p, NULL);
-				dwrq->data.length = snprintf(extra, MAX_WX_STRING, RESP_OK);
-			} else {
-				dwrq->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
-			}
-			dwrq->data.length++;
+ 		else if (strnicmp(extra, CMD_POWERMODE, strlen(CMD_POWERMODE)) == 0)
+ 		{
+ 			lbs_priv_set_ps(priv, dwrq, extra);
 		}
-*/
 		else {
 			/*
 			 * Some commands are not implemented or shouldn't be like the
