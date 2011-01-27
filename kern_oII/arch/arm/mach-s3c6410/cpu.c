@@ -84,7 +84,7 @@ void __init s3c6410_map_io(void)
 
 	s3c6410_default_sdhci0();
 	s3c6410_default_sdhci1();
-	s3c6410_default_sdhci2();
+//	s3c6410_default_sdhci2();
 
 	/* the i2c devices are directly compatible with s3c */
 	s3c_i2c0_setname("s3c-i2c");

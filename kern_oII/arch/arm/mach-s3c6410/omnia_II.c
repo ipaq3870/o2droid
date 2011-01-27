@@ -606,10 +606,6 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 #ifdef CONFIG_S3C64XX_ADC
 	&s3c_device_adc,
 #endif
-#ifdef CONFIG_HAVE_PWM
-	&s3c_device_timer[0],
-	&s3c_device_timer[1],
-#endif
 	&s3c_device_rtc,
 #ifdef CONFIG_SND_S3C64XX_SOC_I2S
 	&s3c64xx_device_iis0,
