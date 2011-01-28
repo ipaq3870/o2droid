@@ -2267,13 +2267,15 @@ static void lbs_priv_set_ps(struct lbs_private *priv, union iwreq_data *wrqu,
 	char * param= lbs_iw_priv_param(extra, strlen(CMD_POWERMODE));
 	if (param != NULL)
 	{
-		p.disabled = *param == '1' ? 0 : 1;
+		p.disabled = (*param == '1') ? 1 : 0;
 		p.flags = 0;
 		p.value = 0;
 		lbs_set_power(priv->dev, NULL, &p, NULL);
+		lbs_pr_info("powersave %s\n", p.disabled?"disabled":"enabled");
 		wrqu->data.length = snprintf(extra, MAX_WX_STRING, RESP_OK);
 	} else {
 		wrqu->data.length = snprintf(extra, MAX_WX_STRING, RESP_FAIL);
+		lbs_pr_err("extra command is invalid\n");
 	}
 	wrqu->data.length++;
 }
@@ -2318,8 +2320,7 @@ static int lbs_iw_set_priv(struct net_device *dev, struct iw_request_info *info,
 		else {
 			/*
 			 * Some commands are not implemented or shouldn't be like the
-			 * various filters and partially START and STOP (wpa_supplicant
-			 * will take care of them).
+			 * various filters and partially START and STOP.
 			 * Just pretend to have processed the command and leave a message
 			 * to track the call in case we missed something important!
 			 */
@@ -2335,7 +2336,6 @@ static int lbs_iw_set_priv(struct net_device *dev, struct iw_request_info *info,
 	}
 
 _ret_no_data:
-	mutex_unlock(&priv->lock);
 
 	if (extra)
 		kfree(extra);
