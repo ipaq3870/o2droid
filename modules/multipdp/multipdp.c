@@ -1254,7 +1254,6 @@ static int pdp_activate(pdp_arg_t *pdp_arg, unsigned type, unsigned flags)
 
 		DPRINTK(1, "%s(id: %u) network device created\n", 
 			net->name, dev->id);
-		msleep(1000); //bss
 	} else if (type == DEV_TYPE_SERIAL) {
 		init_MUTEX(&dev->vs_dev.write_lock);
 		strcpy(dev->vs_dev.tty_name, pdp_arg->ifname);
