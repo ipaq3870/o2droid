@@ -694,13 +694,17 @@ static void vnet_tx_timeout(struct net_device *net)
 	netif_wake_queue(net);
 }
 
+static const struct net_device_ops vnet_options = 
+{
+	.ndo_open		= vnet_open,
+	.ndo_stop		= vnet_stop,
+	.ndo_start_xmit	= vnet_start_xmit,
+	.ndo_get_stats		= vnet_get_stats,
+	.ndo_tx_timeout		= vnet_tx_timeout
+};
+
 static void vnet_setup(struct net_device *dev)
 {
-	dev->open		= vnet_open;
-	dev->stop		= vnet_stop;
-	dev->hard_start_xmit	= vnet_start_xmit;
-	dev->get_stats		= vnet_get_stats;
-	dev->tx_timeout		= vnet_tx_timeout;
 	dev->type		= ARPHRD_PPP;
 	dev->hard_header_len 	= 0;
 	dev->mtu		= MAX_PDP_DATA_LEN;
@@ -708,8 +712,8 @@ static void vnet_setup(struct net_device *dev)
 	dev->tx_queue_len	= 1000;
 	dev->flags		= IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
 	dev->watchdog_timeo	= 40 * HZ;
+	dev->netdev_ops		= &vnet_options;
 }
-
 
 static struct net_device *vnet_add_dev(void *priv)
 {
@@ -1250,6 +1254,7 @@ static int pdp_activate(pdp_arg_t *pdp_arg, unsigned type, unsigned flags)
 
 		DPRINTK(1, "%s(id: %u) network device created\n", 
 			net->name, dev->id);
+		msleep(1000); //bss
 	} else if (type == DEV_TYPE_SERIAL) {
 		init_MUTEX(&dev->vs_dev.write_lock);
 		strcpy(dev->vs_dev.tty_name, pdp_arg->ifname);
