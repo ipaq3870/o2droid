@@ -359,7 +359,7 @@
 
 /* GPP Group */
 #define GPIO_PS_HOLD_PDA	S3C64XX_GPP(13)
-#define GPIO_PS_HOLD_PDA_AF     (2)
+#define GPIO_PS_HOLD_PDA_AF     (1)
 
 /* GPQ Group */
 

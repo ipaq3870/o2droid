@@ -247,11 +247,6 @@ struct platform_device sec_device_btsleep = {
 static int libertas_setup(struct spi_device *spi)
 { 	unsigned int reg;
 
-	// Setup GPIOs
-//       reg = __raw_readl(S3C64XX_SPCON);
-//       reg |= (3 << 18) | (3 << 28);
-//       __raw_writel(reg, S3C64XX_SPCON);
-
 	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_HIGH);
 	gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_HIGH); 	
 	mdelay(600);
@@ -326,8 +321,6 @@ static void __init init_spi(void)
 }
 
 
-//int amp_enable(int a) {}
-//int audio_power(int a) {}
 
 static struct s3c6410_pmem_setting pmem_setting = {
         .pmem_start = RESERVED_PMEM_START,
@@ -610,7 +603,6 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 #ifdef CONFIG_SND_S3C64XX_SOC_I2S
 	&s3c64xx_device_iis0,
 #endif
-//	&s3c_device_iis,
 	&s3c_device_usbgadget,
 	&sec_device_i2c_pmic,			/* pmic(max8698) i2c. */
 	&sec_device_i2c_common,			/* radio, sound, .. i2c. */
@@ -644,15 +636,8 @@ static struct s3c_adc_mach_info s3c_adc_platform = {
 };
 #endif
 
-static void s3c6410_power_off(void)
-{
-		machine_restart(NULL);
-}
-EXPORT_SYMBOL_GPL(s3c6410_power_off);
-
 static void __init smdk6410_map_io(void)
 {
-//	pm_power_off = s3c6410_power_off;
 	pm_power_off = saturn_pm_power_off;
 	s3c64xx_init_io(smdk6410_iodesc, ARRAY_SIZE(smdk6410_iodesc));
 	s3c_init_clocks(12000000);
@@ -907,48 +892,7 @@ void s3c_config_gpio_table(int array_size, int (*gpio_table)[6])
 }
 EXPORT_SYMBOL(s3c_config_gpio_table);
 
-static int saturn_sleep_gpio_table[][6] = {
-	/** ALIVE PART **/
-	/* GPK */
-	//{ GPIO_TOUCH_RST, GPIO_TOUCH_RST_AF, GPIO_LEVEL_HIGH, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ GPIO_CAM_EN, GPIO_CAM_EN_AF, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ GPIO_PHONE_RST_N, GPIO_PHONE_RST_N_AF, GPIO_LEVEL_HIGH, S3C_GPIO_PULL_NONE, 0, 0 },
-#if 0  // [[ Enable anykey wakeup      
-	{ GPIO_KEYSCAN_0, 0, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 }, //Vol Up/Down, HALF_SHUTTER
-	{ GPIO_KEYSCAN_1, 0, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ GPIO_KEYSCAN_2, 0, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ GPIO_KEYSCAN_3, 0, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 }, 
-#endif
-#if 0
-	{ GPIO_FM_RST_N, GPIO_FM_RST_N_AF, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-#endif
-	{ S3C64XX_GPK(13), 1, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ S3C64XX_GPK(14), 1, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ GPIO_VREG_MSMP_26V, GPIO_VREG_MSMP_26V_AF, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 },
-	/* GPL */
-	{ GPIO_KEYSENSE_0, 1, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ GPIO_KEYSENSE_1, 1, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ GPIO_KEYSENSE_2, 1, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	//{ GPIO_7_LED_EN, GPIO_7_LED_EN_AF, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	//{ GPIO_7_LED_LDO_EN, GPIO_7_LED_LDO_EN_AF, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ S3C64XX_GPL(6), 1, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ GPIO_USIM_BOOT, GPIO_USIM_BOOT_AF, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-	{ GPIO_CAM_3M_STBY_N, GPIO_CAM_3M_STBY_N_AF, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-#if 0        
-	{ GPIO_MIC_SEL_N, GPIO_MIC_SEL_N_AF, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 },
-#endif        
-	{ GPIO_FM_INT, GPIO_FM_INT_AF, GPIO_LEVEL_NONE, S3C_GPIO_PULL_UP, 0, 0 },
-	//{ GPIO_TOUCH_INT_N, 0, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 },
-	/* GPM */
-	{ GPIO_PDA_ACTIVE, GPIO_PDA_ACTIVE_AF, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 }, 
-	/** MEMORY PART **/
-	/* GPO */
-	{ GPIO_LCD_RST_N, GPIO_LCD_RST_N_AF, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, S3C_GPIO_SLP_OUT0, S3C_GPIO_PULL_NONE },
-	{ GPIO_LCD_CS_N, GPIO_LCD_CS_N_AF, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, S3C_GPIO_SLP_OUT0, S3C_GPIO_PULL_NONE },
-	{ GPIO_LCD_SDI, GPIO_LCD_SDI_AF, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, S3C_GPIO_SLP_OUT0, S3C_GPIO_PULL_NONE },
-	{ GPIO_LCD_ID, GPIO_LCD_ID_AF, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_NONE },
-	{ GPIO_LCD_SCLK, GPIO_LCD_SCLK_AF, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, S3C_GPIO_SLP_OUT0, S3C_GPIO_PULL_NONE },
-};
+#include "omnia_II_gpio_table.h"
 
 static void check_pmic(void)
 {	
@@ -990,8 +934,8 @@ void s3c_config_sleep_gpio(void)
 	int spcon_val;
 	printk("s3c_config_sleep_gpio");
 	check_pmic();
-	s3c_config_gpio_table(ARRAY_SIZE(saturn_sleep_gpio_table),
-	saturn_sleep_gpio_table);
+	s3c_config_gpio_table(ARRAY_SIZE(omnia_II_sleep_gpio_table),
+	omnia_II_sleep_gpio_table);
 
 	spcon_val = __raw_readl(S3C64XX_SPCON);
 	spcon_val = spcon_val & (~0xFFEC0000);
