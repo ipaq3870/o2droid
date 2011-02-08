@@ -439,7 +439,7 @@ static int s3c_get_bat_level(struct power_supply *bat_ps)
 		fg_vcell = s3c_bat_info.bat_info.batt_vol;
 	} else
 		s3c_bat_info.bat_info.batt_vol = fg_vcell;
-/*
+
 	if (is_over_abs_time()) {
 		fg_soc = 100;
 		s3c_bat_info.bat_info.batt_is_full = 1;
@@ -455,7 +455,7 @@ static int s3c_get_bat_level(struct power_supply *bat_ps)
 			fg_soc = 100;
 
 	}
-*/
+
 	check_recharging_bat(avg_fg_vcell(fg_vcell));
 
 __end__:
@@ -1275,7 +1275,7 @@ static int s3c_cable_status_update(int status)
                  * LED state or whatnot...
                  */
 		if (gpio_get_value(gpio_ta_connected)) 
-			wake_lock_timeout(&vbus_wake_lock, HZ / 2);
+			wake_lock_timeout(&vbus_wake_lock, HZ * 5);
         }
         /* if the power source changes, all power supplies may change state */
         power_supply_changed(&s3c_power_supplies[CHARGER_BATTERY]);
@@ -1439,7 +1439,7 @@ static int s3c_bat_suspend(struct platform_device *pdev,
 static int s3c_bat_resume(struct platform_device *pdev)
 {
 	dev_info(dev, "%s\n", __func__);
-	wake_lock(&vbus_wake_lock);
+//	wake_lock(&vbus_wake_lock);
 	enable_irq(IRQ_TA_CONNECTED_N);
 	enable_irq(IRQ_TA_CHG_N);
 	schedule_work(&bat_work);

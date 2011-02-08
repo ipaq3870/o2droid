@@ -148,7 +148,7 @@ const unsigned int gpio_chg_en_af	= GPIO_TA_EN_AF;
 /* #define __BATTERY_COMPENSATION__ */
 /* #define __CHECK_BOARD_REV__ */
 /* #define __BOARD_REV_ADC__ */
-#define __TEST_DEVICE_DRIVER__
+//#define __TEST_DEVICE_DRIVER__
 /* #define __ALWAYS_AWAKE_DEVICE__ */
 #define __TEST_MODE_INTERFACE__
 /* #define __CHECK_CHG_CURRENT__ */
