@@ -305,7 +305,7 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
 	rtc_tm->tm_sec  = readb(base + S3C_RTCSEC);
 
 	year_bin = bcd2bin(rtc_tm->tm_year) - 20; //bss
-	rtc_tm->tm_year = bin2bcd(year_bin);	//bss
+//	rtc_tm->tm_year = bin2bcd(year_bin);	//bss
 
 	/* the only way to work out wether the system was mid-update
 	 * when we read it is to check the second counter, and if it
@@ -326,7 +326,7 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
 	rtc_tm->tm_hour = bcd2bin(rtc_tm->tm_hour);
 	rtc_tm->tm_mday = bcd2bin(rtc_tm->tm_mday);
 	rtc_tm->tm_mon = bcd2bin(rtc_tm->tm_mon);
-	rtc_tm->tm_year = bcd2bin(rtc_tm->tm_year);
+	rtc_tm->tm_year = year_bin; //bcd2bin(rtc_tm->tm_year);
 
 	rtc_tm->tm_year += 100;
 	rtc_tm->tm_mon -= 1;
@@ -418,9 +418,10 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
 		alm_tm->tm_mon = 0xff;
 	}
 
-	if (alm_en & S3C_RTCALM_YEAREN)
-		alm_tm->tm_year = bcd2bin(alm_tm->tm_year);
-	else
+	if (alm_en & S3C_RTCALM_YEAREN) {
+		alm_tm->tm_year = bcd2bin(alm_tm->tm_year)-20;
+		alm_tm->tm_year += 100;
+	} else
 		alm_tm->tm_year = 0xffff;
 
 	return 0;
@@ -469,7 +470,7 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
 
 	if (year < 100 && year >= 0) {
 		alrm_en |= S3C_RTCALM_YEAREN;
-		writeb(bin2bcd(year), base + S3C_ALMYEAR);
+		writeb(bin2bcd(year+20), base + S3C_ALMYEAR);
 	}
 
 	pr_debug("setting S3C_RTCALM to %08x\n", alrm_en);
