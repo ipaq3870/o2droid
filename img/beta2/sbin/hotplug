@@ -1,0 +1,53 @@
+#!/bin/sh
+
+mesg() {
+  echo Hotplug: "[$$]" "$@"  >> /hotplug.txt
+}
+
+FIRMWARE_DIR="/lib/firmware"
+SYSFS=/sys
+
+if [ "$1" != "firmware" ]; then
+  mesg "Hotplug called with: $1"
+  exit 0
+fi
+
+mesg "FIRMWARE: $ACTION $FIRMWARE"
+
+case $ACTION in
+
+add)
+  counter=8
+  while [ ! -e $SYSFS/$DEVPATH/loading -a $counter -gt 0 ]; do
+    sleep 1
+    counter=`expr $counter - 1` 
+  done
+
+  if [ $counter -eq 0 ]; then
+    mesg "$SYSFS/$DEVPATH/ does not exist"
+    exit 1
+  fi
+
+  if  [ ! -f "$FIRMWARE_DIR/$FIRMWARE" ]; then
+        mesg "$FIRMWARE_DIR/$FIRMWARE does not exists"
+  else
+    echo 1 > $SYSFS/$DEVPATH/loading
+    cat "$FIRMWARE_DIR/$FIRMWARE" > $SYSFS/$DEVPATH/data
+    echo 0 > $SYSFS/$DEVPATH/loading
+    exit 0
+  fi
+
+  # the firmware was not found
+  echo -1 > $SYSFS/$DEVPATH/loading
+  exit 1
+  ;;
+
+remove)
+  ;;
+
+*)
+  mesg "Firmware '$ACTION' event not supported"
+  exit 1
+  ;;
+
+esac

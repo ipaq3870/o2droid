@@ -1,0 +1,10 @@
+#!/system/bin/sh
+export TMPDIR=/data/local/tmp
+if [ ! -e $TMPDIR ]; then
+  mkdir $TMPDIR
+fi
+if [ x"$TERM" = "x" ]; then
+  export TERM=xterm
+fi
+/data/xbin/mc.real $*
+

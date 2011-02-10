@@ -1,0 +1,23 @@
+Timeout occured after PPS Procedure
+Operating Voltage =  3.0
+Command Protocol =  2
+Timeout occured waiting for response from the card
+A command is in progress
+The command is an Internal command
+cmd_ptr->hdr.count :  1
+The command is :  0x102
+The command protocol is :  0x2
+Signals pending in uim TCB are :  0x40000200
+UIM Task currently is interested in signals :  0x65FD
+Num atr bytes is 15
+ATR : 0x3b 0x3b 0x94 0x0 0x4f 0x34 0x10 0x10 0x12 0x1f 0x0 0x33 0x23 0x90 0x0 
+Running with FI = 512, DI = 8 
+Calculated timeout value is 1285 
+uim_rx_state is :  0
+uim_tx_state is :  1
+This command expects data - Expecting  22 Bytes
+We have received 0 Bytes
+Bytes received :
+APDU being sent :0xa0 0xf2 0x0 0x0 0x16 
+Current position in the buffer is :  5 value 0x16
+UART STATUS is :  0xC

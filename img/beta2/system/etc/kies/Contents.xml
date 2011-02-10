@@ -1,0 +1,249 @@
+﻿<?xml version="1.0"?>
+<SDP version="0.9" domain="particular">
+  <Contents>
+    <Image>
+      <DefaultFolder>
+        <External value="/Images"/>
+      </DefaultFolder>
+
+      <Transfer>
+        <FileType value="JPG"/>
+      </Transfer>
+
+      <FileFormat>
+        <JPG>
+          <MaxFileSize value="4096000"/>
+          <MaxWidth value="5000"/>
+          <MaxHeight value="5000"/>
+          <ThumbNail>
+            <MaxWidth value="1280"/>
+            <MaxHeight value="1024"/>
+          </ThumbNail>
+        </JPG>
+
+        <GIF>
+          <MaxFileSize value="4096000"/>
+          <MaxWidth value="3000"/>
+          <MaxHeight value="3000"/>
+        </GIF>
+    
+        
+        <BMP>
+          <MaxFileSize value="4096000"/>
+          <MaxWidth value="3000"/>
+          <MaxHeight value="3000"/>
+        </BMP>
+
+        <WBMP>
+          <MaxFileSize value="4096000"/>
+          <MaxWidth value="3000"/>
+          <MaxHeight value="3000"/>
+        </WBMP>
+
+        <PNG>
+          <MaxFileSize value="4096000"/>
+          <MaxWidth value="3000"/>
+          <MaxHeight value="3000"/>
+        </PNG>        
+
+      </FileFormat>
+
+    </Image>
+
+    <Music>
+      <DefaultFolder>
+        <External value="/Sounds"/>
+      </DefaultFolder>
+
+      <Transfer>
+        <FileType value="MP3"/>
+        <RichInfo value="TRUE"/>
+      </Transfer>
+
+
+      <FileFormat>
+
+        <MP3>
+          <MaxFileSize value="2147483648"/>
+          <MaxBitrate value="327680"/>
+          <MaxSamplingRate value="49152"/>
+        </MP3>
+
+        <IMY>
+          <MaxFileSize value="104857600"/>
+          <MaxBitrate value=""/>
+          <MaxSamplingRate value=""/>
+        </IMY>
+
+        <MID>
+          <MaxFileSize value="104857600"/>
+          <MaxBitrate value=""/>
+          <MaxSampling value=""/>
+        </MID>
+
+        <AMR>
+          <MaxFileSize value="2147483648"/>
+          <MaxBitrate value="12288"/>
+          <MaxSampling value="8192"/>
+        </AMR>
+
+        <WAV>
+          <MaxFileSize value="2147483648"/>
+          <MaxBitrate value=""/>
+          <MaxSampling value="49152"/>
+        </WAV>
+
+        <AAC>
+          <MaxFileSize value="2147483648"/>
+          <MaxBitrate value="131072"/>
+          <MaxSampling value="49152"/>
+        </AAC>
+
+      
+        
+        <WMA>
+          <MaxFileSize value="2147483648"/>
+          <MaxBitrate value="131072"/>
+          <MaxSampling value="49152"/>
+        </WMA>
+
+        <M4A>
+          <MaxFileSize value="2147483648"/>
+          <MaxBitrate value="131072"/>
+          <MaxSampling value="49152"/>
+        </M4A>     
+
+
+      </FileFormat>
+
+
+
+    </Music>
+
+    <Movie>
+      <DefaultFolder>
+        <External value="/Videos"/>
+      </DefaultFolder>
+
+      <MaxFileCount value= ""/>
+
+      <Transfer>
+        <FileType value="MP4"/>
+      </Transfer>
+
+      <FileFormat>
+
+        <MP4>
+          <MaxFileSize value="2147483648"/>
+          <Video>
+            <Codecs>
+              <Codec value="H.263 BP"/>
+              <Codec value="H.264 BP"/>
+              <Codec value="MPEG-4 SP"/>
+            </Codecs>
+            <MaxWidth value="320"/>
+            <MaxHeight value="240"/>
+            <MaxFrameRate value="15"/>
+            <MaxBitrate value="393216"/>
+          </Video>
+          <Audio>
+            <Codecs>
+              <Codec value= "AAC"/>
+              <Codec value= "AMR-NB"/>
+            </Codecs>
+            <MaxSamplingRate value="49152"/>
+            <MaxBitrate value="131072"/>
+            <MaxChannel value="2"/>
+          </Audio>
+        </MP4>
+
+        <_3GP>
+          <MaxFileSize value="2147483648"/>
+          <Video>
+            <Codecs>
+              <Codec value="H.263 BP"/>
+              <Codec value="H.264 BP"/>
+              <Codec value="MPEG-4 SP"/>
+            </Codecs>
+            <MaxWidth value="320"/>
+            <MaxHeight value="240"/>
+            <MaxFrameRate value="15"/>
+            <MaxBitrate value="393216"/>
+          </Video>
+          <Audio>
+            <Codecs>
+              <Codec value= "AAC"/>
+              <Codec value= "AMR-NB"/>
+            </Codecs>
+            <MaxSamplingRate value="49152"/>
+            <MaxBitrate value="131072"/>
+            <MaxChannel value="2"/>
+          </Audio>
+        </_3GP>
+        
+        <WMV>
+          <MaxFileSize value="2147483648"/>
+          <Video>
+            <Codecs>
+              <Codec value="WMV9 SP"/>
+            </Codecs>
+            <MaxWidth value="320"/>
+            <MaxHeight value="240"/>
+            <MaxFrameRate value="15"/>
+            <MaxBitrate value="393216"/>
+          </Video>
+          <Audio>
+            <Codecs>
+              <Codec value= "WMA9 STANDARD"/>
+            </Codecs>
+            <MaxSamplingRate value="49152"/>
+            <MaxBitrate value="131072"/>
+            <MaxChannel value="2"/>
+          </Audio>
+        </WMV>
+        
+        <RM>
+          <MaxFileSize value="2147483648"/>
+          <Video>
+            <Codecs>
+              <Codec value="WMV9 SP"/>
+            </Codecs>
+            <MaxWidth value="320"/>
+            <MaxHeight value="240"/>
+            <MaxFrameRate value="15"/>
+            <MaxBitrate value="393216"/>
+          </Video>
+          <Audio>
+            <Codecs>
+              <Codec value= "WMA9 STANDARD"/>
+            </Codecs>
+            <MaxSamplingRate value="49152"/>
+            <MaxBitrate value="131072"/>
+            <MaxChannel value="2"/>
+          </Audio>
+        </RM>
+        
+        <ASF>
+          <MaxFileSize value="2147483648"/>
+          <Video>
+            <Codecs>
+              <Codec value="WMV9 SP"/>
+            </Codecs>
+            <MaxWidth value="320"/>
+            <MaxHeight value="240"/>
+            <MaxFrameRate value="15"/>
+            <MaxBitrate value="393216"/>
+          </Video>
+          <Audio>
+            <Codecs>
+              <Codec value= "WMA9 STANDARD"/>
+            </Codecs>
+            <MaxSamplingRate value="49152"/>
+            <MaxBitrate value="131072"/>
+            <MaxChannel value="2"/>
+          </Audio>
+        </ASF>
+      </FileFormat>
+    </Movie>
+  </Contents>
+</SDP>

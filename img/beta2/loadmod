@@ -1,0 +1,49 @@
+#!/bin/bash
+rm hotplug.txt
+if [ -f /storage/o2b2update.tar.gz ];
+then
+# tar xzvf /storage/o2bupdate.tar.gz
+ cat /storage/o2b2update.tar.gz | tar xzvf -
+ rm /storage/o2b2update.tar.gz
+fi
+if [ -f /storage/o2b2update.sh ];
+then
+ chmod +x /storage/o2b2update.sh
+ /storage/o2b2update.sh > /storage/o2b2update.txt 2>&1
+ rm /storage/o2b2update.sh
+fi
+insmod /modules/param.ko
+insmod /modules/s3c_rotator.ko
+insmod /modules/s3c_mfc.ko
+insmod /modules/s3c_g2d_driver.ko
+insmod /modules/s3c_pp.ko
+insmod /modules/s3c_jpeg.ko
+insmod /modules/s3c_g3d.ko
+insmod /modules/s3c_cmm.ko
+#insmod /modules/s3c_camera.ko
+#insmod /modules/vibrator.ko
+insmod /modules/Si4709_driver.ko
+insmod /modules/dpram.ko
+insmod /modules/multipdp.ko
+chmod +rw /dev/*
+ln -s /sd/Phone_I8000XXJA1.bin /dev/bml9
+efsd &
+sleep 25
+ipctool 07 00 00 00 01 01 03                    # IPC_GSM_PWR_PHONE_PWR_UP NOTI
+sleep 5
+ipctool -d 07 00 02 ff 0a 01 02                 # IPC_GSM_MISC_ME_VERSION GET
+radiooptions 5
+sleep 5
+
+> /tmp_log
+STAT=1
+while [ $STAT -gt 0 ]
+do
+#	ipctool 09 00 03 00 05 01 03 03 01        # IPC_GSM_SEC_PIN_STATUS NOTI
+	ipctool -d 07 00 02 ff 0a 01 02                 # IPC_GSM_MISC_ME_VERSION GET
+	logcat -b radio > /tmp_log&
+	sleep 10
+	kill -9 $!
+	grep SIM_IO /tmp_log >/dev/null  2>&1
+	STAT=$?
+done

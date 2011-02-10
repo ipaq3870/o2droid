@@ -1,0 +1,20 @@
+key 201     VOLUME_UP        WAKE
+key 202     DPAD_UP           WAKE_DROPPED
+key 203     DPAD_RIGHT         WAKE_DROPPED
+key 204     MENU              WAKE_DROPPED
+
+key 209     VOLUME_DOWN		WAKE
+key 210    DPAD_DOWN         WAKE_DROPPED
+key 211    DPAD_CENTER       WAKE_DROPPED
+key 212    SEARCH            WAKE_DROPPED
+
+key 218    DPAD_LEFT        WAKE_DROPPED
+key 219    HOME              WAKE_DROPPED
+key 220    BACK              WAKE_DROPPED
+key 225    FOCUS
+key 226    CAMERA
+
+key 248   CALL              WAKE_DROPPED
+key 249   POWER           WAKE
+key 247   DUMP       # Platform Dump
+
