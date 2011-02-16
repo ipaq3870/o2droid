@@ -172,8 +172,13 @@ static void __init saturn_fixup(struct machine_desc *desc,
 	mi->bank[1].node = PHYS_TO_NID(0x60000000);///0;
 }
 
-struct platform_device sec_device_opt = {
+struct platform_device sec_device_opt_prox = {
         .name   = "gp2a-opt",
+        .id             = -1,
+};
+
+struct platform_device sec_device_opt_light = {
+        .name   = "isl29023-opt",
         .id             = -1,
 };
 
@@ -245,8 +250,7 @@ struct platform_device sec_device_btsleep = {
 
 // Libertas SPI Wlan setup
 static int libertas_setup(struct spi_device *spi)
-{ 	unsigned int reg;
-
+{
 	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_HIGH);
 	gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_HIGH); 	
 	mdelay(600);
@@ -262,7 +266,7 @@ printk("Sanya: Power on wlan\n");
 
 static int libertas_teardown(struct spi_device *spi)
 {
-	if (gpio_get_value(GPIO_BT_nRST)==0) {
+	if (gpio_get_value(GPIO_BT_nRST) == 0) {
 		gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_LOW);
 	}
 	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_LOW);
@@ -607,7 +611,8 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 	&sec_device_i2c_pmic,			/* pmic(max8698) i2c. */
 	&sec_device_i2c_common,			/* radio, sound, .. i2c. */
 	&sec_device_headset,
-	&sec_device_opt,
+	&sec_device_opt_prox,
+	&sec_device_opt_light,
 	&sec_device_ts,
 #ifdef CONFIG_S3C64XX_ADCTS
 	&s3c_device_adcts,
@@ -974,11 +979,11 @@ void s3c_config_wakeup_source(void)
 	 */
 	eint0pend_val= __raw_readl(S3C64XX_EINT0PEND);
 	eint0pend_val |= (0x1 << 25) | (0x1 << 22) | (0x1 << 19) |
-		(0x1 << 17) |(0x1 << 11) | (0x1 << 10) | (0x1 << 9)| (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
+		(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
 	__raw_writel(eint0pend_val, S3C64XX_EINT0PEND);
 
 	eint0pend_val = (0x1 << 25) | (0x1 << 22) | (0x1 << 19) |
-		(0x1 << 17)|(0x1 << 11) | (0x1 << 10) | (0x1 << 9)| (0x1 << 6) |(0x1 << 5) | (0x1 << 1) | 0x1;
+		(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
 	__raw_writel(~eint0pend_val, S3C64XX_EINT0MASK);
 
 	__raw_writel((0x0FFFFFFF & ~eint0pend_val), S3C_EINT_MASK);	

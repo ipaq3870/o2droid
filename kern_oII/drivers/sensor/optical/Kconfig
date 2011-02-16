@@ -16,7 +16,15 @@ config OPTICAL_GP2A
 	tristate "GP2A driver for s3c6410"
 	default y
 	help
-	  This option enables proximity & light sensors using gp2a driver.
+	  This option enables proximity sensor using gp2a driver.
+	  It is optimized for s3c6410.
+
+config OPTICAL_ISL29023
+	depends on OPTICAL
+	tristate "Intersil ISL29023 driver for s3c6410"
+	default y
+	help
+	  This option enables light sensors using ISL29023 driver.
 	  It is optimized for s3c6410.
 	  
 

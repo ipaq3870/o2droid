@@ -8,7 +8,5 @@
 
 
 obj-$(CONFIG_OPTICAL_GP2A)	+= gp2a.o
-
-				  
-				  
+obj-$(CONFIG_OPTICAL_ISL29023)	+= isl29023.o
 
