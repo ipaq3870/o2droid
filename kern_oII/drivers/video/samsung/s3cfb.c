@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2008 Jinsung Yang <jsgood.yang@samsung.com>
  *
- * This file is subject to the terms and conditions of the GNU General Public
+ * This file is subject to the terms and conditions of the GNU eneral Public
  * License.  See the file COPYING in the main directory of this archive for
  * more details.
  *
@@ -78,30 +78,6 @@ void s3cfb_set_backlight_level(int to)
 }
 EXPORT_SYMBOL(s3cfb_set_backlight_level);
 
-/* RAM Dump Info */
-
-#include <linux/sec_log.h>
-
-static struct struct_frame_buf_mark frame_buf_mark = { 
-	.special_mark_1 = (('*' << 24) | ('^' << 16) | ('^' << 8) | ('*' << 0)),
-	.special_mark_2 = (('I' << 24) | ('n' << 16) | ('f' << 8) | ('o' << 0)),
-	.special_mark_3 = (('H' << 24) | ('e' << 16) | ('r' << 8) | ('e' << 0)),
-	.special_mark_4 = (('f' << 24) | ('b' << 16) | ('u' << 8) | ('f' << 0)),
-	.p_fb = 0,
-	.resX = 320,
-	.resY = 480,
-	.bpp = 24,
-	.frames =5,
-};
-
-static struct struct_marks_ver_mark marks_ver_mark = {
-	.special_mark_1 = (('*' << 24) | ('^' << 16) | ('^' << 8) | ('*' << 0)),
-	.special_mark_2 = (('I' << 24) | ('n' << 16) | ('f' << 8) | ('o' << 0)),
-	.special_mark_3 = (('H' << 24) | ('e' << 16) | ('r' << 8) | ('e' << 0)),
-	.special_mark_4 = (('v' << 24) | ('e' << 16) | ('r' << 8) | ('s' << 0)),
-	.log_mark_version = 0,
-	.framebuffer_mark_version = 1, 
-};
 
 
 
@@ -126,10 +102,6 @@ static int __init s3cfb_map_video_memory(s3c_fb_info_t *fbi)
 		printk("            FB1: map_video_memory: dma=%08x cpu=%p size=%08x\n",
 			fbi->map_dma_f1, fbi->map_cpu_f1, fbi->fb.fix.smem_len);
 	}
-
-	/* RAM Dump Info */
-	if ((fbi->win_id == 1) && fbi->map_cpu_f1)
-		frame_buf_mark.p_fb = (void *)fbi->map_dma_f1;	
 
 	if (!fbi->map_cpu_f1)
 		return -ENOMEM;
@@ -231,7 +203,7 @@ static int s3cfb_set_par(struct fb_info *info)
 	else
 		fbi->fb.fix.visual = FB_VISUAL_PSEUDOCOLOR;
 
-	fbi->fb.fix.line_length = var->width * s3c_fimd.bytes_per_pixel;
+	fbi->fb.fix.line_length = var->xres * s3c_fimd.bytes_per_pixel;
 
 	/* activate this new configuration */
 	s3cfb_activate_var(fbi, var);
@@ -295,7 +267,7 @@ static int s3cfb_pan_display(struct fb_var_screeninfo *var, struct fb_info *info
  */
 static int s3cfb_blank(int blank_mode, struct fb_info *info)
 {
-	printk("s3cfb_blank \n");
+
 	DPRINTK("blank(mode=%d, info=%p)\n", blank_mode, info);
 
 	switch (blank_mode) {

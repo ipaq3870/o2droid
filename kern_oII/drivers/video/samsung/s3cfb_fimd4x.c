@@ -42,6 +42,8 @@
 
 #include <mach/map.h>
 #include <linux/i2c/pmic.h>
+#include <linux/i2c/maximi2c.h>
+
 
 #ifdef CONFIG_S3C64XX_DOMAIN_GATING
 #define USE_LCD_DOMAIN_GATING
@@ -54,10 +56,6 @@ extern int backlight_power;
 #endif
 
 #include "s3cfb.h"
-
-
-//extern void standby_on(void);
-//extern void standby_off(void); //TODO ALMAR FIX
 
 
 s3c_fimd_info_t s3c_fimd = {
@@ -1760,9 +1758,8 @@ void s3cfb_pre_init(void)
 int s3cfb_set_gpio(void)
 {
 	unsigned long val;
-//#if defined (CONFIG_MACH_SMDK6410)
-	int i, err;
-//#endif
+
+
 	/* Must be '0' for Normal-path instead of By-pass */
 	writel(0x0, S3C_HOSTIFB_MIFPCON);
 
@@ -1776,52 +1773,7 @@ int s3cfb_set_gpio(void)
 	val &= ~0x3;
 	val |= (1 << 0);
 	writel(val, S3C64XX_SPC_BASE);
-/*#if defined (CONFIG_MACH_SMDK6410)
-	// VD /
-	for (i = 0; i < 16; i++)
-		s3c_gpio_cfgpin(S3C64XX_GPI(i), S3C_GPIO_SFN(2));
 
-	for (i = 0; i < 12; i++)
-		s3c_gpio_cfgpin(S3C64XX_GPJ(i), S3C_GPIO_SFN(2));
-
-	// backlight ON /
-	if (gpio_is_valid(S3C64XX_GPF(15))) {
-		err = gpio_request(S3C64XX_GPF(15), "GPF");
-
-		if (err) {
-			printk(KERN_ERR "failed to request GPF for "
-				"lcd backlight control\n");
-			return err;
-		}
-
-		gpio_direction_output(S3C64XX_GPF(15), 1);
-	}
-
-	// module reset 
-	if (gpio_is_valid(S3C64XX_GPN(5))) {
-		err = gpio_request(S3C64XX_GPN(5), "GPN");
-
-		if (err) {
-			printk(KERN_ERR "failed to request GPN for "
-				"lcd reset control\n");
-			return err;
-		}
-
-		gpio_direction_output(S3C64XX_GPN(5), 1);
-	}
-	
-	mdelay(100);
-
-	gpio_set_value(S3C64XX_GPN(5), 0);
-	mdelay(10);
-
-	gpio_set_value(S3C64XX_GPN(5), 1);
-	mdelay(10);
-
-	gpio_free(S3C64XX_GPF(15));
-	gpio_free(S3C64XX_GPN(5));
-#endif 
-*/
 	return 0;
 }
 
@@ -1965,7 +1917,7 @@ int lcd_late_resume = 1;
 static int s3cfb_suspend_sub(s3c_fb_info_t *fbi)
 {
 
-//	printk("s3cfb_suspend_sub  \n");
+
         s3c6410_pm_do_save(s3c_lcd_save, ARRAY_SIZE(s3c_lcd_save));
 
         /* for Idle Current GPIO Setting */
@@ -1987,7 +1939,7 @@ static int s3cfb_suspend_sub(s3c_fb_info_t *fbi)
 
 
 #ifdef USE_LCD_DOMAIN_GATING
-//        s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_LCD);
+     // s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_LCD);
 #endif /* USE_LCD_DOMAIN_GATING */
 
 
@@ -1997,25 +1949,19 @@ static int s3cfb_suspend_sub(s3c_fb_info_t *fbi)
 
 static int s3cfb_resume_sub(s3c_fb_info_t *fbi)
 {
-//	printk("s3cfb_resume_sub \n");
+
 #ifdef USE_LCD_DOMAIN_GATING
         s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_ACTIVE_MODE, S3C64XX_LCD);
-        if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_F)) {
-                printk(KERN_ERR "[%s] Domain F is not ready\n", __func__);
-                return -1;
-        }
+//        if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_F)) {
+//               printk(KERN_ERR "[%s] Domain F is not ready\n", __func__);
+//                return -1;
+//        }
 #endif /* USE_LCD_DOMAIN_GATING */
 
         clk_enable(fbi->clk);
-
         s3c6410_pm_do_restore(s3c_lcd_save, ARRAY_SIZE(s3c_lcd_save));
-
         s3cfb_set_gpio();
-
         s3cfb_start_lcd();
-
-	//standby_off();
-
         return 0;
 }
 
@@ -2040,24 +1986,41 @@ void s3cfb_enable_clock_power(void)
 void s3cfb_early_suspend(struct early_suspend *h)
 {
 
-	//standby_on();
 	s3c_fb_info_t *info = container_of(h, s3c_fb_info_t, early_suspend);
 	
-//	printk("#%s\n", __func__);
+	printk("#%s\n", __func__);
 	
 	lcd_late_resume = 0;
 
 	s3cfb_suspend_sub(info);
-
 	lcd_clock_status = 0; 
 	lcd_pm_status = 0;
 }
 
+#define MAX8698_ID		0xCC
+
+#define ONOFF2			0x01
+
+#define ONOFF2_ELDO6	(0x01 << 7)
+#define ONOFF2_ELDO7	(0x03 << 6)
 void s3cfb_late_resume(struct early_suspend *h)
 {
 	s3c_fb_info_t *info = container_of(h, s3c_fb_info_t, early_suspend);
+	u8 data;
 
-//	printk("#%s\n", __func__);
+	printk("#%s\n", __func__);
+
+	/* Power Enable */ //CAUSES FLASH WHEN TURNING ON WITH LATE RESUME, TRY WITH LEAVING?)
+	if(pmic_read(MAX8698_ID, ONOFF2, &data, 1) != PMIC_PASS) {
+		printk(KERN_ERR "LCD POWER CONTROL can't read the status from PMIC\n");
+		return -1;
+	}
+	data |= (ONOFF2_ELDO6 | ONOFF2_ELDO7);
+		
+	if(pmic_write(MAX8698_ID, ONOFF2, &data, 1) != PMIC_PASS) {
+		printk(KERN_ERR "LCD POWER CONTROL can't write the command to PMIC\n");
+		return -1;
+		} 
 
 	if (lcd_pm_status == 0) {
 		s3cfb_resume_sub(info);
@@ -2071,10 +2034,11 @@ void s3cfb_late_resume(struct early_suspend *h)
  */
 int s3cfb_suspend(struct platform_device *dev, pm_message_t state)
 {
+
 	struct fb_info *fbinfo = platform_get_drvdata(dev);
 	s3c_fb_info_t *info = fbinfo->par;
 	
-//	printk("#%s\n", __func__);
+	printk("#%s\n", __func__);
 
 	if (lcd_pm_status != 0) {
 		s3cfb_suspend_sub(info);
@@ -2093,7 +2057,7 @@ int s3cfb_resume(struct platform_device *dev)
 	struct fb_info *fbinfo = platform_get_drvdata(dev);
 	s3c_fb_info_t *info = fbinfo->par;
 
-//	printk("#%s\n", __func__);
+	printk("#%s\n", __func__);
 
 	s3cfb_resume_sub(info);
 
@@ -2120,7 +2084,7 @@ int s3cfb_shutdown(struct platform_device *dev)
  */
 int s3cfb_suspend(struct platform_device *dev, pm_message_t state)
 {
-//	printk("s3cfb_suspend \n");
+
 	struct fb_info *fbinfo = platform_get_drvdata(dev);
 	s3c_fb_info_t *info = fbinfo->par;
 	
@@ -2153,7 +2117,7 @@ int s3cfb_shutdown(struct platform_device *dev)
 
 #else
 
-//printk("CONFIG_DOES NOT HAVE_EARLYSUSPEND \n");
+
 int s3cfb_suspend(struct platform_device *dev, pm_message_t state)
 {
 	return 0;

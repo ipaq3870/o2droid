@@ -71,29 +71,6 @@ config S3C64XX_ADCTS
 	help
 	  Common setup code for adc and touchscreen
 
-config S3C64XX_DEV_FIMC0
-	bool
-	default y
-	help
-	  Compile in platform device definitions for FIMC controller 0
-
-config S3C64XX_DEV_FIMC1
-	bool
-	default y
-	help
-	  Compile in platform device definitions for FIMC controller 1
-
-config S3C64XX_SETUP_FIMC0
-	bool
-	default y
-	help
-	  Common setup code for FIMC controller 0
-
-config S3C64XX_SETUP_FIMC1
-	bool
-	default y
-	help
-	  Common setup code for FIMC controller 1
 
 config S3C64XX_SETUP_FB_24BPP
 	bool

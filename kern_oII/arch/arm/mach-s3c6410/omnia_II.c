@@ -589,6 +589,7 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 #ifdef CONFIG_S3C_DEV_I2C1
 	&s3c_device_i2c1,
 #endif
+	&s3c_device_camif,
 	&s3c_device_lcd,
 	&s3c_device_keypad,
 	&s3c_device_ts,
@@ -670,8 +671,6 @@ static void __init smdk6410_machine_init(void)
 	s3c_adcts_set_platdata (&s3c_adcts_cfgs);
 #endif
 	
-	s3c_fimc0_set_platdata(NULL);
-	s3c_fimc1_set_platdata(NULL);
 
 	init_spi();
 

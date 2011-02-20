@@ -47,10 +47,6 @@ obj-$(CONFIG_S3C64XX_ADCTS) 		+= s3c64xx-adcts.o
 
 obj-$(CONFIG_SPI_S3C6410)   		+= dev-spi.o
 
-# Device setup - FIMC
-obj-$(CONFIG_S3C64XX_DEV_FIMC0)   += dev-fimc0.o
-obj-$(CONFIG_S3C64XX_DEV_FIMC1)   += dev-fimc1.o
-obj-$(CONFIG_S3C64XX_SETUP_FIMC0) += setup-fimc0.o
-obj-$(CONFIG_S3C64XX_SETUP_FIMC1) += setup-fimc1.o
+
 
 obj-$(CONFIG_S3C6410_PWM)	  			+= pwm-s3c6410.o
