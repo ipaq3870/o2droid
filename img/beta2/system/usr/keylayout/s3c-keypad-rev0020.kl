@@ -13,6 +13,8 @@ key 219    HOME              WAKE_DROPPED
 key 220    BACK              WAKE_DROPPED
 key 225    FOCUS
 key 226    CAMERA
+key 102    MENU              WAKE
+key 26	   ENDCALL	     WAKE
 
 key 248   CALL              WAKE_DROPPED
 key 249   POWER           WAKE

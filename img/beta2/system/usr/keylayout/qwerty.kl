@@ -26,7 +26,7 @@ key 61    CALL              WAKE_DROPPED
 key 232   DPAD_CENTER       WAKE_DROPPED
 key 108   DPAD_DOWN         WAKE_DROPPED
 key 103   DPAD_UP           WAKE_DROPPED
-key 102   HOME              WAKE
+key 102   MENU              WAKE
 key 105   DPAD_LEFT         WAKE_DROPPED
 key 106   DPAD_RIGHT        WAKE_DROPPED
 key 115   VOLUME_UP
@@ -44,7 +44,7 @@ key 22    U
 key 23    I
 key 24    O
 key 25    P
-key 26    LEFT_BRACKET
+key 26    ENDCALL	WAKE
 key 27    RIGHT_BRACKET
 key 43    BACKSLASH
 
