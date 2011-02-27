@@ -164,15 +164,9 @@ static int __init android_bind_config(struct usb_configuration *c)
 	struct android_dev *dev = _android_dev;
 	int ret;
 
-	//ret = acm_bind_config(c, 0);
 	ret = acm_function_add(dev->cdev, c);
 	if (ret) {
 		printk("[%s] Fail to acm_function_add()\n", __func__);
-		return ret;
-	}
-	ret = adb_function_add(dev->cdev, c);
-	if (ret) {
-		printk("[%s] Fail to adb_function_add()\n", __func__);
 		return ret;
 	}
 /* bss	ret = mass_storage_function_add(dev->cdev, c, dev->nluns);
@@ -181,6 +175,11 @@ static int __init android_bind_config(struct usb_configuration *c)
 		return ret;
 	}
 */
+	ret = adb_function_add(dev->cdev, c);
+	if (ret) {
+		printk("[%s] Fail to adb_function_add()\n", __func__);
+		return ret;
+	}
 #if ADB_ENABLE_AT_BOOT
 	printk("[%s] Enabling adb function at booting\n", __func__);
 	enable_adb(dev, 1);
@@ -334,7 +333,7 @@ static void enable_adb(struct android_dev *dev, int enable)
 			dev->cdev->desc.bDeviceProtocol = device_desc.bDeviceProtocol;
 		}
 
-#if 1 //bss
+#if 0 //bss
 		/* force reenumeration */
 		if (dev->cdev && dev->cdev->gadget &&
 				//the following means that usb device already enumerated by host

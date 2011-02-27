@@ -19,7 +19,6 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 
-#include <asm/dma.h>
 #include <mach/map.h>
 
 #include <mach/hardware.h>
