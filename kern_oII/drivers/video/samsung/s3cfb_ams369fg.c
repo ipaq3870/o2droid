@@ -692,7 +692,7 @@ void backlight_level_ctrl(s32 value)
 	}
 
 
-	if (backlight_power)
+	//if (backlight_power)
 	backlight_ctrl(value);	
 	
 	backlight_level = value;	
