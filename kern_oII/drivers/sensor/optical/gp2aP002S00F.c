@@ -26,7 +26,7 @@
 #include "gp2aP002S00F.h"
 
 /*********** for debug **********************************************************/
-#if 1 
+#if 0 
 #define gprintk(fmt, x... ) printk( "%s(%d): " fmt, __FUNCTION__ ,__LINE__, ## x)
 #else
 #define gprintk(x...) do { } while (0)
@@ -95,11 +95,11 @@ void gp2a_work_func_prox(struct work_struct *work) {
 	/* Report proximity information */
 	proximity_value = vout;
 
-	if(USE_INPUT_DEVICE) {
+#if USE_INPUT_DEVICE 
     		input_report_abs(gp2a->input_dev,ABS_DISTANCE,(int)vout);
 		input_sync(gp2a->input_dev);
 		mdelay(1);
-	}
+#endif
 	
 	/* Write HYS Register */
 	if(!vout) 
@@ -292,28 +292,28 @@ static int gp2a_opt_probe( struct platform_device* pdev ) {
 		return -ENODEV;
 	}
 
+#if USE_INPUT_DEVICE	
 	/* Input device Settings */
-	if(USE_INPUT_DEVICE) {
-		gp2a->input_dev = input_allocate_device();
-		if (gp2a->input_dev == NULL) {
-			pr_err("Failed to allocate input device\n");
-			return -ENOMEM;
-		}
-		gp2a->input_dev->name = "proximity";
-	
-		set_bit(EV_SYN,gp2a->input_dev->evbit);
-		set_bit(EV_ABS,gp2a->input_dev->evbit);
-		
-   	 	input_set_abs_params(gp2a->input_dev, ABS_DISTANCE, 0, 1, 0, 0);
-	
-		ret = input_register_device(gp2a->input_dev);
-		if (ret) {
-			pr_err("Unable to register %s input device\n", gp2a->input_dev->name);
-			input_free_device(gp2a->input_dev);
-			kfree(gp2a);
-			return -1;
-		}
+	gp2a->input_dev = input_allocate_device();
+	if (gp2a->input_dev == NULL) {
+		pr_err("Failed to allocate input device\n");
+		return -ENOMEM;
 	}
+	gp2a->input_dev->name = "proximity";
+
+	set_bit(EV_SYN,gp2a->input_dev->evbit);
+	set_bit(EV_ABS,gp2a->input_dev->evbit);
+	
+	input_set_abs_params(gp2a->input_dev, ABS_DISTANCE, 0, 1, 0, 0);
+
+	ret = input_register_device(gp2a->input_dev);
+	if (ret) {
+		pr_err("Unable to register %s input device\n", gp2a->input_dev->name);
+		input_free_device(gp2a->input_dev);
+		kfree(gp2a);
+		return -1;
+	}
+#endif
 
 	/* WORK QUEUE Settings */
 	gp2a_wq = create_singlethread_workqueue("gp2a_wq");
@@ -454,8 +454,9 @@ static void __exit gp2a_opt_exit(void) {
 
 	free_irq(IRQ_GP2A_INT,gp2a);
 	
-	if(USE_INPUT_DEVICE)
-		input_unregister_device(gp2a->input_dev);
+#if USE_INPUT_DEVICE
+	input_unregister_device(gp2a->input_dev);
+#endif
 	kfree(gp2a);
 
 	platform_driver_unregister(&gp2a_opt_driver);
