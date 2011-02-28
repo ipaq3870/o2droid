@@ -106,9 +106,9 @@ static struct i2c_driver ak8973b_i2c_driver = {
 		   },
 };
 
-unsigned short ignore[] = { I2C_CLIENT_END };
+unsigned short ignore[] = {0, I2C_CLIENT_END };
 static unsigned short normal_addr[] = { I2C_CLIENT_END };
-static unsigned short probe_addr[] = {  E_COMPASS_ADDRESS, I2C_CLIENT_END };
+static unsigned short probe_addr[] = {1, E_COMPASS_ADDRESS, I2C_CLIENT_END };
 
 
 static struct i2c_client_address_data addr_data = {
@@ -707,9 +707,6 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 	return 0;
 }
 
-
-
-
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void ak8973b_early_suspend(struct early_suspend *handler)
 {
@@ -736,8 +733,8 @@ static void ak8973b_early_resume(struct early_suspend *handler)
 static void ak8973b_init_hw(void)
 {
 #if 0	
-	s3c_gpio_cfgpin(GPIO_MSENSE_INT, S3C_GPIO_SFN(GPIO_MSENSE_INT_AF));
-	s3c_gpio_setpull(GPIO_MSENSE_INT, S3C_GPIO_PULL_NONE);
+	s3c_gpio_cfgpin(GPIO_MSENSE_IRQ, S3C_GPIO_SFN(GPIO_MSENSE_IRQ_AF));
+	s3c_gpio_setpull(GPIO_MSENSE_IRQ, S3C_GPIO_PULL_NONE);
 	set_irq_type(IRQ_COMPASS_INT, IRQ_TYPE_EDGE_RISING);
 #endif
 
