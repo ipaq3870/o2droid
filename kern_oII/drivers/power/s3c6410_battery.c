@@ -31,6 +31,8 @@
 
 #include "s3c6410_battery.h"
 
+#define S3C_CALL_STATE
+
 static struct wake_lock vbus_wake_lock;
 #if (defined __TEST_DEVICE_DRIVER__  || defined __ALWAYS_AWAKE_DEVICE__)
 static struct wake_lock wake_lock_for_dev;
@@ -42,10 +44,11 @@ static struct wake_lock wake_lock_for_dev;
 
 #include <linux/i2c.h>
 #include "fuel_gauge.c"
+#ifdef S3C_CALL_STATE
 int call_state = 0;
 #define OFFSET_VOICE_CALL_2G		(0x1 << 1)
 #define OFFSET_VOICE_CALL_3G		(0x1 << 0)
-
+#endif
 /* Prototypes */
 extern int s3c_adc_get_adc_data(int channel);
 extern int get_usb_power_state(void);
@@ -181,6 +184,7 @@ struct s3c_battery_info {
 	unsigned int device_state;
 
 	struct battery_info bat_info;
+	int max_soc_value;			//phj: the highest possible soc, measured when fully charged, default 96%
 };
 static struct s3c_battery_info s3c_bat_info;
 
@@ -389,7 +393,7 @@ unsigned int fg_vcell_table[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned int avg_fg_vcell(int last_fg_vcell)
 {
 	unsigned int result = 0, min_adc, max_adc;
-	int i, j;
+	int i;
 
 	for(i=0; i<10; i++)
 	{
@@ -441,6 +445,9 @@ static int s3c_get_bat_level(struct power_supply *bat_ps)
 		s3c_bat_info.bat_info.batt_vol = fg_vcell;
 
 	if (is_over_abs_time()) {
+		//phj:here we can reach the MAXIMUM of soc for a given battery
+		if (fg_soc)
+			s3c_bat_info.max_soc_value=fg_soc;
 		fg_soc = 100;
 		s3c_bat_info.bat_info.batt_is_full = 1;
 		dev_info(dev, "%s: charging time is over\n", __func__);
@@ -448,13 +455,8 @@ static int s3c_get_bat_level(struct power_supply *bat_ps)
 		goto __end__;
 	}
 
-	if (fg_soc > 80) {
-		fg_soc += fg_soc - 80;
-
-		if (fg_soc > 100)
-			fg_soc = 100;
-
-	}
+	fg_soc = (fg_soc*100)/s3c_bat_info.max_soc_value;
+	if (fg_soc > 100)	fg_soc = 100;
 
 	check_recharging_bat(avg_fg_vcell(fg_vcell));
 
@@ -758,15 +760,16 @@ static struct device_attribute s3c_battery_attrs[] = {
 	SEC_BATTERY_ATTR(charging_source),
 	SEC_BATTERY_ATTR(fg_soc),
 	SEC_BATTERY_ATTR(reset_soc),
+	SEC_BATTERY_ATTR(max_soc),
 };
 
 enum {
-        BATT_VOL = 0,
-        BATT_VOL_ADC,
-        BATT_VOL_ADC_CAL,
-        BATT_TEMP,
-        BATT_TEMP_ADC,
-        BATT_TEMP_ADC_CAL,
+    BATT_VOL = 0,
+    BATT_VOL_ADC,
+    BATT_VOL_ADC_CAL,
+    BATT_TEMP,
+    BATT_TEMP_ADC,
+    BATT_TEMP_ADC_CAL,
 	BATT_VOL_ADC_AVER,
 #ifdef __TEST_MODE_INTERFACE__
 	BATT_TEST_MODE,
@@ -778,8 +781,11 @@ enum {
 	BATT_CHARGING_SOURCE,
 	BATT_FG_SOC,
 	BATT_RESET_SOC,
+	BATT_MAX_SOC,
+#ifdef S3C_CALL_STATE
 	BATT_VOICE_CALL_2G,
 	BATT_VOICE_CALL_3G,
+#endif
 };
 
 static int s3c_bat_create_attrs(struct device * dev)
@@ -867,10 +873,16 @@ static ssize_t s3c_bat_show_property(struct device *dev,
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
 			s3c_bat_info.bat_info.charging_source);
 		break;
+
 	case BATT_FG_SOC:
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
 			fg_read_soc());
 		break;
+	case BATT_MAX_SOC:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+			s3c_bat_info.max_soc_value);
+		break;
+
         default:
                 i = -EINVAL;
         }       
@@ -975,6 +987,15 @@ static ssize_t s3c_bat_store(struct device *dev,
 		}
 		dev_info(dev, "%s: Reset SOC:%d\n", __func__, x);
 		break;
+	case BATT_MAX_SOC:
+		if (sscanf(buf, "%d\n", &x)) {
+			if (x && x<=100)
+				s3c_bat_info.max_soc_value=x;
+			ret = count;
+		}
+		dev_info(dev, "%s: Max SOC:%d\n", __func__, x);
+		break;
+#ifdef S3C_CALL_STATE
 	case BATT_VOICE_CALL_2G:
 		if (sscanf(buf, "%d\n", &x) == 1) {
 			if(x)
@@ -995,10 +1016,10 @@ static ssize_t s3c_bat_store(struct device *dev,
 		}
 		printk("%s: voice call 3G = %d\n", __func__, x);
 		break;
+#endif
         default:
                 ret = -EINVAL;
         }       
-
 	return ret;
 }
 
@@ -1274,8 +1295,8 @@ static int s3c_cable_status_update(int status)
                 /* give userspace some time to see the uevent and update
                  * LED state or whatnot...
                  */
-		if (gpio_get_value(gpio_ta_connected)) 
-			wake_lock_timeout(&vbus_wake_lock, HZ * 5);
+			if (gpio_get_value(gpio_ta_connected)) 
+				wake_lock_timeout(&vbus_wake_lock, HZ * 5);
         }
         /* if the power source changes, all power supplies may change state */
         power_supply_changed(&s3c_power_supplies[CHARGER_BATTERY]);
@@ -1563,7 +1584,7 @@ static int __devinit s3c_bat_probe(struct platform_device *pdev)
 	s3c_bat_info.bat_info.charging_source = CHARGER_BATTERY;
 	s3c_bat_info.bat_info.charging_enabled = 0;
 	s3c_bat_info.bat_info.batt_health = POWER_SUPPLY_HEALTH_GOOD;
-
+	s3c_bat_info.max_soc_value=96;
 	memset(adc_sample, 0x00, sizeof adc_sample);
 
 	batt_max = BATT_CAL + BATT_MAXIMUM;
@@ -1719,6 +1740,6 @@ static void __exit s3c_bat_exit(void)
 module_init(s3c_bat_init);
 module_exit(s3c_bat_exit);
 
-MODULE_AUTHOR("Minsung Kim <ms925.kim@samsung.com>");
+MODULE_AUTHOR("Minsung Kim <ms925.kim@samsung.com>/O2Droid");
 MODULE_DESCRIPTION("S3C6410 battery driver");
 MODULE_LICENSE("GPL");
