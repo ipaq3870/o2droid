@@ -619,6 +619,12 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			if (rwbuf[0] < 1)
 				return -EINVAL;
 			ret = AKI2C_RxData(&rwbuf[1], rwbuf[0]);
+			// for akmd, must revert and re-sign the x,y values: x=-y, y=x!!!!!!!!!!
+			{
+				char ch = rwbuf[2];
+				rwbuf[2] = -rwbuf[3];
+				rwbuf[3] = ch;
+			}
 			for(i=0; i<rwbuf[0]; i++){
 				gprintk(" %02x", rwbuf[i+1]);
 			}
@@ -710,8 +716,9 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void ak8973b_early_suspend(struct early_suspend *handler)
 {
+	// go to sleep
 	AKECS_SetMode(AKECS_MODE_POWERDOWN);
-	#if 0
+#if 0
 	atomic_set(&suspend_flag, 1);
 	if (atomic_read(&open_flag) == 2)
 		AKECS_SetMode(AKECS_MODE_POWERDOWN);
@@ -719,14 +726,20 @@ static void ak8973b_early_suspend(struct early_suspend *handler)
 	atomic_set(&reserve_open_flag, atomic_read(&open_flag));
 	atomic_set(&open_flag, 0);
 	wake_up(&open_wq);
-	#endif
+#endif
+	gprintk("ak8973b suspend\n");
 }
 
 static void ak8973b_early_resume(struct early_suspend *handler)
 {
+#if  0
 	atomic_set(&suspend_flag, 0);
 	atomic_set(&open_flag, atomic_read(&reserve_open_flag));
 	wake_up(&open_wq);
+#endif
+	// put back to measuring mode
+	AKECS_SetMode( AKECS_MODE_MEASURE );
+	gprintk("ak8973b resume\n");
 }
 #endif /* CONFIG_HAS_EARLYSUSPEND */ 
 

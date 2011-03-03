@@ -40,5 +40,11 @@
 #define KXSD9_TESTMODE_PERIOD 500000000  // 0.5 sec
 //#define KXSD9_TESTMODE_PERIOD 1000000000  // 1 sec
 
+typedef struct  {
+	                short  y, x, z; 
+} bma020acc_t;
+
+bma020acc_t acc_data;
+
 #endif   // __KXSD9_2042_H__
 

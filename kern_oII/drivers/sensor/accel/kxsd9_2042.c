@@ -32,13 +32,22 @@ struct kxsd9_data {
 	struct early_suspend	early_suspend;
 };
 
-#define KXSD9_SADDR 		0x18 	// [0011000]
-#define I2C_DF_NOTIFY       0x01
-#define IRQ_ACC_INT IRQ_EINT(3)
+#define KXSD9_SADDR	0x18 	// [0011000]
+#define I2C_DF_NOTIFY	0x01
+#define IRQ_ACC_INT 	IRQ_EINT(3)
 
 #define TIMER_OFF 	0
 #define TIMER_ON	1
 
+/*
+   * CLKhld = 1 //held low during A/D conversions
+   * ENABLE = 1 //normal operation
+   * ST = 0 //selftest disable
+   * MOTIen = 0 //normal operation
+*/
+#define REGB_VALUE_NORMAL	0xC0
+#define REGB_VALUE_STANDBY	0x80
+                              
 static int kxsd9_timer_oper = TIMER_OFF;
 
 static unsigned short ignore[] = { I2C_CLIENT_END };
@@ -73,23 +82,6 @@ static irqreturn_t kxsd9_interrupt_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 #endif
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void kxsd9_early_suspend(struct early_suspend *handler)
-{
-	struct kxsd9_data *data = container_of(handler, struct kxsd9_data, early_suspend);
-	hrtimer_cancel(&data->timer);
-	gprintk("......................\n");
-}
-
-static void kxsd9_early_resume(struct early_suspend *handler)
-{
-	struct kxsd9_data *data = container_of(handler, struct kxsd9_data, early_suspend);
-	if(kxsd9_timer_oper == TIMER_ON)
-		hrtimer_start(&data->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
-	gprintk("......................\n");
-}
-#endif	/* CONFIG_HAS_EARLYSUSPEND */
 
 static int kxsd9_i2c_write(char *buf_to_write, int length)
 {
@@ -133,31 +125,84 @@ static int kxsd9_i2c_read(char *buf_to_read, int length)
 		return 0;
 }
 
-static int kxsd9_aot_open(struct inode *inode, struct file *file)
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void kxsd9_early_suspend(struct early_suspend *handler)
+{
+	struct kxsd9_data *data = container_of(handler, struct kxsd9_data, early_suspend);
+	char buf_write[2];
+
+	hrtimer_cancel(&data->timer);
+	// switch to low-power standby now
+	buf_write[0] = KXSD9_REG_CTRL_REGB;
+	buf_write[1] = REGB_VALUE_STANDBY;
+	
+	kxsd9_i2c_write(buf_write, 2);	
+
+	gprintk("kxsd9 suspend\n");
+}
+
+static void kxsd9_early_resume(struct early_suspend *handler)
+{
+	struct kxsd9_data *data = container_of(handler, struct kxsd9_data, early_suspend);
+	char buf_write[2];
+
+	// switch to normal operation now
+	buf_write[0] = KXSD9_REG_CTRL_REGB;
+	buf_write[1] = REGB_VALUE_NORMAL;
+	
+	kxsd9_i2c_write(buf_write, 2);	
+
+	if(kxsd9_timer_oper == TIMER_ON)
+		hrtimer_start(&data->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
+	gprintk("ksxd9 resume\n");
+}
+#endif	/* CONFIG_HAS_EARLYSUSPEND */
+
+/* BMA150 IOCTL */
+#define BMA150_IOC_MAGIC 				'B'
+#define BMA150_CALIBRATE				_IOW(BMA150_IOC_MAGIC,2, unsigned char)
+#define BMA150_SET_RANGE            	_IOWR(BMA150_IOC_MAGIC,4, unsigned char)
+#define BMA150_SET_MODE             	_IOWR(BMA150_IOC_MAGIC,6, unsigned char)
+#define BMA150_SET_BANDWIDTH            _IOWR(BMA150_IOC_MAGIC,8, unsigned char)
+#define BMA150_READ_ACCEL_XYZ           _IOWR(BMA150_IOC_MAGIC,46,short)
+#define BMA150_IOC_MAXNR            	48
+
+static int bma150_open(struct inode *inode, struct file *file)
 {
 	return 0;
 }
 
-static int kxsd9_aot_release(struct inode *inode, struct file *file)
+static int bma150_release(struct inode *inode, struct file *file)
 {
 	return 0;
 }
-static int kxsd9_aot_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
+static int bma150_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
+	unsigned char mode;
 	struct kxsd9_data *kxsd9 = i2c_get_clientdata(g_i2c_client);
 	
 	switch(cmd)
 	{
-		case ACCS_IOCTL_OPEN:
-			gprintk("hrtimer_start!\n");
-			kxsd9_timer_oper = TIMER_ON;
-			hrtimer_start(&kxsd9->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
+		case BMA150_CALIBRATE:
+		case BMA150_SET_RANGE:
+		case BMA150_SET_BANDWIDTH:
 			break;
-		case ACCS_IOCTL_CLOSE:
-			gprintk("hrtimer_cancel!\n");
-			kxsd9_timer_oper = TIMER_OFF;
-			hrtimer_cancel(&kxsd9->timer);
+		case BMA150_SET_MODE:
+			copy_from_user(&mode,(unsigned char*)arg,1);
+			if (mode != 2) {	
+				gprintk("hrtimer_start!\n");
+				kxsd9_timer_oper = TIMER_ON;
+				hrtimer_start(&kxsd9->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
+			}
+			else {
+				gprintk("hrtimer_cancel!\n");
+				kxsd9_timer_oper = TIMER_OFF;
+				hrtimer_cancel(&kxsd9->timer);
+			}
+			break;
+		case BMA150_READ_ACCEL_XYZ:
+			copy_to_user((bma020acc_t*)arg, &acc_data, sizeof(acc_data));
 			break;
 		default:
 			break;
@@ -177,7 +222,7 @@ static int kxsd9_get_valid_value(char* p)
 	gprintk("[DBG] buf[0]=%d, buf[1]=%d\n", buf[0], buf[1]);
 
 
-#if 0	//12bit
+#if 1	//12bit
 	ret = ((int)buf[0]<<4) ^ ((int)buf[1]>>4);
 #else	//8bit
 	ret = (int)buf[0];
@@ -209,6 +254,11 @@ static void kxsd9_workqueue_func(struct work_struct *work)
 	x = kxsd9_get_valid_value(&buf_read[0]);
 	y = kxsd9_get_valid_value(&buf_read[2]);
 	z = kxsd9_get_valid_value(&buf_read[4]);
+
+	acc_data.x = (x - 2080) / -3;
+	acc_data.y = (y - 2080) / -3;
+	acc_data.z = (z - 2080) / -3;
+
 	gprintk("\ninput_report_abs\n");
 
 	input_report_abs(kx_data->input_dev, ABS_X, x);
@@ -216,16 +266,17 @@ static void kxsd9_workqueue_func(struct work_struct *work)
 	input_report_abs(kx_data->input_dev, ABS_Z, z);
 	input_sync(kx_data->input_dev);
 
-	gprintk("Read value [x=%d, y=%d, z=%d]\n", x, y, z);
+//	printk("Read value [x=%d, y=%d, z=%d]\n", x, y, z);
+	gprintk("Read value [x=%d, y=%d, z=%d]\n", acc_data.x, acc_data.y, acc_data.z);
 
-	printk("============ END ============\n");
+//	printk("============ END ============\n");
 }
 
 static enum hrtimer_restart kxsd9_timer_func(struct hrtimer *timer)
 {
 	struct kxsd9_data* kxsd9 = container_of(timer, struct kxsd9_data, timer);
 
-	printk("============START============\n");
+//	printk("============START============\n");
 
 	// puts a job in the kernel-global workqueue
 	schedule_work(&kxsd9->work);
@@ -250,7 +301,7 @@ static int kxsd9_init_device(void)
 	 * MOTIen = 0 //normal operation
 	 */
 	buf_write[0] = KXSD9_REG_CTRL_REGB;
-	buf_write[1] = 0xC0;
+	buf_write[1] = REGB_VALUE_NORMAL;
 	
 	ret = kxsd9_i2c_write(buf_write, 2);	
 	if (ret<0) {
@@ -290,18 +341,20 @@ static int kxsd9_init_device(void)
 	return ret;
 }
 
-static struct file_operations kxsd9_aot_fops = {
+
+static struct file_operations bma150_fops = {
 	.owner = THIS_MODULE,
-	.open = kxsd9_aot_open,
-	.ioctl = kxsd9_aot_ioctl,
-	.release = kxsd9_aot_release,
+	.open = bma150_open,
+	.ioctl = bma150_ioctl,
+	.release = bma150_release,
 };
 
-static struct miscdevice kxsd9_aot_device = {
+static struct miscdevice bma150_device = {
 	.minor = MISC_DYNAMIC_MINOR,
-	.name = "kxsd9_aot",
-	.fops = &kxsd9_aot_fops,
+	.name = "bma150",
+	.fops = &bma150_fops,
 };
+
 
 static int kxsd9_i2c_probe_found(struct i2c_adapter *adapter, int address, int kind)
 {
@@ -340,7 +393,7 @@ static int kxsd9_i2c_probe_found(struct i2c_adapter *adapter, int address, int k
 	new_client->irq = IRQ_ACC_INT;  //TODO: interrupt (XEINT3)
 	#endif
 	
-	if (ret = i2c_attach_client(new_client))
+	if ((ret = i2c_attach_client(new_client)))
 		goto exit;
 
 
@@ -380,7 +433,7 @@ static int kxsd9_i2c_probe_found(struct i2c_adapter *adapter, int address, int k
 		goto exit;
 	}
 
-	ret = misc_register(&kxsd9_aot_device);
+	ret = misc_register(&bma150_device);
 	if(ret)
 	{
 		gprintk("kxsd9 misc device register failed\n");
@@ -429,17 +482,17 @@ static int kxsd9_i2c_detach_adapter(struct i2c_client *client)
 
 	//free_irq(client->irq, kxsd9);  //TODO: interrupt
 #ifdef KXSD9_TESTMODE
-	gprintk("timer_cansel\n");
+	gprintk("timer_cancel\n");
 	hrtimer_cancel(&kxsd9->timer);
 #endif
 	input_unregister_device(kxsd9->input_dev);
 
-	if ( ret = i2c_detach_client(client) )
+	if ( (ret = i2c_detach_client(client)) )
 		return ret;
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	unregister_early_suspend(&kxsd9->early_suspend);
 #endif	/* CONFIG_HAS_EARLYSUSPEND */
-	misc_deregister(&kxsd9_aot_device);
+	misc_deregister(&bma150_device);
 	kfree(kxsd9);
 	kfree(client);  //TOCHK
 	g_i2c_client = NULL;
