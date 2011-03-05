@@ -546,7 +546,7 @@ static unsigned int s3c_serial_getclk(struct uart_port *port,
 	struct s3c_uart_clksrc *clkp;
 	struct baud_calc res[MAX_CLKS];
 	struct baud_calc *resptr, *best, *sptr;
-	struct clk *uclk1;
+	//struct clk *uclk1;
 	int i;
 
 	clkp = cfg->clocks;

@@ -107,10 +107,9 @@ static int android_hifi_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
 	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
-	unsigned int pll_out = 0, bclk = 0;
+	unsigned int pll_out = 0;
 	int ret = 0;
 	unsigned long iispsr, iismod;
-	unsigned long epll_con0=0;
 	unsigned int prescaler = 4;
 	unsigned int m,p,s,k = 0;
 

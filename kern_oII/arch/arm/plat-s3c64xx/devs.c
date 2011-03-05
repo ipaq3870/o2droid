@@ -25,10 +25,8 @@
 #include <mach/hardware.h>
 #include <mach/map.h>
 
-//#include <plat/regs-spi.h>
 #include <plat/devs.h>
 #include <plat/adc.h>
-#include <plat/adcts.h>
 #include <linux/android_pmem.h>
 #include <plat/reserved_mem.h>
 

@@ -1,6 +1,7 @@
 make M=../modules PRJROOT=. modules
 
 arch/arm/mach-s3c6400/include/mach/Omnia_II.h
+arch/arm/mach-s3c6410/omnia_II_gpio_table.h
 arch/arm/mach-s3c6410/omnia_II.c
 
 arch/arm/mach-s3c6410/mach-saturn.c
@@ -16,9 +17,9 @@ arch/arm/plat-s3c64xx/s3c64xx-adcts.c
 
 arch/arm/plat-s3c/clock.c
 arch/arm/plat-s3c/Makefile
-/dka/bss/Omnia/marc/modules/dpram/dpram.c
-/dka/bss/Omnia/marc/modules/dpram/dpram.h
-/dka/bss/Omnia/marc/modules/multipdp/multipdp.c
+../modules/dpram/dpram.c
+../modules/dpram/dpram.h
+../modules/multipdp/multipdp.c
 
 drivers/serial/samsung.c
 
@@ -45,3 +46,6 @@ sound/soc/s3c64xx/s3c-pcm-sol.c
 drivers/net/wireless/libertas/if_spi.c
 drivers/spi/spi_s3c64xx.c
 arch/arm/plat-s3c64xx/dev-spi.c
+
+arch/arm/plat-s3c64xx/pm.c
+

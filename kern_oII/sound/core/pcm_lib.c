@@ -1777,7 +1777,6 @@ snd_pcm_sframes_t snd_pcm_lib_write(struct snd_pcm_substream *substream, const v
 {
 	struct snd_pcm_runtime *runtime;
 	int nonblock;
-	snd_pcm_sframes_t ret;
 	int err;
 
 	err = pcm_sanity_check(substream);

@@ -360,7 +360,7 @@ static int ak4671_set_path(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-	int i = 0, new_path;
+	int i = 0, new_path = 0;
 
 	while(audio_path[i] != NULL) {
 		new_path = (i << 4) | ucontrol->value.integer.value[0];

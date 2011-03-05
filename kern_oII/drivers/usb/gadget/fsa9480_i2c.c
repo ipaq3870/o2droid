@@ -747,8 +747,8 @@ void fsa9480_SetManualSW(unsigned char valManualSw1, unsigned char valManualSw2)
 ***********************************************************************/
 void fsa9480_SetAutoSWMode(void)
 {
-    DEBUG_FSA9480("[FSA9480]%s\n ", __func__);
-	unsigned char cont_reg=0xff;
+//	unsigned char cont_reg=0xff;
+    	DEBUG_FSA9480("[FSA9480]%s\n ", __func__);
 
 	/*set Auto Swithing mode */
 	fsa9480_write(&fsa9480_i2c_client, REGISTER_CONTROL, 0x1E);

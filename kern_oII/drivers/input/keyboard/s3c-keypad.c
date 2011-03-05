@@ -63,7 +63,7 @@
 
 
 static struct timer_list keypad_timer;
-static struct timer_list powerkey_timer;
+//static struct timer_list powerkey_timer;
 static int is_timer_on = FALSE;
 static struct clk *keypad_clock;
 struct resource *keypad_mem = NULL;		
@@ -77,8 +77,8 @@ static u32 keymask[KEYPAD_COLUMNS];
 static u32 prevmask[KEYPAD_COLUMNS];
 
 extern struct task_struct *find_task_by_pid(pid_t nr);
-static int keylock = 0;
-static unsigned int process_id = 0;
+//static int keylock = 0;
+//static unsigned int process_id = 0;
 
 static int in_sleep = 0;
 
@@ -93,11 +93,11 @@ EXPORT_SYMBOL(earjack_report_key);
 static int keypad_scan(void)
 {
 
-	u32 col, cval, rval, gpio;
+	u32 col, cval, rval;
 
 	for (col = 0; col < KEYPAD_COLUMNS; col++) {
 
-		cval = KEYCOL_DMASK & ~((1 << col) | (1 << col + 8));	
+		cval = KEYCOL_DMASK & ~((1 << col) | (1 << (col + 8)));	
 
 		writel(cval, key_base + S3C_KEYIFCOL);	
 		udelay(KEYPAD_DELAY);
@@ -125,13 +125,14 @@ static void keypad_timer_handler(unsigned long data)
 	for (col = 0; col < KEYPAD_COLUMNS; col++) {
 		press_mask = ((keymask[col] ^ prevmask[col]) & keymask[col]);
 		release_mask = ((keymask[col] ^ prevmask[col]) & prevmask[col]);
-
+/*
 #ifdef CONFIG_CPU_FREQ
 #if USE_PERF_LEVEL_KEYPAD
-//		if (press_mask || release_mask)
-//			set_dvfs_target_level(LEV_400MHZ);
+		if (press_mask || release_mask)
+			set_dvfs_target_level(LEV_400MHZ);
 #endif
 #endif
+*/
 		i = col * KEYPAD_ROWS;
 
 		while (press_mask) {
@@ -356,6 +357,7 @@ static int __init s3c_keypad_probe(struct platform_device *pdev)
 
 	input_dev->keycode = keypad_keycode;
 
+	keypad_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	ret = input_register_device(input_dev);
 	if (ret) {
 		printk("Unable to register s3c-keypad input device!!!\n");
@@ -368,7 +370,6 @@ static int __init s3c_keypad_probe(struct platform_device *pdev)
 	keypad_timer.data = (unsigned long)s3c_keypad;
 
 	/* For IRQ_KEYPAD */
-	keypad_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (keypad_irq == NULL) {
 		dev_err(&pdev->dev, "no irq resource specified\n");
 		ret = -ENOENT;
@@ -470,10 +471,10 @@ static int s3c_keypad_suspend(struct platform_device *dev, pm_message_t state)
 
 static int s3c_keypad_resume(struct platform_device *dev)
 {
-	struct s3c_keypad *s3c_keypad =
-	    (struct s3c_keypad *)platform_get_drvdata(dev);
-	struct input_dev *iDev = s3c_keypad->dev;
-	unsigned int key_temp_data = 0;
+//	struct s3c_keypad *s3c_keypad =
+//	    (struct s3c_keypad *)platform_get_drvdata(dev);
+//	struct input_dev *iDev = s3c_keypad->dev;
+//	unsigned int key_temp_data = 0;
 
 	printk(KERN_DEBUG "++++ %s\n", __FUNCTION__);
 

@@ -86,22 +86,22 @@ static unsigned int send_end_irq_token;
 static unsigned short int headset_status;
 static struct wake_lock headset_sendend_wake_lock;
 
-short int get_headset_status()
+short int get_headset_status(void)
 {
 	SEC_HEADSET_DBG(" headset_status %d", headset_status);
 	return headset_status;
 }
 
 EXPORT_SYMBOL(get_headset_status);
-static void release_headset_event(unsigned long arg)
+static void release_headset_event(struct work_struct *work)
 {
 	printk("Headset attached\n");
 	headset_status = 1;
 	switch_set_state(&switch_earjack, 1);
 }
-static DECLARE_DELAYED_WORK(release_headset_event_work, release_headset_event);
+static DECLARE_WORK(release_headset_event_work, release_headset_event);
 
-static void ear_adc_caculrator(unsigned long arg)
+static void ear_adc_caculrator(struct work_struct *work)
 {
 	int adc = 0;
 	struct sec_gpio_info   *det_headset = &hi->port.det_headset;
@@ -145,7 +145,7 @@ static void ear_adc_caculrator(unsigned long arg)
 	wake_unlock(&headset_sendend_wake_lock);
 }
 
-static DECLARE_DELAYED_WORK(ear_adc_cal_work, ear_adc_caculrator);
+static DECLARE_WORK(ear_adc_cal_work, ear_adc_caculrator);
 
 static void headset_detect_timer_handler(unsigned long arg)
 {
@@ -171,8 +171,6 @@ static void headset_detect_timer_handler(unsigned long arg)
 		}
 		else if(headset_detect_timer_token == 4)
 		{
-			//gpio_set_value(GPIO_MICBIAS_EN, 1); 
-			//schedule_delayed_work(&ear_adc_cal_work, 200);
 			schedule_work(&ear_adc_cal_work);
 			SEC_HEADSET_DBG("mic bias enable add work queue \n");
 			headset_detect_timer_token = 0;
@@ -191,7 +189,7 @@ static void ear_switch_change(struct work_struct *ignored)
 	int state;
 
 	del_timer(&headset_detect_timer);
-	cancel_delayed_work_sync(&ear_adc_cal_work);
+	cancel_work_sync(&ear_adc_cal_work);
 	state = gpio_get_value(det_headset->gpio) ^ det_headset->low_active;
 
 	if (state && !send_end_irq_token)
@@ -281,7 +279,7 @@ static void sendend_switch_change(struct work_struct *ignored)
 
 	del_timer(&send_end_key_event_timer);
 	send_end_key_timer_token = 0;
-    mdelay(10); // for earjack keyevent delay
+	mdelay(10); // for earjack keyevent delay
 	
 	headset_state = gpio_get_value(det_headset->gpio) ^ det_headset->low_active;
 	state = gpio_get_value(send_end->gpio) ^ send_end->low_active;
@@ -392,6 +390,7 @@ static int sec_headset_probe(struct platform_device *pdev)
 		goto err_switch_dev_register;
         }
 
+	det_headset = &hi->port.det_headset;
 	send_end = &hi->port.send_end;
         s3c_gpio_cfgpin(send_end->gpio, S3C_GPIO_SFN(send_end->gpio_af));
         s3c_gpio_setpull(send_end->gpio, S3C_GPIO_PULL_NONE);
@@ -405,7 +404,6 @@ static int sec_headset_probe(struct platform_device *pdev)
 	}
 	disable_irq(send_end->eint);
 
-	det_headset = &hi->port.det_headset;
         s3c_gpio_cfgpin(det_headset->gpio, S3C_GPIO_SFN(det_headset->gpio_af));
         s3c_gpio_setpull(det_headset->gpio, S3C_GPIO_PULL_NONE);
         set_irq_type(det_headset->eint, IRQ_TYPE_EDGE_BOTH);

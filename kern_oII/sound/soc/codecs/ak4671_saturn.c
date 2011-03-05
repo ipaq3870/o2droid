@@ -72,7 +72,7 @@ static struct i2c_client_address_data max9877_addr_data = {
 
 extern int shutdown_flag;
 
-short int get_headset_status();//import from arc/arm/s3c6410/sec_headset.c
+extern short int get_headset_status(void);
 
 static int max9877_read(struct i2c_client *client, u8 reg, u8 *data)
 {
@@ -395,8 +395,8 @@ static void set_amp_gain(int mode)
 
 int amp_set_path(int path)
 {
-	int i; 
 #if MAX9877_SPECIFIC_DEBUG
+	int i; 
 	u8 pData;
 	/* real all */
     for(i = 0; i <= 0x4; i++) {

@@ -965,7 +965,7 @@ static int soc_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
+#if 0
 static int soc_shutdown(struct platform_device *pdev)
 {
 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
@@ -976,6 +976,7 @@ static int soc_shutdown(struct platform_device *pdev)
 
 	return 0;
 }
+#endif
 
 /* ASoC platform driver */
 static struct platform_driver soc_driver = {

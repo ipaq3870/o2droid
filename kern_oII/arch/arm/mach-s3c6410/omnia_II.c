@@ -652,7 +652,7 @@ static void __init smdk6410_map_io(void)
 
 void __iomem *s3c6410_wdt_addr;
 
-static void s3c6410_wdt_io_map()
+static void s3c6410_wdt_io_map(void)
 {
         s3c6410_wdt_addr = ioremap(S3C64XX_PA_WATCHDOG,S3C64XX_SZ_WATCHDOG);
 }

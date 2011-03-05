@@ -879,7 +879,7 @@ void (*pm_cpu_sleep)(void);
  * central control for sleep/resume process
 */
 
-extern unsigned int extra_eint0pend = 0x0;
+//unsigned int extra_eint0pend = 0x0;
 
 static int s3c6410_pm_enter(suspend_state_t state)
 {
@@ -891,10 +891,10 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	/* ensure the debug is initialised (if enabled) */
 
 	printk("s3c6410_pm_enter(%d)\n", state);
-//	DBG("s3c6410_pm_enter(%d)\n", state);
+	//	DBG("s3c6410_pm_enter(%d)\n", state);
 
-//	if (bml_suspend_fp)
-//		bml_suspend_fp(NULL, 0, 0);
+	//	if (bml_suspend_fp)
+	//		bml_suspend_fp(NULL, 0, 0);
 
 	if (pm_cpu_prep == NULL || pm_cpu_sleep == NULL) {
 		printk(KERN_ERR PFX "error: no cpu sleep functions set\n");
@@ -1004,7 +1004,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_pm_do_restore(gpio_save, ARRAY_SIZE(gpio_save));
 	s3c6410_pm_do_restore(irq_save, ARRAY_SIZE(irq_save));
 	s3c6410_pm_do_restore(onenand_save, ARRAY_SIZE(onenand_save));
-	
+
 	__raw_writel(0x0, S3C64XX_SLPEN);
 
 	wakeup_stat = __raw_readl(S3C_WAKEUP_STAT);
@@ -1016,7 +1016,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 
 	s3c6410_pm_check_restore();
 
-	extra_eint0pend = eint0pend;
+//	extra_eint0pend = eint0pend;
 
 	pr_info("%s: WAKEUP_STAT(0x%08x), EINT0PEND(0x%08x)\n",
 			__func__, wakeup_stat, eint0pend);
