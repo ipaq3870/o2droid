@@ -1444,39 +1444,6 @@ err_clock:
 	return ret;
 }
 
-static int s3c_g3d_suspend(struct platform_device *dev, pm_message_t state)
-{
-	printk("s3c_g3d_suspend.\n");
-	mutex_lock(&pm_critical_section_lock);
-	if(g_G3D_CriticalFlag)
-	{
-		mutex_unlock(&pm_critical_section_lock);
-		while (g_G3D_CriticalFlag) {
-			printk("g3d_suspend : wait for !Critical.\n");
-			msleep(1);
-		}
-		mutex_lock(&pm_critical_section_lock);
-	}
-	else
-	{
-		/*power off*/
-#ifdef USE_G3D_DOMAIN_GATING
-		del_timer(&g3d_pm_timer);
-#endif
-		g_G3D_SelfPowerOFF=False;
-	
-		clk_g3d_disable();
-
-#ifdef USE_G3D_DOMAIN_GATING
-		DOMAIN_POWER_OFF;
-#endif /* USE_G3D_DOMAIN_GATING */
-
-		// it is 0 now ! g_G3D_CriticalFlag=0;
-	}
-    
-	return 0;
-}
-
 static int s3c_g3d_remove(struct platform_device *dev)
 {
 	printk("s3c_g3d_remove.\n");
@@ -1503,9 +1470,44 @@ static int s3c_g3d_remove(struct platform_device *dev)
 	return 0;
 }
 
+static int s3c_g3d_suspend(struct platform_device *dev, pm_message_t state)
+{
+//	printk("s3c_g3d_suspend.\n");
+	mutex_lock(&pm_critical_section_lock);
+	if(g_G3D_CriticalFlag)
+	{
+		int loop=0;
+		mutex_unlock(&pm_critical_section_lock);
+		while (g_G3D_CriticalFlag) {
+			if ( ! loop)
+				printk("g3d_suspend : wait for !Critical.\n");
+			msleep(1);
+			if (++loop>1000) {
+				printk("g3d critical flag error, skip!\n");
+				g_G3D_CriticalFlag=0;
+				break;
+			}
+		}
+		mutex_lock(&pm_critical_section_lock);
+	}
+	/*power off*/
+#ifdef USE_G3D_DOMAIN_GATING
+	del_timer(&g3d_pm_timer);
+#endif
+	g_G3D_SelfPowerOFF=False;
+	
+	clk_g3d_disable();
+
+#ifdef USE_G3D_DOMAIN_GATING
+	DOMAIN_POWER_OFF;
+#endif /* USE_G3D_DOMAIN_GATING */
+	// it is 0 now ! g_G3D_CriticalFlag=0;
+	return 0;
+}
+
 static int s3c_g3d_resume(struct platform_device *pdev)
 {
-	printk("s3c_g3d_resume.\n");
+//	printk("s3c_g3d_resume.\n");
 	if(!g_G3D_CriticalFlag)
 	{
 		/*power on 3D PM right after 3D APIs are used*/
