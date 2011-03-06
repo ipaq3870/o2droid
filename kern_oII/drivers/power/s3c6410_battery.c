@@ -146,7 +146,8 @@ typedef enum {
 	CHARGER_BATTERY = 0,
 	CHARGER_USB,
 	CHARGER_AC,
-	CHARGER_DISCHARGE
+	CHARGER_DISCHARGE,
+	CHARGER_UNKNOWN
 } charger_type_t;
 
 struct battery_info {
@@ -1258,8 +1259,8 @@ static struct power_supply s3c_power_supplies[] = {
 
 static int s3c_cable_status_update(int status)
 {
-	int ret = 0;
-	charger_type_t source = CHARGER_BATTERY;
+	int chng;
+	charger_type_t source=CHARGER_UNKNOWN;
 
 	dev_dbg(dev, "%s\n", __func__);
 
@@ -1269,43 +1270,47 @@ static int s3c_cable_status_update(int status)
 	switch(status) {
 	case CHARGER_BATTERY:
 		dev_dbg(dev, "%s: cable NOT PRESENT\n", __func__);
-		s3c_bat_info.bat_info.charging_source = CHARGER_BATTERY;
+		source = CHARGER_BATTERY;
 		break;
 	case CHARGER_USB:
 		dev_dbg(dev, "%s: cable USB\n", __func__);
-		s3c_bat_info.bat_info.charging_source = CHARGER_USB;
+		source = CHARGER_USB;
 		break;
 	case CHARGER_AC:
 		dev_dbg(dev, "%s: cable AC\n", __func__);
-		s3c_bat_info.bat_info.charging_source = CHARGER_AC;
+		source = CHARGER_AC;
 		break;
 	case CHARGER_DISCHARGE:
 		dev_dbg(dev, "%s: Discharge\n", __func__);
-		s3c_bat_info.bat_info.charging_source = CHARGER_DISCHARGE;
+		source = CHARGER_DISCHARGE;
 		break;
 	default:
-		dev_err(dev, "%s: Nat supported status\n", __func__);
-		ret = -EINVAL;
+		dev_err(dev, "%s: Not supported status\n", __func__);
 	}
-	source = s3c_bat_info.bat_info.charging_source;
+	if (source != s3c_bat_info.bat_info.charging_source) chng=1;
 
-        if (source == CHARGER_USB || source == CHARGER_AC) {
-                wake_lock(&vbus_wake_lock);
-        } else {
-                /* give userspace some time to see the uevent and update
-                 * LED state or whatnot...
-                 */
-			if (gpio_get_value(gpio_ta_connected)) 
-				wake_lock_timeout(&vbus_wake_lock, HZ * 5);
-        }
-        /* if the power source changes, all power supplies may change state */
-        power_supply_changed(&s3c_power_supplies[CHARGER_BATTERY]);
-	/*
-        power_supply_changed(&s3c_power_supplies[CHARGER_USB]);
-        power_supply_changed(&s3c_power_supplies[CHARGER_AC]);
-	*/
+	s3c_bat_info.bat_info.charging_source=source;
+
+	if (source == CHARGER_USB || source == CHARGER_AC) {
+		wake_lock(&vbus_wake_lock);
+	} else {
+    /* give userspace some time to see the uevent and update
+    * LED state or whatnot...   */
+		if (gpio_get_value(gpio_ta_connected)) 
+			wake_lock_timeout(&vbus_wake_lock, HZ * 5);
+	}
+    /* if the power source changes, all power supplies may change state */
+    if (chng) {
+    	printk("Charging src: %s ,param:%x\n",
+    		source==CHARGER_BATTERY?"battery":(source==CHARGER_USB?"usb":(source==CHARGER_AC?"ac":
+    			(source==CHARGER_DISCHARGE?"discharge":"unknown"))),
+    			fg_read_param() );
+		power_supply_changed(&s3c_power_supplies[CHARGER_BATTERY]);
+		power_supply_changed(&s3c_power_supplies[CHARGER_USB]);
+		power_supply_changed(&s3c_power_supplies[CHARGER_AC]);
+    }
 	dev_dbg(dev, "%s: call power_supply_changed\n", __func__);
-	return ret;
+	return source==CHARGER_UNKNOWN?-EINVAL:0;
 }
 
 static void s3c_bat_status_update(struct power_supply *bat_ps)

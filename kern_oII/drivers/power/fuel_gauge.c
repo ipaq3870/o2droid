@@ -128,6 +128,15 @@ unsigned int fg_read_vcell(void)
 	return (vcell_total - vcell_max - vcell_min) / (VCELL_ARR_SIZE - 2);
 }
 
+unsigned int fg_read_param(void) {
+	struct i2c_client *client = fg_i2c_client;
+	u8 data[2];
+
+	fg_i2c_read(client, RCOMP0_REG, &data[0]);
+	fg_i2c_read(client, RCOMP1_REG, &data[1]);
+	return  data[0]<<8|data[1];
+}
+
 unsigned int fg_read_soc(void)
 {
 	struct i2c_client *client = fg_i2c_client;
