@@ -90,6 +90,9 @@ EXPORT_SYMBOL(sec_set_param_value);
 void (*sec_get_param_value)(int idx, void *value);
 EXPORT_SYMBOL(sec_get_param_value);
 
+#include "omnia_II_gpio_table.h"
+void s3c_config_gpio_table(int array_size, int (*gpio_table)[6]);
+
 #define UCON S3C_UCON_DEFAULT
 #define ULCON S3C_LCON_CS8 | S3C_LCON_PNONE
 #define UFCON S3C_UFCON_RXTRIG8 | S3C_UFCON_FIFOMODE
@@ -345,45 +348,6 @@ static struct s3c6410_pmem_setting pmem_setting = {
         .pmem_skia_size = RESERVED_PMEM_SKIA,
 };
 
-#ifdef CONFIG_S3C64XX_ADCTS
-static struct s3c_adcts_plat_info s3c_adcts_cfgs __initdata = {
-	.channel = {
-		{ /* 0 */
-			.delay = 0xFF,
-			.presc = 49,
-			.resol = S3C_ADCCON_RESSEL_12BIT,
-		},{ /* 1 */
-			.delay = 0xFF,
-			.presc = 49,
-			.resol = S3C_ADCCON_RESSEL_12BIT,
-		},{ /* 2 */
-			.delay = 0xFF,
-			.presc = 49,
-			.resol = S3C_ADCCON_RESSEL_12BIT,
-		},{ /* 3 */
-			.delay = 0xFF,
-			.presc = 49,
-			.resol = S3C_ADCCON_RESSEL_12BIT,
-		},{ /* 4 */
-			.delay = 0xFF,
-			.presc = 49,
-			.resol = S3C_ADCCON_RESSEL_12BIT,
-		},{ /* 5 */
-			.delay = 0xFF,
-			.presc = 49,
-			.resol = S3C_ADCCON_RESSEL_12BIT,
-		},{ /* 6 */
-			.delay = 0xFF,
-			.presc = 49,
-			.resol = S3C_ADCCON_RESSEL_12BIT,
-		},{ /* 7 */
-			.delay = 0xFF,
-			.presc = 49,
-			.resol = S3C_ADCCON_RESSEL_12BIT,
-		},
-	},
-};
-#endif
 
 extern int get_usb_cable_state(void);
 
@@ -615,9 +579,6 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 	&sec_device_opt_prox,
 	&sec_device_opt_light,
 	&sec_device_ts,
-#ifdef CONFIG_S3C64XX_ADCTS
-	&s3c_device_adcts,
-#endif
 	&sec_device_battery,
 	&sec_device_rfkill,   //BT POWER ON-OFF
 //	&sec_device_btsleep,  //BT SLEEP-AWAKE
@@ -659,6 +620,10 @@ static void s3c6410_wdt_io_map(void)
 
 static void __init smdk6410_machine_init(void)
 {
+
+	s3c_config_gpio_table(ARRAY_SIZE(omnia_II_init_gpio_table),
+		omnia_II_init_gpio_table);
+	
 	s3c_i2c0_set_platdata(NULL);
 	s3c_i2c1_set_platdata(NULL);
 
@@ -666,11 +631,6 @@ static void __init smdk6410_machine_init(void)
 	s3c_ts_set_platdata(&s3c_ts_platform);
 	s3c_adc_set_platdata(&s3c_adc_platform);
 #endif
-
-#ifdef CONFIG_S3C64XX_ADCTS
-	s3c_adcts_set_platdata (&s3c_adcts_cfgs);
-#endif
-	
 
 	init_spi();
 
@@ -896,7 +856,6 @@ void s3c_config_gpio_table(int array_size, int (*gpio_table)[6])
 }
 EXPORT_SYMBOL(s3c_config_gpio_table);
 
-#include "omnia_II_gpio_table.h"
 
 static void check_pmic(void)
 {	
