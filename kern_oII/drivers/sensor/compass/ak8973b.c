@@ -66,7 +66,7 @@ static atomic_t mv_flag;
 static short akmd_delay = 0;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static atomic_t suspend_flag = ATOMIC_INIT(0);
+//static atomic_t suspend_flag = ATOMIC_INIT(0);
 #endif /* CONFIG_HAS_EARLYSUSPEND */ 
 
 /* following are the sysfs callback functions */
@@ -619,7 +619,7 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			if (rwbuf[0] < 1)
 				return -EINVAL;
 			ret = AKI2C_RxData(&rwbuf[1], rwbuf[0]);
-			// for akmd, must revert and re-sign the x,y values: x=-y, y=x!!!!!!!!!!
+			// for akmd, must revert and re-sign the x,y values: x=-y, y=x!!
 			{
 				char ch = rwbuf[2];
 				rwbuf[2] = -rwbuf[3];
@@ -641,6 +641,12 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			gprintk("\n");
 			if (rwbuf[0] < 2)
 				return -EINVAL;
+			if (rwbuf[0] == 4) {
+			// the calibratin feedback must be exchanged too  x=y, y=-x !!
+				char ch = -rwbuf[2];
+				rwbuf[2] = rwbuf[3];
+				rwbuf[3] = ch;
+			}			
 			ret = AKI2C_TxData(&rwbuf[1], rwbuf[0]);
 			gprintk(" ret = %d\n", ret);
 			if (ret < 0)
