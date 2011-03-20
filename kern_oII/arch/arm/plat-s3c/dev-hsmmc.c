@@ -14,11 +14,13 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/mmc/host.h>
+#include <linux/io.h>
 
 #include <mach/map.h>
 #include <plat/sdhci.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
+#include <plat/regs-gpio.h>
 
 #define S3C_SZ_HSMMC	(0x1000)
 
@@ -32,15 +34,30 @@ static struct resource s3c_hsmmc_resource[] = {
 		.start = IRQ_HSMMC0,
 		.end   = IRQ_HSMMC0,
 		.flags = IORESOURCE_IRQ,
+	},
+	[2] = {
+		.start = IRQ_EINT(6),
+		.end   = IRQ_EINT(6),
+		.flags = IORESOURCE_IRQ,
 	}
 };
 
 static u64 s3c_device_hsmmc_dmamask = 0xffffffffUL;
 
+static unsigned int detect_ext_cd( void ) {
+    return(readl(S3C64XX_GPNDAT) & 0x40 ? 0 : 1); /* GPN6 */
+}
+static void cfg_ext_cd( void ) {
+	printk("MMC cd config");
+}
+
 struct s3c_sdhci_platdata s3c_hsmmc0_def_platdata = {
 	.max_width	= 4,
 	.host_caps	= (MMC_CAP_4_BIT_DATA |
 			   MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED),
+	.ext_cd = IRQ_EINT(6),
+	.detect_ext_cd = detect_ext_cd,
+	.cfg_ext_cd = cfg_ext_cd,
 };
 
 struct platform_device s3c_device_hsmmc0 = {

@@ -268,6 +268,7 @@ static int sdhci_s3c_adjust_cfg(struct sdhci_host *host, int rw)
 
 	if(pdata->adjust_cfg_card)
 		pdata->adjust_cfg_card(pdata, host->ioaddr, rw);
+	return 0;
 }
 
 static struct sdhci_ops sdhci_s3c_ops = {
@@ -295,10 +296,9 @@ EXPORT_SYMBOL_GPL(sdhci_s3c_force_presence_change);
 irqreturn_t sdhci_irq_cd(int irq, void *dev_id)
 {
 	struct sdhci_s3c* sc = dev_id;
+	uint detect = sc->pdata->detect_ext_cd();
 
 	printk(KERN_DEBUG "sdhci: card interrupt.\n");
-
-	uint detect = sc->pdata->detect_ext_cd();
 
 	if (detect) {
 		printk(KERN_DEBUG "sdhci: card inserted.\n");
@@ -406,7 +406,7 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 
 	/* Ensure we have minimal gpio selected CMD/CLK/Detect */
 	if (pdata->cfg_gpio)
-		pdata->cfg_gpio(pdev, pdata->max_width);
+		pdata->cfg_gpio(pdev, pdata->max_width);	//????
 
 	if (pdata->get_ro)
 		sdhci_s3c_ops.get_ro = sdhci_s3c_get_ro;
