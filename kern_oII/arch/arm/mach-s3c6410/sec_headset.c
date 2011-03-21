@@ -96,8 +96,7 @@ EXPORT_SYMBOL(get_headset_status);
 static void release_headset_event(struct work_struct *work)
 {
 	printk("Headset attached\n");
-	headset_status = 1;
-	switch_set_state(&switch_earjack, 1);
+	switch_set_state(&switch_earjack, headset_status);
 }
 static DECLARE_WORK(release_headset_event_work, release_headset_event);
 
@@ -124,11 +123,14 @@ static void ear_adc_caculrator(struct work_struct *work)
 			send_end_irq_token++;
 			SEC_HEADSET_DBG("MICBIAS enable after token is %d \n", send_end_irq_token);
 			gpio_set_value(GPIO_MICBIAS_EN, 1); 
+			headset_status = 1;
+			schedule_work(&release_headset_event_work);
 		}
 		else if(adc < 10)
 		{
 			printk("3pole earphone adc is %d\n", adc);
-			headset_status = 0;
+			headset_status = 2;
+			schedule_work(&release_headset_event_work);
 		}
 		else
 		{
@@ -167,7 +169,6 @@ static void headset_detect_timer_handler(unsigned long arg)
 			headset_detect_timer.expires = SEND_END_ENABLE_TIME;
 			add_timer(&headset_detect_timer);
 			headset_detect_timer_token++;
-			schedule_work(&release_headset_event_work);
 		}
 		else if(headset_detect_timer_token == 4)
 		{
