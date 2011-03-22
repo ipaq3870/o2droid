@@ -116,7 +116,7 @@
 #define GPIO_CAM_PCLK           S3C64XX_GPF(2)
 #define GPIO_CAM_PCLK_AF        (2)
 #define GPIO_CAM_3M_nRST        S3C64XX_GPF(3)
-#define GPIO_CAM_3M_nRST_AF     (1)
+#define GPIO_CAM_3M_nRST_AF     (2)
 #define GPIO_CAM_VSYNC          S3C64XX_GPF(4)
 #define GPIO_CAM_VSYNC_AF       (2)
 #define GPIO_CAM_D_0            S3C64XX_GPF(5)
