@@ -2031,32 +2031,7 @@ static int s3c_camif_set_gpio(void)
 #elif defined(CONFIG_CPU_S3C6400) || defined(CONFIG_CPU_S3C6410)
 static int s3c_camif_set_gpio(void)
 {
-#if 1
-	s3c_gpio_cfgpin(GPIO_CAM_D_0, S3C_GPIO_SFN(GPIO_CAM_D_0_AF));
-	s3c_gpio_setpull(GPIO_CAM_D_0, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_D_1, S3C_GPIO_SFN(GPIO_CAM_D_1_AF));
-	s3c_gpio_setpull(GPIO_CAM_D_1, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_D_2, S3C_GPIO_SFN(GPIO_CAM_D_2_AF));
-	s3c_gpio_setpull(GPIO_CAM_D_2, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_D_3, S3C_GPIO_SFN(GPIO_CAM_D_3_AF));
-	s3c_gpio_setpull(GPIO_CAM_D_3, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_D_4, S3C_GPIO_SFN(GPIO_CAM_D_4_AF));
-	s3c_gpio_setpull(GPIO_CAM_D_4, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_D_5, S3C_GPIO_SFN(GPIO_CAM_D_5_AF));
-	s3c_gpio_setpull(GPIO_CAM_D_5, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_D_6, S3C_GPIO_SFN(GPIO_CAM_D_6_AF));
-	s3c_gpio_setpull(GPIO_CAM_D_6, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_D_7, S3C_GPIO_SFN(GPIO_CAM_D_7_AF));
-	s3c_gpio_setpull(GPIO_CAM_D_7, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_MCLK, S3C_GPIO_SFN(GPIO_CAM_MCLK_AF));
-	s3c_gpio_setpull(GPIO_CAM_MCLK, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_PCLK, S3C_GPIO_SFN(GPIO_CAM_PCLK_AF));
-	s3c_gpio_setpull(GPIO_CAM_PCLK, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_HSYNC, S3C_GPIO_SFN(GPIO_CAM_HSYNC_AF));
-	s3c_gpio_setpull(GPIO_CAM_HSYNC, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(GPIO_CAM_VSYNC, S3C_GPIO_SFN(GPIO_CAM_VSYNC_AF));
-	s3c_gpio_setpull(GPIO_CAM_VSYNC, S3C_GPIO_PULL_NONE);
-#else
+
 	printk("s3c_camif_set_gpio \n");
 	s3c_gpio_cfgpin(S3C64XX_GPF(5), S3C_GPIO_SFN(2));
 	s3c_gpio_setpull(S3C64XX_GPF(5), S3C_GPIO_PULL_NONE);
@@ -2084,7 +2059,7 @@ static int s3c_camif_set_gpio(void)
 	s3c_gpio_setpull(S3C64XX_GPF(0), S3C_GPIO_PULL_NONE);
 	s3c_gpio_cfgpin(S3C64XX_GPF(3), S3C_GPIO_SFN(2));
 	s3c_gpio_setpull(S3C64XX_GPF(3), S3C_GPIO_PULL_NONE);
-#endif
+
 	return 0;
 }
 #endif
