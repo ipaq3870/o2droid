@@ -16,21 +16,17 @@
 /* Default Parameter Values */
 
 #define SERIAL_SPEED		7		/* Baudrate */
-#define LCD_LEVEL			0x07F	/* Backlight Level */
+#define LCD_LEVEL			0x061	/* Backlight Level */
 #define BOOT_DELAY			0		/* Boot Wait Time */
 #define LOAD_RAMDISK		0		/* Enable Ramdisk Loading */
-#if defined(CONFIG_MACH_QUATTRO)
-#define SWITCH_SEL			1		/* Switch Setting (WIMAX[2], UART[1], USB[0]) */
-#else
 #define SWITCH_SEL			1		/* Switch Setting (UART[1], USB[0]) */
-#endif
 #define PHONE_DEBUG_ON		0		/* Enable Phone Debug Mode */
-#define LCD_DIM_LEVEL		0x01D	/* Backlight Dimming Level */
+#define LCD_DIM_LEVEL		0x011	/* Backlight Dimming Level */
 #define MELODY_MODE			0		/* Melody Mode */
 #define REBOOT_MODE			0		/* Reboot Mode */
 #define NATION_SEL			0		/* Language Configuration */
 #define SET_DEFAULT_PARAM	0		/* Set Param to Default */
-#define VERSION_LINE		"INSTINCTQXXIE00"	/* Set Image Info */
+#define VERSION_LINE		"I8315XXIE00"	/* Set Image Info */
 #define COMMAND_LINE		"console=ttySAC2,115200"
 #define	BOOT_VERSION		" version=Sbl(1.0.0) "
 
@@ -75,32 +71,17 @@ typedef struct {
 } status_t;
 
 /* REBOOT_MODE */
-#define REBOOT_MODE_NONE				0
-#define REBOOT_MODE_DOWNLOAD			1
-#define REBOOT_MODE_CHARGING			3
-#define REBOOT_MODE_RECOVERY			4
-#define REBOOT_MODE_ARM11_FOTA		    5
-#define REBOOT_MODE_ARM9_FOTA			6
-#define REBOOT_MODE_DOWNLOAD_FAIL	    7
-#define REBOOT_MODE_RAMDUMP			    8
-#define REBOOT_MODE_DOWNLOAD_KEY		9
-#define REBOOT_MODE_FASTBOOT            10 //etinum.adb.reboot bootloader
-
-#define USB_SEL_MASK	(1 << 0)
-#define UART_SEL_MASK	(1 << 1)
-#if defined(CONFIG_MACH_QUATTRO)
-#define WIMAX_SEL_MASK	(1 << 2)
-#endif
+#define REBOOT_MODE_NONE		0
+#define REBOOT_MODE_DOWNLOAD		1
+#define REBOOT_MODE_CHARGING		3
+#define REBOOT_MODE_RECOVERY		4
+#define REBOOT_MODE_ARM11_FOTA		5
+#define REBOOT_MODE_ARM9_FOTA		6
 
 extern void (*sec_set_param_value)(int idx, void *value);
 extern void (*sec_get_param_value)(int idx, void *value);
 
-#define SEC_SET_PARAM(idx, value)	\
-if (sec_set_param_value)		\
-	sec_set_param_value(idx, &value);
-
-#define SEC_GET_PARAM(idx, value)	\
-if (sec_get_param_value)		\
-	sec_get_param_value(idx, &value);
+#define USB_SEL_MASK	(1 << 0)
+#define UART_SEL_MASK	(1 << 1)
 
 #endif	/* ASM_MACH_PARAM_H */

@@ -44,10 +44,11 @@ struct s3c_adcts_value{
 	unsigned int	xp[MAX_SCAN_TIME];
 	unsigned int	yp[MAX_SCAN_TIME];
 };
-
+#if 0
 extern struct s3c_ts_mach_info;
 extern int s3c_adcts_register_ts (struct s3c_ts_mach_info *ts,
 			void (*done_callback)(struct s3c_adcts_value *ts_value));
+#endif
 extern int s3c_adcts_unregister_ts (void);
 extern int s3c_adc_get_adc_data(int channel);
 

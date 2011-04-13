@@ -23,5 +23,6 @@ obj-$(CONFIG_PM)    += pm.o
 
 # machine support
 
+obj-$(CONFIG_MACH_OMNIA_II)	+= omnia_II.o board-rfkill.o
 obj-$(CONFIG_MACH_INSTINCTQ)	+= mach-instinctq.o board-rfkill.o
 obj-$(CONFIG_SEC_HEADSET)	+= sec_headset.o

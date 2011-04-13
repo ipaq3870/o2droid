@@ -37,8 +37,8 @@ static void arch_detect_cpu(void);
 /* how many bytes we allow into the FIFO at a time in FIFO mode */
 #define FIFO_MAX	 (14)
 
-#define uart_base S3C_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT)
-
+//#define uart_base S3C_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT)
+#define uart_base S3C_PA_UART2
 static __inline__ void
 uart_wr(unsigned int reg, unsigned int val)
 {
@@ -64,6 +64,10 @@ uart_rd(unsigned int reg)
 
 static void putc(int ch)
 {
+}
+#if 0
+static void putc(int ch)
+{
 	if (uart_rd(S3C_UFCON) & S3C_UFCON_FIFOMODE) {
 		int level;
 
@@ -85,7 +89,7 @@ static void putc(int ch)
 	/* write byte to transmission register */
 	uart_wr(S3C_UTXH, ch);
 }
-
+#endif
 static inline void flush(void)
 {
 }

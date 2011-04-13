@@ -19,6 +19,7 @@
 
 #include <mach/gpio.h>
 #include <plat/gpio-cfg.h>
+#include <mach/hardware.h>
 
 void s3c64xx_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 {
@@ -33,8 +34,9 @@ void s3c64xx_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 	}
 
-	s3c_gpio_setpull(S3C64XX_GPG(6), S3C_GPIO_PULL_UP);
-	s3c_gpio_cfgpin(S3C64XX_GPG(6), S3C_GPIO_SFN(2));
+        s3c_gpio_cfgpin(GPIO_T_FLASH_DETECT, S3C_GPIO_SFN(GPIO_T_FLASH_DETECT_AF));
+        gpio_set_value(GPIO_T_FLASH_DETECT, GPIO_LEVEL_HIGH);
+        s3c_gpio_setpull(GPIO_T_FLASH_DETECT, S3C_GPIO_PULL_NONE);
 }
 
 void s3c64xx_setup_sdhci1_cfg_gpio(struct platform_device *dev, int width)
@@ -49,7 +51,18 @@ void s3c64xx_setup_sdhci1_cfg_gpio(struct platform_device *dev, int width)
 		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 	}
+}
 
-	s3c_gpio_setpull(S3C64XX_GPG(6), S3C_GPIO_PULL_UP);
-	s3c_gpio_cfgpin(S3C64XX_GPG(6), S3C_GPIO_SFN(3));
+void s3c64xx_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
+{
+	unsigned int gpio;
+	unsigned int end;
+
+	end = S3C64XX_GPH(6 + width);
+
+	/* Set all the necessary GPH pins to special-function 1 */
+	for (gpio = S3C64XX_GPH(6); gpio < end; gpio++) {
+		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
+		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
+	}
 }

@@ -53,13 +53,28 @@ config S3C64XX_SETUP_I2C1
 	help
 	  Common setup code for i2c bus 1.
 
+config S3C64XX_ADC
+	bool "S3C64XX ADC D/D support"
+	default y
+	help
+	 Analog to Digital conversion(ADC) D/D for S3C64XX support   
+
 config S3C64XX_ADCTS
 	bool
-	default y
+	default n
 	help
 	  Common setup code for adc and touchscreen
 
+config S3C64XX_SETUP_FB_24BPP
+	bool "S3C64XX_SETUP_FB_24BPP"
+	help
+	  Common setup code for S3C64XX with an 24bpp RGB display helper.
 
+config S3C64XX_SETUP_SDHCI_GPIO
+	bool "S3C64XX_SETUP_SDHCI_GPIO"
+	help
+	  Common setup code for S3C64XX SDHCI GPIO configurations
+	
 config PWM
 	tristate "Pulse Width Modulation (PWM) Timer support"
 
@@ -83,4 +98,10 @@ config S3C64XX_DOMAIN_GATING_DEBUG
 	help
 	  s3c64xx domain gating debug message enable / disable
 
+config SPI_S3C6410
+	bool "Support S3C64XX SPI interface"
+	depends on SPI
+	default y
+	help
+	  s3c64xx SPI interface handling enable
 endif

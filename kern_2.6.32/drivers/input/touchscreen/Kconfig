@@ -120,6 +120,19 @@ config TOUCHSCREEN_EETI
 	  To compile this driver as a module, choose M here: the
 	  module will be called eeti_ts.
 
+config TOUCHSCREEN_S3C
+        tristate "S3C touchscreen driver"
+        depends on ARCH_S3C2410 || ARCH_S3C64XX || ARCH_S5P64XX || ARCH_S5PC1XX
+        default y
+        help
+          Say Y here to enable the driver for the touchscreen on the
+          S3C SMDK board.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the
+          module will be called s3c_ts.
+
 config TOUCHSCREEN_FUJITSU
 	tristate "Fujitsu serial touchscreen"
 	select SERIO
@@ -540,7 +553,7 @@ config TOUCHSCREEN_PCAP
 config TOUCHSCREEN_MELFAS
 	tristate "melfas touchscreen driver"
 	depends on ARCH_S3C2410 || ARCH_S3C64XX
-	default y
+	default n
 	help
 	  Say Y here to enable the driver for the touchscreen on the
 	  S3C capela/naos/spica/orion_6410 board.
@@ -553,7 +566,7 @@ config TOUCHSCREEN_MELFAS
 config TOUCHSCREEN_MELFAS_KEY
     bool "melfas touchkey"
 	depends on TOUCHSCREEN_MELFAS
-	default y
+	default n
 	help
 	  Say Y here to enable the touchkey on melfas touchkey.
 
@@ -562,7 +575,7 @@ config TOUCHSCREEN_MELFAS_KEY
 config TOUCHSCREEN_MELFAS_FIRMWARE_UPDATE
     bool "melfas touchscreen firmware update"
 	depends on TOUCHSCREEN_MELFAS
-	default y
+	default n
 	help
 	  Say Y here to enable the touchscreen firmware update.
 

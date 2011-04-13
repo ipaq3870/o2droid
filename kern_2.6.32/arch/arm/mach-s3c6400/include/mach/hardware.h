@@ -11,8 +11,7 @@
 #ifndef __ASM_ARCH_HARDWARE_H
 #define __ASM_ARCH_HARDWARE_H __FILE__
 
-#ifdef CONFIG_MACH_INSTINCTQ
-#include <mach/instinctq.h> 
-#endif
+#include <mach/Omnia_II.h>
+/* currently nothing here, placeholder */
 
-#endif /* __ASM_ARCH_HARDWARE_H */
+#endif /* __ASM_ARCH_IRQ_H */

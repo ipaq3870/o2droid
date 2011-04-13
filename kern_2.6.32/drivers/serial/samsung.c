@@ -30,6 +30,7 @@
 #include <linux/cpufreq.h>
 
 #include <asm/irq.h>
+#include <asm/gpio.h>
 
 #include <mach/hardware.h>
 #include <mach/map.h>
@@ -471,7 +472,8 @@ static void s3c_serial_pm(struct uart_port *port, unsigned int level,
 #define MAX_CLKS (8)
 
 static struct s3c_uart_clksrc tmp_clksrc = {
-	.name		= "uclk1",
+	//.name		= "uclk1",
+	.name		= "pclk",
 	.min_baud	= 0,
 	.max_baud	= 0,
 	.divisor	= 1,

@@ -236,7 +236,7 @@ static u32 get_card_status(struct mmc_card *card, struct request *req)
 	cmd.flags = MMC_RSP_SPI_R2 | MMC_RSP_R1 | MMC_CMD_AC;
 	err = mmc_wait_for_cmd(card->host, &cmd, 0);
 	if (err)
-		printk(KERN_ERR "%s: error %d sending status comand",
+		printk(KERN_DEBUG "%s: error %d sending status comand",
 		       req->rq_disk->disk_name, err);
 	return cmd.resp[0];
 }
@@ -370,7 +370,21 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 		mmc_wait_for_req(card->host, &brq.mrq);
 
 		mmc_queue_bounce_post(mq);
-
+#if defined(CONFIG_ARIES_NTT) // Modify NTTS1
+#ifdef	MMC_SECTOR_DEBUG_JAPAN_SYSTEM
+		if(!strcmp(md->disk->disk_name, "mmcblk0")) // mmcblk0 : movinand , mmcblk1 : sdcard
+		{
+			printk(" ==================================== \n ");
+			printk("%s  ,  %s ", md->disk->disk_name, __func__);
+			if(rq_data_dir(req) == READ)
+				printk(" :: READ  \n ");
+			else
+				printk(" :: \t WRITE \n ");
+			printk( "\t pos_sec [ %x ], nr_sector [ %x ] \n",
+					(unsigned int)blk_rq_pos(req), (unsigned int)blk_rq_sectors(req));
+		}
+#endif
+#endif
 		/*
 		 * Check for errors here, but don't jump to cmd_err
 		 * until later as we need to wait for the card to leave
@@ -379,10 +393,21 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 		if (brq.cmd.error || brq.data.error || brq.stop.error) {
 			if (brq.data.blocks > 1 && rq_data_dir(req) == READ) {
 				/* Redo read one sector at a time */
-				printk(KERN_WARNING "%s: retrying using single "
+				printk(KERN_DEBUG "%s: retrying using single "
 				       "block read\n", req->rq_disk->disk_name);
-				disable_multi = 1;
-				continue;
+				if(brq.data.error == -EILSEQ) {
+					mq->rx_retries++;
+					if(mq->rx_retries == 3) {
+						mq->rx_retries = 0;
+						disable_multi = 1;
+					}
+					mmc_card_adjust_cfg(card->host, READ);
+					continue;
+				}
+				else {
+					disable_multi = 1;
+					continue;
+				}
 			}
 			status = get_card_status(card, req);
 		} else if (disable_multi == 1) {
@@ -390,7 +415,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 		}
 
 		if (brq.cmd.error) {
-			printk(KERN_ERR "%s: error %d sending read/write "
+			printk(KERN_DEBUG "%s: error %d sending read/write "
 			       "command, response %#x, card status %#x\n",
 			       req->rq_disk->disk_name, brq.cmd.error,
 			       brq.cmd.resp[0], status);
@@ -400,7 +425,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 			if (brq.data.error == -ETIMEDOUT && brq.mrq.stop)
 				/* 'Stop' response contains card status */
 				status = brq.mrq.stop->resp[0];
-			printk(KERN_ERR "%s: error %d transferring data,"
+			printk(KERN_DEBUG "%s: error %d transferring data,"
 			       " sector %u, nr %u, card status %#x\n",
 			       req->rq_disk->disk_name, brq.data.error,
 			       (unsigned)blk_rq_pos(req),
@@ -408,7 +433,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 		}
 
 		if (brq.stop.error) {
-			printk(KERN_ERR "%s: error %d sending stop command, "
+			printk(KERN_DEBUG "%s: error %d sending stop command, "
 			       "response %#x, card status %#x\n",
 			       req->rq_disk->disk_name, brq.stop.error,
 			       brq.stop.resp[0], status);
@@ -423,7 +448,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 				cmd.flags = MMC_RSP_R1 | MMC_CMD_AC;
 				err = mmc_wait_for_cmd(card->host, &cmd, 5);
 				if (err) {
-					printk(KERN_ERR "%s: error %d requesting status\n",
+					printk(KERN_DEBUG "%s: error %d requesting status\n",
 					       req->rq_disk->disk_name, err);
 					goto cmd_err;
 				}
@@ -455,6 +480,16 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 				ret = __blk_end_request(req, -EIO, brq.data.blksz);
 				spin_unlock_irq(&md->lock);
 				continue;
+			}
+			else {
+				if(brq.data.error == -EILSEQ) {
+					mq->tx_retries++;
+					mmc_card_adjust_cfg(card->host, WRITE);
+					if(mq->tx_retries < 3)
+						continue;
+					else
+						mq->tx_retries = 0;
+				}
 			}
 			goto cmd_err;
 		}

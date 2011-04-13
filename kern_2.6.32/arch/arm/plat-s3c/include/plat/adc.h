@@ -33,5 +33,6 @@ struct s3c_adc_mach_info
 };
 
 void __init s3c_adc_set_platdata(struct s3c_adc_mach_info *pd);
+int s3c_adc_get(struct s3c_adc_request *req);
 
 #endif /* __ASM_ARCH_ADC_H */

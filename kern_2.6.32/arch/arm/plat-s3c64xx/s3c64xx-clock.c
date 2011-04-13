@@ -286,8 +286,6 @@ static unsigned long s3c64xx_clk_doutmpll_get_rate(struct clk *clk)
 {
 	unsigned long rate = clk_get_rate(clk->parent);
 
-	printk(KERN_DEBUG "%s: parent is %ld\n", __func__, rate);
-
 	if (__raw_readl(S3C_CLK_DIV0) & S3C6400_CLKDIV0_MPLL_MASK)
 		rate /= 2;
 
@@ -302,6 +300,7 @@ struct clk clk_dout_mpll = {
 };
 
 static struct clk *clkset_spi_mmc_list[] = {
+	&clk_mout_epll.clk,
 	&clk_mout_epll.clk,
 	&clk_dout_mpll,
 	&clk_fin_epll,
@@ -329,7 +328,7 @@ static struct clk *clkset_uart_list[] = {
 	&clk_mout_epll.clk,
 	&clk_dout_mpll,
 	NULL,
-	NULL
+	NULL,
 };
 
 static struct clk_sources clkset_uart = {
@@ -425,7 +424,7 @@ static int s3c64xx_setrate_clksrc(struct clk *clk, unsigned long rate)
 
 	val = __raw_readl(reg);
 	val &= ~(0xf << sclk->divider_shift);
-		val |= ((div - 1) << sclk->divider_shift);
+	val |= ((div - 1) << sclk->divider_shift);
 	__raw_writel(val, reg);
 
 	return 0;
@@ -635,8 +634,8 @@ static struct clksrc_clk clk_spi1 = {
 
 static struct clksrc_clk clk_audio0 = {
 	.clk	= {
-		.name		= "audio-bus",
-		.id		= 0,
+		.name		= "audio-bus0",
+		.id		= -1,
 		.ctrlbit        = S3C_CLKCON_SCLK_AUDIO0,
 		.enable		= s3c64xx_sclk_ctrl,
 		.set_parent	= s3c64xx_setparent_clksrc,
@@ -667,7 +666,7 @@ static struct clk_sources clkset_audio1 = {
 
 static struct clksrc_clk clk_audio1 = {
 	.clk	= {
-		.name		= "audio-bus",
+		.name		= "audio-bus1",
 		.id		= 1,
 		.ctrlbit        = S3C_CLKCON_SCLK_AUDIO1,
 		.enable		= s3c64xx_sclk_ctrl,
@@ -759,8 +758,18 @@ void __init_or_cpufreq s3c64xx_setup_clocks(void)
 	unsigned int ptr;
 	u32 clkdiv0;
 	u32 clksrc;
+	int a;
 
 	printk(KERN_DEBUG "%s: registering clocks\n", __func__);
+
+	a = 0;
+#if 1
+#define PCLK_DIV_RATIO_BIT                12
+#define PCLK_DIV_MASK                     (0xf<<PCLK_DIV_RATIO_BIT)
+    clkdiv0 = __raw_readl(S3C_CLK_DIV0); //bss
+    a=(clkdiv0 & ~(PCLK_DIV_MASK)) | (7 << PCLK_DIV_RATIO_BIT); //bss pclk to (3: 66MHz, 7: 33MHz )
+    writel(a, S3C_CLK_DIV0);         //bss
+#endif 
 
 	clkdiv0 = __raw_readl(S3C_CLK_DIV0);
 	printk(KERN_DEBUG "%s: clkdiv0 = %08x\n", __func__, clkdiv0);

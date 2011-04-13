@@ -273,10 +273,16 @@ config FB_S3C_S6D05A0
 	bool "S6D05A0"
 	---help---
 	TBA
+
 config FB_S3C_AMS320FS01
 	bool "AMS320FS01"
 	---help---
 	TBA
+
+config FB_S3C_AMS369FG
+	bool "AMS369FG"
+	---help---
+	Display driver for OMNIA II. 
 
 endchoice
 

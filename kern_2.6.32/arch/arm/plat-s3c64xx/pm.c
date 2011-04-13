@@ -807,13 +807,20 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_pm_do_save(uart_save, ARRAY_SIZE(uart_save));
 
 	/* ensure INF_REG0  has the resume address */
+	__raw_writel(0xE240000C, (phys_to_virt(0x50008000)));
+	__raw_writel(0xE5901000, (phys_to_virt(0x50008004)));
+	__raw_writel(0xE1a0f001, (phys_to_virt(0x50008008)));
+	__raw_writel(0xe320f000, (phys_to_virt(0x5000800C)));
+	__raw_writel(0xe320f000, (phys_to_virt(0x50008010)));
+	__raw_writel(0xe320f000, (phys_to_virt(0x50008014)));
+
 	__raw_writel(virt_to_phys(s3c6410_cpu_resume), S3C_INFORM0);
 
 	/* set the irq configuration for wake */
 	s3c6410_pm_configure_extint();
 
 	/* call cpu specific preperation */
-
+	__raw_writel(0xF, S3C_INFORM3);
 	pm_cpu_prep();
 
 	/* flush cache back to ram */

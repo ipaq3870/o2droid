@@ -1,11 +1,11 @@
-/* linux/arch/arm/mach-s3c6410/setup-sdhci.c
+/* linux/arch/arm/mach-s3c64xx/setup-sdhci.c
  *
  * Copyright 2008 Simtec Electronics
  * Copyright 2008 Simtec Electronics
  *	Ben Dooks <ben@simtec.co.uk>
  *	http://armlinux.simtec.co.uk/
  *
- * S3C6410 - Helper functions for settign up SDHCI device(s) (HSMMC)
+ * S3C6400/S3C6410 - Helper functions for settign up SDHCI device(s) (HSMMC)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,118 +21,53 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
 
-#include <mach/gpio.h>
-#include <plat/gpio-cfg.h>
 #include <plat/regs-sdhci.h>
 #include <plat/sdhci.h>
 
-#include <mach/map.h>
-#include <plat/gpio-cfg.h>
-#include <plat/regs-gpio.h>
-
-#include <mach/hardware.h>
-
-
 /* clock sources for the mmc bus clock, order as for the ctrl2[5..4] */
 
-char *s3c6410_hsmmc_clksrcs[4] = {
+char *s3c64xx_hsmmc_clksrcs[4] = {
 	[0] = "hsmmc",
 	[1] = "hsmmc",
 	[2] = "hsmmc",
-	/* [3] = "48m", - note not succesfully used yet */
+	[3] = "hsmmc",
+	/* [3] = "48m", - note not successfully used yet */
 };
 
-void s3c6410_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
+void s3c6400_setup_sdhci_cfg_card(struct platform_device *dev,
+				  void __iomem *r,
+				  struct mmc_ios *ios,
+				  struct mmc_card *card)
 {
-	unsigned int gpio;
-	unsigned int end;
-
-	end = S3C64XX_GPG(2 + width);
-
-	/* Set all the necessary GPG pins to special-function 0 */
-	for (gpio = S3C64XX_GPG(0); gpio < end; gpio++) {
-		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
-		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-	}
-
-	s3c_gpio_cfgpin(GPIO_TF_DETECT, S3C_GPIO_SFN(GPIO_TF_DETECT_AF));
-	gpio_set_value(GPIO_TF_DETECT, GPIO_LEVEL_HIGH);
-	s3c_gpio_setpull(GPIO_TF_DETECT, S3C_GPIO_PULL_NONE);
-}
-
-void s3c6410_setup_sdhci1_cfg_gpio(struct platform_device *dev, int width)
-{
-	unsigned int gpio;
-	unsigned int end;
-
-	end = S3C64XX_GPH(2 + width);
-
-  
-    s3c_gpio_cfgpin(S3C64XX_GPH(0), S3C_GPIO_SFN(2));
-    s3c_gpio_cfgpin(S3C64XX_GPH(1), S3C_GPIO_SFN(2));
-  
-    s3c_gpio_setpull(S3C64XX_GPH(0), S3C_GPIO_PULL_NONE);
-    s3c_gpio_setpull(S3C64XX_GPH(1), S3C_GPIO_PULL_UP);
-  
-  
-    /* Set all the necessary GPH pins to special-function 0 */
-    for (gpio = S3C64XX_GPH(2); gpio < end; gpio++) {
-		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
-  //    s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-      s3c_gpio_setpull(gpio, S3C_GPIO_PULL_UP);
-	}
-
-}
-
-void s3c6410_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
-{
-	unsigned int gpio;
-	unsigned int end;
-
-	end = S3C64XX_GPH(6 + width);
-
-	s3c_gpio_cfgpin(S3C64XX_GPC(5), S3C_GPIO_SFN(3));
-	s3c_gpio_cfgpin(S3C64XX_GPC(4), S3C_GPIO_SFN(3));
-
-	s3c_gpio_setpull(S3C64XX_GPC(5), S3C_GPIO_PULL_NONE);
-	s3c_gpio_setpull(S3C64XX_GPC(4), S3C_GPIO_PULL_NONE);
-
-	for (gpio = S3C64XX_GPH(6); gpio < end; gpio++) {
-		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
-		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-	}
-}
-
-void s3c6410_setup_sdhci0_cfg_card(struct platform_device *dev,
-				    void __iomem *r,
-				    struct mmc_ios *ios,
-				    struct mmc_card *card)
-{
-	u32 ctrl2 = 0, ctrl3 = 0;
-
-	/* don't need to alter anything acording to card-type */
-
-	writel(S3C64XX_SDHCI_CONTROL4_DRIVE_4mA, r + S3C64XX_SDHCI_CONTROL4);
+	u32 ctrl2, ctrl3;
 
 	ctrl2 = readl(r + S3C_SDHCI_CONTROL2);
 	ctrl2 &= S3C_SDHCI_CTRL2_SELBASECLK_MASK;
 	ctrl2 |= (S3C64XX_SDHCI_CTRL2_ENSTAASYNCCLR |
-		S3C64XX_SDHCI_CTRL2_ENCMDCNFMSK |
-		//S3C_SDHCI_CTRL2_ENFBCLKRX |
-		S3C_SDHCI_CTRL2_DFCNT_NONE |
-		S3C_SDHCI_CTRL2_ENCLKOUTHOLD);
+		  S3C64XX_SDHCI_CTRL2_ENCMDCNFMSK |
+		  S3C_SDHCI_CTRL2_ENFBCLKRX |
+		  S3C_SDHCI_CTRL2_DFCNT_NONE |
+		  S3C_SDHCI_CTRL2_ENCLKOUTHOLD);
 
 	if (ios->clock < 25 * 1000000)
-	{
 		ctrl3 = (S3C_SDHCI_CTRL3_FCSEL3 |
 			 S3C_SDHCI_CTRL3_FCSEL2 |
 			 S3C_SDHCI_CTRL3_FCSEL1 |
 			 S3C_SDHCI_CTRL3_FCSEL0);
-	}
 	else
-	{
-		ctrl3 = S3C_SDHCI_CTRL3_FCSEL0;
-	}
+		ctrl3 = (S3C_SDHCI_CTRL3_FCSEL1 | S3C_SDHCI_CTRL3_FCSEL0);
+
+	//printk(KERN_INFO "%s: CTRL 2=%08x, 3=%08x\n", __func__, ctrl2, ctrl3);
 	writel(ctrl2, r + S3C_SDHCI_CONTROL2);
 	writel(ctrl3, r + S3C_SDHCI_CONTROL3);
+}
+
+void s3c6410_setup_sdhci_cfg_card(struct platform_device *dev,
+				  void __iomem *r,
+				  struct mmc_ios *ios,
+				  struct mmc_card *card)
+{
+	writel(S3C64XX_SDHCI_CONTROL4_DRIVE_9mA, r + S3C64XX_SDHCI_CONTROL4);
+
+	s3c6400_setup_sdhci_cfg_card(dev, r, ios, card);
 }

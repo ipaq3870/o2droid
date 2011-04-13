@@ -26,19 +26,15 @@
 #define S3C_KEYIFROW		S3C_KEYPADREG(0x0C)
 #define S3C_KEYIFFC		S3C_KEYPADREG(0x10)
 
-#if defined(CONFIG_CPU_S3C6400) || defined(CONFIG_CPU_S3C6410)
-#define KEYCOL_DMASK		(0xffff)
+#define KEYCOL_DMASK		(0xff)
 #define KEYROW_DMASK		(0xff)
 #define	INT_F_EN		(1<<0)	/*falling edge(key-pressed) interuppt enable*/
 #define	INT_R_EN		(1<<1)	/*rising edge(key-released) interuppt enable*/
 #define	DF_EN			(1<<2)	/*debouncing filter enable*/
 #define	FC_EN			(1<<3)	/*filter clock enable*/
-#define	KEYIFCON_INIT		(KEYIFCON_CLEAR |INT_F_EN|INT_R_EN|DF_EN|FC_EN)
+#define	WAKEUP_INT_EN	(1<<4)	/*KEYPAD input Stop/ Sleep/Idle mode wakeup interrupt enable.*/
+#define	KEYIFCON_INIT		(KEYIFCON_CLEAR |INT_F_EN|INT_R_EN|DF_EN|FC_EN|WAKEUP_INT_EN)
 #define KEYIFSTSCLR_CLEAR	(0xffff)
-
-#else
-#error "Not supported S3C Configuration!!"
-#endif
 
 #endif /* __ASM_ARCH_REGS_KEYPAD_H */
 

@@ -117,6 +117,7 @@
 #define IRQ_ONENAND1		S3C64XX_IRQ_VIC1(12)
 #define IRQ_NFC			S3C64XX_IRQ_VIC1(13)
 #define IRQ_CFCON		S3C64XX_IRQ_VIC1(14)
+#define IRQ_USBH		S3C64XX_IRQ_VIC1(15)
 #define IRQ_UHOST		S3C64XX_IRQ_VIC1(15)
 #define IRQ_SPI0		S3C64XX_IRQ_VIC1(16)
 #define IRQ_SPI1		S3C64XX_IRQ_VIC1(17)
@@ -157,6 +158,7 @@
 
 #define S3C_EINT(x)		((x) + S3C_IRQ_EINT_BASE)
 #define IRQ_EINT(x)		S3C_EINT(x)
+#define IRQ_EINT_BIT(x)		((x) - S3C_EINT(0))
 
 /* Next the external interrupt groups. These are similar to the IRQ_EINT(x)
  * that they are sourced from the GPIO pins but with a different scheme for

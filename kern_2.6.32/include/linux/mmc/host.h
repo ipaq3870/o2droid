@@ -107,6 +107,7 @@ struct mmc_host_ops {
 	int	(*get_cd)(struct mmc_host *host);
 
 	void	(*enable_sdio_irq)(struct mmc_host *host, int enable);
+	void	(*adjust_cfg)(struct mmc_host *host, int rw);
 };
 
 struct mmc_card;
@@ -151,6 +152,7 @@ struct mmc_host {
 #define MMC_CAP_DISABLE		(1 << 7)	/* Can the host be disabled */
 #define MMC_CAP_NONREMOVABLE	(1 << 8)	/* Nonremovable e.g. eMMC */
 #define MMC_CAP_WAIT_WHILE_BUSY	(1 << 9)	/* Waits while card is busy */
+#define MMC_CAP_ATHEROS_WIFI	(1 << 10)	/* For Atheros wifi module */
 
 	/* host specific block data */
 	unsigned int		max_seg_size;	/* see blk_queue_max_segment_size */
@@ -174,7 +176,6 @@ struct mmc_host {
 #ifdef CONFIG_MMC_DEBUG
 	unsigned int		removed:1;	/* host is being removed */
 #endif
-	unsigned int        skip_pwrmgt:1; /* skip power on/off during suspend/resume */
 
 	/* Only used with MMC_CAP_DISABLE */
 	int			enabled;	/* host is enabled */

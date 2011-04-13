@@ -17,7 +17,6 @@
 /*
  * Controller registers
  */
-#define SUPPORT_CLK_GATING 1
 
 #define SDHCI_DMA_ADDRESS	0x00
 
@@ -126,7 +125,7 @@
 #define  SDHCI_INT_DATA_MASK	(SDHCI_INT_DATA_END | SDHCI_INT_DMA_END | \
 		SDHCI_INT_DATA_AVAIL | SDHCI_INT_SPACE_AVAIL | \
 		SDHCI_INT_DATA_TIMEOUT | SDHCI_INT_DATA_CRC | \
-		SDHCI_INT_DATA_END_BIT | SDHCI_ADMA_ERROR)
+		SDHCI_INT_DATA_END_BIT | SDHCI_INT_ADMA_ERROR)
 #define SDHCI_INT_ALL_MASK	((unsigned int)-1)
 
 #define SDHCI_ACMD12_ERR	0x3C
@@ -235,14 +234,13 @@ struct sdhci_host {
 #define SDHCI_QUIRK_DELAY_AFTER_POWER			(1<<23)
 /* Controller uses SDCLK instead of TMCLK for data timeouts */
 #define SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK		(1<<24)
-
+/* Controller cannot support End Attribute in NOP ADMA descriptor */
+#define SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC		(1<<25)
+/* Controller does not use HISPD bit field in HI-SPEED SD cards */
+#define SDHCI_QUIRK_NO_HISPD_BIT			(1<<26)
+/* Controller has unreliable card present bit */
+#define SDHCI_QUIRK_BROKEN_CARD_PRESENT_BIT		(1<<27)
 	int			irq;		/* Device IRQ */
-	int			irq_cd;		/* SD Card Detection IRQ */
-
-	unsigned int 		hwport;
-	struct clk		*clk_io;	/* clock for io bus */
-	struct clk		*clk_bus;
-	
 	void __iomem *		ioaddr;		/* Mapped address */
 
 	const struct sdhci_ops	*ops;		/* Low level hw interface */
@@ -263,6 +261,7 @@ struct sdhci_host {
 #define SDHCI_USE_ADMA		(1<<1)		/* Host is ADMA capable */
 #define SDHCI_REQ_USE_DMA	(1<<2)		/* Use DMA for this req. */
 #define SDHCI_DEVICE_DEAD	(1<<3)		/* Device unresponsive */
+#define SDHCI_DEVICE_ALIVE	(1<<4)		/* used on ext card detect */
 
 	unsigned int		version;	/* SDHCI spec. version */
 
@@ -292,14 +291,9 @@ struct sdhci_host {
 	struct tasklet_struct	finish_tasklet;
 
 	struct timer_list	timer;		/* Timer for timeouts */
-#if SUPPORT_CLK_GATING
 	struct timer_list	busy_check_timer;
-#endif
 
 	unsigned long		private[0] ____cacheline_aligned;
-#ifdef CONFIG_CPU_FREQ
-        struct notifier_block           freq_transition;
-#endif
 };
 
 
@@ -319,6 +313,11 @@ struct sdhci_ops {
 	unsigned int	(*get_max_clock)(struct sdhci_host *host);
 	unsigned int	(*get_min_clock)(struct sdhci_host *host);
 	unsigned int	(*get_timeout_clock)(struct sdhci_host *host);
+	void            (*set_ios)(struct sdhci_host *host,
+				   struct mmc_ios *ios);
+	int             (*get_ro) (struct mmc_host *mmc);
+	int				(*get_cd)(struct sdhci_host *host);
+	void			(*adjust_cfg)(struct sdhci_host *host, int rw);
 };
 
 #ifdef CONFIG_MMC_SDHCI_IO_ACCESSORS
@@ -416,7 +415,6 @@ static inline void *sdhci_priv(struct sdhci_host *host)
 
 extern int sdhci_add_host(struct sdhci_host *host);
 extern void sdhci_remove_host(struct sdhci_host *host, int dead);
-extern void sdhci_set_clock(struct sdhci_host *host, unsigned int clock);
 
 #ifdef CONFIG_PM
 extern int sdhci_suspend_host(struct sdhci_host *host, pm_message_t state);
