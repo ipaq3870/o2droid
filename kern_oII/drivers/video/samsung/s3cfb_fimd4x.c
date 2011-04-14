@@ -45,14 +45,9 @@
 #include <linux/i2c/maximi2c.h>
 
 
-#ifdef CONFIG_S3C64XX_DOMAIN_GATING
-#define USE_LCD_DOMAIN_GATING
-#endif /* CONFIG_S3C64XX_DOMAIN_GATING */
-
 #if defined(CONFIG_PM)
 #include <plat/pm.h>
 #include <plat/power-clock-domain.h>
-extern int backlight_power;
 #endif
 
 #include "s3cfb.h"
@@ -1909,60 +1904,91 @@ static struct sleep_save s3c_lcd_save[] = {
 	SAVE_ITEM(S3C64XX_GPJPUD),
 };
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static int lcd_pm_status = 0;
-static int lcd_clock_status = 1;
-int lcd_late_resume = 1;
+int lcd_pm_status = ON;
+static int lcd_clock_status = ON;
+
+#ifdef USE_LCD_DOMAIN_GATING
+
+void s3cfb_domain_gating_on()
+{
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_ACTIVE_MODE, S3C64XX_LCD);
+}
+
+int s3cfb_domain_gating_wait()
+{
+	return s3c_wait_blk_pwr_ready(S3C64XX_BLK_F);
+}
+
+void s3cfb_domain_gating_off()
+{
+	s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_LCD);
+}
+
+#endif /* USE_LCD_DOMAIN_GATING */
 
 static int s3cfb_suspend_sub(s3c_fb_info_t *fbi)
 {
 
+	printk("#%s lcd_pm_status=%d\n", __func__, lcd_pm_status);
+	if (lcd_pm_status == OFF)
+	{
+        printk(KERN_WARNING "[%s] LCD is already in powersave mode\n", __func__);
+		return -1;
+	}
 
-        s3c6410_pm_do_save(s3c_lcd_save, ARRAY_SIZE(s3c_lcd_save));
+	s3c6410_pm_do_save(s3c_lcd_save, ARRAY_SIZE(s3c_lcd_save));
 
-        /* for Idle Current GPIO Setting */
-        __raw_writel(0x55555555, S3C64XX_GPICON);
-        __raw_writel(0x0, S3C64XX_GPIDAT);
-        __raw_writel(0x55555555, S3C64XX_GPIPUD);
-        __raw_writel(0x55555555, S3C64XX_GPJCON);
-        __raw_writel(0x0, S3C64XX_GPJDAT);
-        __raw_writel(0x55555555, S3C64XX_GPJPUD);
+    s3cfb_set_backlight_power(OFF);
 
-        /* sleep before disabling the clock, we need to ensure
+    /* for Idle Current GPIO Setting */
+    __raw_writel(0x55555555, S3C64XX_GPICON);
+    __raw_writel(0x0, S3C64XX_GPIDAT);
+    __raw_writel(0x55555555, S3C64XX_GPIPUD);
+    __raw_writel(0x55555555, S3C64XX_GPJCON);
+    __raw_writel(0x0, S3C64XX_GPJDAT);
+    __raw_writel(0x55555555, S3C64XX_GPJPUD);
+
+    /* sleep before disabling the clock, we need to ensure
 	 * the LCD DMA engine is not going to get back on the bus
-         * before the clock goes off again (bjd) */
+     * before the clock goes off again (bjd) */
 
-        msleep(1); //already breaking up
-        clk_disable(fbi->clk);
+    mdelay(1); //already breaking up
 
-
-
-
-#ifdef USE_LCD_DOMAIN_GATING
-     // s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_LCD);
-#endif /* USE_LCD_DOMAIN_GATING */
+    clk_disable(fbi->clk);
+    lcd_clock_status = OFF;
 
 
+	lcd_pm_status = OFF;
 
-        return 0;
+
+    return 0;
 }
 
 static int s3cfb_resume_sub(s3c_fb_info_t *fbi)
 {
 
-#ifdef USE_LCD_DOMAIN_GATING
-        s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_ACTIVE_MODE, S3C64XX_LCD);
-//        if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_F)) {
-//               printk(KERN_ERR "[%s] Domain F is not ready\n", __func__);
-//                return -1;
-//        }
-#endif /* USE_LCD_DOMAIN_GATING */
+	printk("#%s lcd_pm_status=%d\n", __func__, lcd_pm_status);
+	if (lcd_pm_status == ON)
+	{
+        printk(KERN_WARNING "[%s] LCD is already started\n", __func__);
+		return -1;
+	}
 
-        clk_enable(fbi->clk);
-        s3c6410_pm_do_restore(s3c_lcd_save, ARRAY_SIZE(s3c_lcd_save));
-        s3cfb_set_gpio();
-        s3cfb_start_lcd();
-        return 0;
+	clk_enable(fbi->clk);
+	lcd_clock_status = ON;
+
+    mdelay(1);
+
+	s3c6410_pm_do_restore(s3c_lcd_save, ARRAY_SIZE(s3c_lcd_save));
+
+    s3cfb_set_gpio();
+    s3cfb_start_lcd();
+
+    lcd_pm_status = ON;
+
+    s3cfb_set_backlight_power(ON);
+
+    return 0;
 }
 
 int s3cfb_is_clock_on(void)
@@ -1972,16 +1998,16 @@ int s3cfb_is_clock_on(void)
 
 void s3cfb_enable_clock_power(void)
 {
-	struct early_suspend *early_suspend_ptr;
-	
-	early_suspend_ptr = get_earlysuspend_ptr();
-
+	struct early_suspend *early_suspend_ptr = get_earlysuspend_ptr();
 	s3c_fb_info_t *info = container_of(early_suspend_ptr, s3c_fb_info_t, early_suspend);
+	printk("#%s lcd_pm_status=%d\n", __func__, lcd_pm_status);
+
 	s3cfb_resume_sub(info);
 
-	lcd_clock_status = 1;
-	lcd_pm_status = 1;
 }
+
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
 
 void s3cfb_early_suspend(struct early_suspend *h)
 {
@@ -1989,62 +2015,39 @@ void s3cfb_early_suspend(struct early_suspend *h)
 	s3c_fb_info_t *info = container_of(h, s3c_fb_info_t, early_suspend);
 	
 	printk("#%s\n", __func__);
-	
-	lcd_late_resume = 0;
 
 	s3cfb_suspend_sub(info);
-	lcd_clock_status = 0; 
-	lcd_pm_status = 0;
+
 }
 
-#define MAX8698_ID		0xCC
-
-#define ONOFF2			0x01
-
-#define ONOFF2_ELDO6	(0x01 << 7)
-#define ONOFF2_ELDO7	(0x03 << 6)
 void s3cfb_late_resume(struct early_suspend *h)
 {
 	s3c_fb_info_t *info = container_of(h, s3c_fb_info_t, early_suspend);
-	u8 data;
 
 	printk("#%s\n", __func__);
 
-	/* Power Enable */ //CAUSES FLASH WHEN TURNING ON WITH LATE RESUME, TRY WITH LEAVING?)
-	if(pmic_read(MAX8698_ID, ONOFF2, &data, 1) != PMIC_PASS) {
-		printk(KERN_ERR "LCD POWER CONTROL can't read the status from PMIC\n");
-		return -1;
+#ifdef USE_LCD_DOMAIN_GATING
+	if (s3cfb_domain_gating_wait() < 0)
+	{
+        printk(KERN_ERR "[%s] Domain F is not ready\n", __func__);
+        return;
 	}
-	data |= (ONOFF2_ELDO6 | ONOFF2_ELDO7);
-		
-	if(pmic_write(MAX8698_ID, ONOFF2, &data, 1) != PMIC_PASS) {
-		printk(KERN_ERR "LCD POWER CONTROL can't write the command to PMIC\n");
-		return -1;
-		} 
+#endif /* USE_LCD_DOMAIN_GATING */
 
-	if (lcd_pm_status == 0) {
-		s3cfb_resume_sub(info);
-	}
+	s3cfb_resume_sub(info);
 
-	lcd_clock_status = 1;
-	lcd_late_resume = 1;
 }
+
 /*
  *  Suspend
  */
 int s3cfb_suspend(struct platform_device *dev, pm_message_t state)
 {
-
-	struct fb_info *fbinfo = platform_get_drvdata(dev);
-	s3c_fb_info_t *info = fbinfo->par;
-	
 	printk("#%s\n", __func__);
 
-	if (lcd_pm_status != 0) {
-		s3cfb_suspend_sub(info);
-	}
-
-	lcd_clock_status = 0;
+#ifdef USE_LCD_DOMAIN_GATING
+	s3cfb_domain_gating_off();
+#endif /* USE_LCD_DOMAIN_GATING */
 
 	return 0;
 }
@@ -2054,30 +2057,16 @@ int s3cfb_suspend(struct platform_device *dev, pm_message_t state)
  */
 int s3cfb_resume(struct platform_device *dev)
 {
-	struct fb_info *fbinfo = platform_get_drvdata(dev);
-	s3c_fb_info_t *info = fbinfo->par;
-
 	printk("#%s\n", __func__);
 
-	s3cfb_resume_sub(info);
-
-	lcd_clock_status = 1;
-	lcd_pm_status = 1;
+#ifdef USE_LCD_DOMAIN_GATING
+	s3cfb_domain_gating_on();
+#endif /* USE_LCD_DOMAIN_GATING */
 
 	return 0;
 }
 
-/*
- * shutdown
- */
-extern void lcd_power_ctrl(s32 value);
-int s3cfb_shutdown(struct platform_device *dev)
-{
-	printk("s3cfb_shutdown \n");
-	lcd_power_ctrl(0);
-	return 0;
-}
-#else
+#else	/* CONFIG_HAS_EARLYSUSPEND */
 
 /*
  *  Suspend
@@ -2088,6 +2077,7 @@ int s3cfb_suspend(struct platform_device *dev, pm_message_t state)
 	struct fb_info *fbinfo = platform_get_drvdata(dev);
 	s3c_fb_info_t *info = fbinfo->par;
 	
+	printk("#%s\n", __func__);
 	s3cfb_suspend_sub(info);
 
 	return 0;
@@ -2101,19 +2091,27 @@ int s3cfb_resume(struct platform_device *dev)
 	struct fb_info *fbinfo = platform_get_drvdata(dev);
 	s3c_fb_info_t *info = fbinfo->par;
 
+	printk("#%s\n", __func__);
+
 	s3cfb_resume_sub(info);
 
 	return 0;
 }
+
+#endif	/* CONFIG_HAS_EARLYSUSPEND */
 
 /*
  * shutdown
  */
 int s3cfb_shutdown(struct platform_device *dev)
 {
-	lcd_power_ctrl(0);
+	struct fb_info *fbinfo = platform_get_drvdata(dev);
+	s3c_fb_info_t *info = fbinfo->par;
+
+	s3cfb_suspend_sub(info);
+
+	return 0;
 }
-#endif	/* CONFIG_HAS_EARLYSUSPEND */
 
 #else
 

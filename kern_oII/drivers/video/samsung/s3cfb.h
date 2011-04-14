@@ -524,6 +524,16 @@ extern struct early_suspend *get_earlysuspend_ptr(void);
 extern void s3cfb_enable_clock_power(void);
 extern int s3cfb_is_clock_on(void);
 
+#ifdef CONFIG_S3C64XX_DOMAIN_GATING
+#define USE_LCD_DOMAIN_GATING
+#endif /* CONFIG_S3C64XX_DOMAIN_GATING */
+
+#ifdef USE_LCD_DOMAIN_GATING
+extern void s3cfb_domain_gating_on(void);
+extern int s3cfb_domain_gating_wait(void);
+extern void s3cfb_domain_gating_off(void);
+#endif /* USE_LCD_DOMAIN_GATING */
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 extern void s3cfb_early_suspend(struct early_suspend *h);
 extern void s3cfb_late_resume(struct early_suspend *h);

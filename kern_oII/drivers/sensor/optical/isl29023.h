@@ -171,6 +171,5 @@ struct workqueue_struct *light_wq;
 int isl_i2c_read(u8 reg);
 int isl_i2c_write( u8 reg, int val );
 extern void backlight_level_ctrl(s32 value);
-extern int lcd_late_resume;
 static int isl_attach_adapter(struct i2c_adapter *adap);
 #endif

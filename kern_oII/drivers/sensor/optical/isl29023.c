@@ -111,8 +111,7 @@ void set_new_state(void) {
 		} else no_change = 1;	
 	}
 	
-	if (lcd_late_resume) 
-		backlight_level_ctrl(light_state[cur_state].brightness);
+	backlight_level_ctrl(light_state[cur_state].brightness);
 
 	if (int_op_mode)
 		set_irq_threshold(light_state[cur_state].lux_bottom_limit, 

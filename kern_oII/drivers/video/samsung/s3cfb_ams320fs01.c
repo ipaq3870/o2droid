@@ -871,7 +871,7 @@ static void setting_table_write(struct setting_table *table)
 
 #define ONOFF2_ELDO6	(0x01 << 7)
 #define ONOFF2_ELDO7	(0x03 << 6)
-static s32 old_level = 0;
+static s32 old_level = -1;
 
 typedef enum {
 	LCD_IDLE = 0,
