@@ -50,7 +50,7 @@ extern ftm_sleep;
 #define FSA9480UCX		0x4A
 static unsigned short fsa9480_normal_i2c[] = {I2C_CLIENT_END };
 static unsigned short fsa9480_ignore[] = { I2C_CLIENT_END };
-static unsigned short fsa9480_i2c_probe[] = { 5, FSA9480UCX >> 1, I2C_CLIENT_END };
+static unsigned short fsa9480_i2c_probe[] = { 0, FSA9480UCX >> 1, I2C_CLIENT_END };
 
 static struct i2c_client_address_data fsa9480_addr_data = {
 	.normal_i2c = fsa9480_normal_i2c,

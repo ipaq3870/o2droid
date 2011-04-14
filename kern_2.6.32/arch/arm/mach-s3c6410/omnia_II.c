@@ -1,4 +1,4 @@
-/* linux/arch/arm/mach-s3c6410/mach-smdk6410.c
+/* linux/arch/arm/mach-s3c6410/mach-omnia_II.c
  *
  * Copyright 2008 Openmoko, Inc.
  * Copyright 2008 Simtec Electronics
@@ -156,7 +156,7 @@ static struct i2c_gpio_platform_data i2c_common_platdata = {
 
 static struct platform_device sec_device_i2c_common = {
 	.name	= "i2c-gpio",
-	.id		= 5,
+	.id		= 3,
 	.dev.platform_data	= &i2c_common_platdata,
 };
 
@@ -169,6 +169,16 @@ static struct i2c_board_info i2c_devs1[] __initdata = {
 static struct i2c_board_info i2c_devs2[] __initdata = {
 	{
 		I2C_BOARD_INFO("max8698", (0xcc >> 1)),
+	},
+};
+
+#define MAX9877_ADDRESS 0x9A
+static struct i2c_board_info i2c_devs3[] __initdata = {
+	{
+		I2C_BOARD_INFO("MAX9877 I2C (AMP)", (MAX9877_ADDRESS >> 1)),
+	},
+	{
+		I2C_BOARD_INFO("AK4671 I2C Codec", (0x24 >> 1)),
 	},
 };
 
@@ -628,6 +638,7 @@ static void s3c6410_wdt_io_map(void)
 static void __init omnia_II_machine_init(void)
 {
 
+//	system_rev = 0x20;
 	s3c_config_gpio_table(ARRAY_SIZE(omnia_II_init_gpio_table),
 		omnia_II_init_gpio_table);
 	
@@ -644,13 +655,14 @@ static void __init omnia_II_machine_init(void)
 	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
 	i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
 	i2c_register_board_info(2, i2c_devs2, ARRAY_SIZE(i2c_devs2));
+	i2c_register_board_info(3, i2c_devs3, ARRAY_SIZE(i2c_devs3));
+
 	s3c6410_add_mem_devices (&pmem_setting);
 
 	platform_add_devices(smdk6410_devices, ARRAY_SIZE(smdk6410_devices));
 	s3c6410_pm_init();
 	s3c6410_wdt_io_map();
 	saturn_switch_init();
-
 }
 
 MACHINE_START(OMNIA_II, "OMNIA II")

@@ -30,6 +30,11 @@ static struct i2c_client_address_data fg_addr_data = {
 	.probe		= fg_probe,
 };
 
+static struct i2c_device_id fuelgauge_id[] = {
+	{ "Fuel Gauge I2C", 0 },
+	{}
+};
+
 static int is_reset_soc = 0;
 
 static int fg_i2c_read(struct i2c_client *client, u8 reg, u8 *data)
@@ -191,53 +196,43 @@ unsigned int fg_reset_soc(void)
 	return ret;
 }
 
-static int fg_attach(struct i2c_adapter *adap, int addr, int kind)
+static int fg_i2c_detect(struct i2c_client *client, int kind, struct i2c_board_info *info)
 {
 	struct i2c_client *c;
-	int ret;
 
-	pr_info("%s\n", __func__);
-
+    printk(KERN_DEBUG "[%s] detected\n", __func__);
+    
 	c = kmalloc(sizeof(*c), GFP_KERNEL);
 	if (!c)
 		return -ENOMEM;
 
 	memset(c, 0, sizeof(struct i2c_client));
 
-	strncpy(c->name, fg_i2c_driver.driver.name, I2C_NAME_SIZE);
-	c->addr = addr;
-	c->adapter = adap;
+	c->addr = client->addr;
+	c->adapter = client->adapter;
 	c->driver = &fg_i2c_driver;
 
-	if ((ret = i2c_attach_client(c)))
-		goto error;
-
 	fg_i2c_client = c;
+	strlcpy(info->type, "Fuel Gauge I2C", I2C_NAME_SIZE);
 
-error:
-	return ret;
+//	pr_info("%s, fg_i2c_client->addr:%x\n", __func__, fg_i2c_client->addr);
+	return 0;
 }
 
-static int fg_attach_adapter(struct i2c_adapter *adap)
+static int __devexit fg_i2c_remove(struct i2c_client *client)
 {
-	pr_info("%s\n", __func__);
-	return i2c_probe(adap, &fg_addr_data, fg_attach);
-}
-
-static int fg_detach_client(struct i2c_client *client)
-{
-	pr_info("%s\n", __func__);
-	i2c_detach_client(client);
+//	pr_info("%s\n", __func__);
 	return 0;
 }
 
 static struct i2c_driver fg_i2c_driver = {
 	.driver = {
-		.name = "Fuel Gauge I2C",
-		.owner = THIS_MODULE,
+		.name 		= "Fuel Gauge I2C",
+		.owner 		= THIS_MODULE,
 	},
-	.id 		= 0,
-	.attach_adapter	= fg_attach_adapter,
-	.detach_client	= fg_detach_client,
-	.command	= NULL,
+	.class			= I2C_CLASS_HWMON,
+	.remove			= __devexit_p(fg_i2c_remove),
+	.detect			= fg_i2c_detect,
+	.id_table 		= fuelgauge_id,
+	.address_data 	= &fg_addr_data,
 };

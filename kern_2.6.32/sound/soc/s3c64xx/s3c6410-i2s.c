@@ -14,11 +14,11 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/interrupt.h>
+#include <linux/gpio.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
-
 #include <asm/dma.h>
 #include <mach/map.h>
 
@@ -652,16 +652,16 @@ static int s3c_i2s_probe(struct platform_device *pdev,
 	s3c_i2s.regs = ioremap(S3C_IIS_PABASE, 0x100);
 
 	/* Configure the I2S pins in correct mode */
-	s3c_gpio_cfgpin(GPIO_I2S_LRCLK, S3C_GPIO_SFN(GPIO_I2S_LRCLK_AF)); 
-	s3c_gpio_cfgpin(GPIO_I2S_CLK, S3C_GPIO_SFN(GPIO_I2S_CLK_AF)); 
-	s3c_gpio_cfgpin(GPIO_I2S_DI, S3C_GPIO_SFN(GPIO_I2S_DI_AF));   
-	s3c_gpio_cfgpin(GPIO_I2S_DO, S3C_GPIO_SFN(GPIO_I2S_DO_AF));
+	s3c_gpio_cfgpin(GPIO_I2S_SYNC, S3C_GPIO_SFN(GPIO_I2S_SYNC_AF)); 
+	s3c_gpio_cfgpin(GPIO_I2S_SCLK, S3C_GPIO_SFN(GPIO_I2S_SCLK_AF)); 
+	s3c_gpio_cfgpin(GPIO_I2S_SDI, S3C_GPIO_SFN(GPIO_I2S_SDI_AF));   
+	s3c_gpio_cfgpin(GPIO_I2S_SDO, S3C_GPIO_SFN(GPIO_I2S_SDO_AF));
 
     /* pull-up-enable, pull-down-disable*/
-	s3c_gpio_setpull(GPIO_I2S_CLK, S3C_GPIO_PULL_UP); 
-	s3c_gpio_setpull(GPIO_I2S_LRCLK, S3C_GPIO_PULL_UP); 
-	s3c_gpio_setpull(GPIO_I2S_DI, S3C_GPIO_PULL_UP); 
-	s3c_gpio_setpull(GPIO_I2S_DO, S3C_GPIO_PULL_UP); 
+	s3c_gpio_setpull(GPIO_I2S_SCLK, S3C_GPIO_PULL_UP); 
+	s3c_gpio_setpull(GPIO_I2S_SYNC, S3C_GPIO_PULL_UP); 
+	s3c_gpio_setpull(GPIO_I2S_SDI, S3C_GPIO_PULL_UP); 
+	s3c_gpio_setpull(GPIO_I2S_SDO, S3C_GPIO_PULL_UP); 
 
 	if (s3c_i2s.regs == NULL)
 		return -ENXIO;

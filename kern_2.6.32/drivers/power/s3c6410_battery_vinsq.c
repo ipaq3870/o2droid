@@ -37,8 +37,9 @@
 
 #include "s3c6410_battery_vinsq.h"
 
+#define CONFIG_INSTINCTQ_REV04 0x0
 #define DEBUG
-
+system_rev_bs = 0x0;
 static struct wake_lock vbus_wake_lock;
 
 #ifdef __FUEL_GAUGES_IC_MAX17043_SLEEP_ALERT__
@@ -1686,7 +1687,7 @@ static ssize_t s3c_bat_show_property(struct device *dev,
 					s3c_bat_get_adc_data(S3C_ADC_VOLTAGE);
 #else
 #if defined(CONFIG_MACH_VINSQ) || defined(CONFIG_MACH_VITAL)
-				if(system_rev >= CONFIG_INSTINCTQ_REV04)
+				if(system_rev_bs >= CONFIG_INSTINCTQ_REV04)
 					s3c_bat_info.bat_info.batt_vol_adc = 0;
 				else
 					s3c_bat_info.bat_info.batt_vol_adc = s3c_bat_get_adc_data(S3C_ADC_VOLTAGE);
@@ -2539,7 +2540,7 @@ static void s3c_bat_status_update(struct power_supply *bat_ps)
 #endif
 #else
 #if defined(CONFIG_MACH_VINSQ) || defined(CONFIG_MACH_VITAL)	
-	if(system_rev >= CONFIG_INSTINCTQ_REV04)
+	if(system_rev_bs >= CONFIG_INSTINCTQ_REV04)
 		s3c_bat_info.bat_info.level = s3c_get_bat_level_fuel(bat_ps);		
 	else
 #ifdef __ANDROID_BAT_LEVEL_CONCEPT__
@@ -2577,7 +2578,7 @@ if(!is_batt_test)
 	s3c_bat_info.bat_info.batt_vol = s3c_get_bat_vol(bat_ps);
 #else
 #if defined(CONFIG_MACH_VINSQ) || defined(CONFIG_MACH_VITAL)
-	if(system_rev >= CONFIG_INSTINCTQ_REV04)
+	if(system_rev_bs >= CONFIG_INSTINCTQ_REV04)
 		s3c_bat_info.bat_info.batt_vol = s3c_get_bat_vol_fuel(bat_ps);
 	else
 		s3c_bat_info.bat_info.batt_vol = s3c_get_bat_vol(bat_ps);
@@ -3076,12 +3077,12 @@ static int __devinit s3c_bat_probe(struct platform_device *pdev)
 
 #ifdef __CHECK_BATTERY_V_F__
 #ifdef __CHECK_BOARD_REV__
-	if (system_rev >= rev_to_check)
+	if (system_rev_bs >= rev_to_check)
 #endif /* __CHECK_BOARD_REV__ */
 		s3c_bat_check_v_f();
 #endif /* __CHECK_BATTERY_V_F__ */
 	s3c_cable_check_status();
-	printk("func : %s, rev%02x\n",__FUNCTION__, system_rev);
+	printk("func : %s, rev%02x\n",__FUNCTION__, system_rev_bs);
 __end__:
 	return ret;
 __ta_connected_irq_failed__:
@@ -3151,7 +3152,7 @@ static int __init s3c_bat_init(void)
 #endif /* __TEST_DEVICE_DRIVER__ || __ALWAYS_AWAKE_DEVICE__ */
 
 #if defined(CONFIG_MACH_VINSQ) || defined(CONFIG_MACH_VITAL)
-	if(system_rev >= CONFIG_INSTINCTQ_REV04)
+	if(system_rev_bs >= CONFIG_INSTINCTQ_REV04)
 	{
 #endif
 #if defined(__FUEL_GAUGES_IC__) || defined(__FUEL_GAUGES_IC_MAX17043__)

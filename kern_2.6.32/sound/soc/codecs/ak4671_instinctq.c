@@ -26,10 +26,15 @@
 #include <plat/gpio-cfg.h>
 #include <plat/regs-gpio.h>
 #include <mach/hardware.h>
+#include <linux/gpio.h>
 
 #include <sound/soc.h>
 
 #include "ak4671.h"
+
+#define CONFIG_MACH_MAX 1
+#define GPIO_MIC_SEL_EN_REV04 GPIO_MIC_SEL
+#define GPIO_MONOHEAD_DET_ISR GPIO_DET_35
 
 #define AUDIO_SPECIFIC_DEBUG	0
 

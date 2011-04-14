@@ -767,7 +767,7 @@ void __init_or_cpufreq s3c64xx_setup_clocks(void)
 #define PCLK_DIV_RATIO_BIT                12
 #define PCLK_DIV_MASK                     (0xf<<PCLK_DIV_RATIO_BIT)
     clkdiv0 = __raw_readl(S3C_CLK_DIV0); //bss
-    a=(clkdiv0 & ~(PCLK_DIV_MASK)) | (7 << PCLK_DIV_RATIO_BIT); //bss pclk to (3: 66MHz, 7: 33MHz )
+    a=(clkdiv0 & ~(PCLK_DIV_MASK)) | (3 << PCLK_DIV_RATIO_BIT); //bss pclk to (3: 66MHz, 7: 33MHz )
     writel(a, S3C_CLK_DIV0);         //bss
 #endif 
 
