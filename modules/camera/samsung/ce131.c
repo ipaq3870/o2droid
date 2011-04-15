@@ -131,7 +131,7 @@
 #define CMD_START_AUTO_FOCUS_SEARCH 	0x23 
 #define CMD_CHECK_AUTO_FOCUS_SEARCH 	0x24
 #define CMD_FW_STATUS			0xF5 //CHECKED, not implemented yet --> for firmware update
-#define CMD_GET_STROBE_RESULT		0xBD //NOT in CE147 FIXME
+#define CMD_GET_STROBE_RESULT		0xBD //NOT in CE131 FIXME
 #define CMD_JPEG_CONFIG			0x90
 #define CMD_JPEG_BUFFERING		0x8F
 //#define CMD_SET_FLASH_MANUAL
@@ -183,11 +183,71 @@ struct ce131_jpeg_param {
 	unsigned int postview_offset;
 } ; 
 
+enum ce131_oprmode {
+	CE131_OPRMODE_VIDEO = 0,
+	CE131_OPRMODE_IMAGE = 1,
+};
+
+enum ce131_frame_size {
+	CE131_PREVIEW_QCIF = 0,
+	CE131_PREVIEW_QVGA,
+	CE131_PREVIEW_592x480,
+	CE131_PREVIEW_VGA,
+	CE131_PREVIEW_D1,
+	CE131_PREVIEW_WVGA,
+	CE131_PREVIEW_720P,
+	CE131_PREVIEW_VERTICAL_QCIF,
+	//CE131_CAPTURE_VGA, /* 640 x 480 */	
+	CE131_CAPTURE_WVGA, /* 800 x 480 */
+	CE131_CAPTURE_W1MP, /* 1600 x 960 */
+	//CE131_CAPTURE_2MP, /* UXGA  - 1600 x 1200 */
+	CE131_CAPTURE_W2MP, /* 35mm Academy Offset Standard 1.66  - 2048 x 1232, 2.4MP */	
+	//CE131_CAPTURE_3MP, /* QXGA  - 2048 x 1536 */
+	CE131_CAPTURE_W4MP, /* WQXGA - 2560 x 1536 */
+	//CE131_CAPTURE_5MP, /* 2560 x 1920 */
+};
+
+#define CE131_CAPTURE_5MP SENSOR_QSXGA
+#define CE131_CAPTURE_3MP SENSOR_QXGA
+#define CE131_CAPTURE_2MP SENSOR_UXGA
+#define CE131_CAPTURE_VGA SENSOR_VGA
+
+
+struct ce131_enum_framesize {
+	/* mode is 0 for preview, 1 for capture */
+	enum ce131_oprmode mode;
+	unsigned int index;
+	unsigned int width;
+	unsigned int height;	
+};
+
+static struct ce131_enum_framesize ce131_framesize_list[] = {
+	{ CE131_OPRMODE_VIDEO, CE131_PREVIEW_QCIF,       176,  144 },
+	{ CE131_OPRMODE_VIDEO, CE131_PREVIEW_QVGA,       320,  240 },
+	{ CE131_OPRMODE_VIDEO, CE131_PREVIEW_592x480,    592,  480 },
+	{ CE131_OPRMODE_VIDEO, CE131_PREVIEW_VGA,		 640,  480 },
+	{ CE131_OPRMODE_VIDEO, CE131_PREVIEW_D1,         720,  480 },
+	{ CE131_OPRMODE_VIDEO, CE131_PREVIEW_WVGA,       800,  480 },
+	{ CE131_OPRMODE_VIDEO, CE131_PREVIEW_720P,      1280,  720 },
+	{ CE131_OPRMODE_VIDEO, CE131_PREVIEW_VERTICAL_QCIF,	144,	176},
+	{ CE131_OPRMODE_IMAGE, CE131_CAPTURE_VGA,		 640,  480 },
+	{ CE131_OPRMODE_IMAGE, CE131_CAPTURE_WVGA,		 800,  480 },
+	{ CE131_OPRMODE_IMAGE, CE131_CAPTURE_W1MP,   	1600,  960 },
+	{ CE131_OPRMODE_IMAGE, CE131_CAPTURE_2MP,       1600, 1200 },
+	{ CE131_OPRMODE_IMAGE, CE131_CAPTURE_W2MP,		2048, 1232 },
+	{ CE131_OPRMODE_IMAGE, CE131_CAPTURE_3MP,       2048, 1536 },
+	{ CE131_OPRMODE_IMAGE, CE131_CAPTURE_W4MP,      2560, 1536 },
+	{ CE131_OPRMODE_IMAGE, CE131_CAPTURE_5MP,       2560, 1920 },
+};
+
+
+
 enum ce131_runmode {
 	CE131_RUNMODE_NOTREADY,
 	CE131_RUNMODE_IDLE, 
 	CE131_RUNMODE_READY,
 	CE131_RUNMODE_RUNNING, 
+	CE131_RUNMODE_CAPTURE, 
 };
 
 struct ce131_state {
@@ -195,6 +255,18 @@ struct ce131_state {
 	struct ce131_jpeg_param jpeg;
 	enum ce131_runmode runmode;
 	int flash;
+	int fps;
+	int iso;
+	int preview_size;
+	int framesize_index;
+	int saturation;
+	int sharpness;
+	int af;
+	int contrast;
+	int metering;
+	int brightness;
+	int whitebalance;
+	int effect;
 };
 
 
@@ -654,14 +726,16 @@ static int ce131_set_preview_size(struct i2c_client *client)
 	unsigned char ce131_regbuf_preview_size[3] = { 0x08, 0x01, 0x00 }; // Default VGA resolution 0x08 in winmo
 	unsigned int ce131_reglen_preview_size = 3; 
 
-/*	switch(type){
+	struct ce131_state *state = to_state(client);
+
+	switch(state->preview_size){
 		case CE131_PREVIEW_VGA:
-			ce131_regbuf_preview_size[1] = 0x08;
+			ce131_regbuf_preview_size[0] = 0x08;
 			break;
 		case CE131_PREVIEW_WVGA:
 			ce131_regbuf_preview_size[0] = 0x10;
 			break;
-		case CE131_PREVIEW_UNKNOWN:
+		/*case CE131_PREVIEW_UNKNOWN:
 			ce131_regbuf_preview_size[0] = 0x0d;
 			break;
 		case CE131_PREVIEW_UNKNOWN2:
@@ -669,23 +743,18 @@ static int ce131_set_preview_size(struct i2c_client *client)
 			break;
 		case CE131_PREVIEW_UNKNOWN3:
 			ce131_regbuf_preview_size[0] = 0x06;
-			break; 
+			break; */
 		default:
-			ce131_regbuf_preview_size[1] = 0x08;
-			ce131_msg(&client->dev, "Setting preview resoution as VGA for image capture mode\n");
+			ce131_regbuf_preview_size[0] = 0x08;
+			printk("Setting preview resolution as VGA for image capture mode, send: %x \n", state->preview_size );
 			break;
 	}
-
-*/
-
 
     	err = ce131_i2c_write_multi(client, CMD_PREVIEW_SIZE, ce131_regbuf_preview_size, ce131_reglen_preview_size);
 	if(err < 0){
 		dev_err(&client->dev, "%s: failed: i2c_write for preview_size\n", __func__);
 		return -EIO;
 	}
-
-
 	return 0;
 }
 
@@ -799,49 +868,58 @@ static int ce131_set_capture_size(struct i2c_client *client)
 	unsigned char ce131_regbuf_capture_size[4] = { 0x0D, 0x00, 0x01, 0x00}; // Default 640, have to adjust
 	unsigned int ce131_reglen_capture_size = 4;
 
-	//struct ce131_state *state = to_state(client);
+	struct ce131_state *state = to_state(client);
 
-	/*int index = state->framesize_index;
-
+	int index = state->framesize_index;
+	printk("CE131: set capture size: ");
 	switch(index){
 	case CE131_CAPTURE_VGA: // 640x480 
 		ce131_regbuf_capture_size[0] = 0x08;
+		printk("VGA \n");
 		break;
-	case CE131_CAPTURE_SVGA: // 800x600 
-		ce131_regbuf_capture_size[0] = 0x09;
-		break;
+	//case CE131_CAPTURE_SVGA: // 800x600 
+	//	ce131_regbuf_capture_size[0] = 0x09;
+	//	break;
 	case CE131_CAPTURE_WVGA: // 800x480 
 		ce131_regbuf_capture_size[0] = 0x10;
+		printk("WVGA \n");
 		break;
 	case CE131_CAPTURE_W1MP: // 1280x768 
 		ce131_regbuf_capture_size[0] = 0x11;
+		printk("W1 \n");
 		break;	
-	case CE131_CAPTURE_1MP: // 1280x960 
-		ce131_regbuf_capture_size[0] = 0x12;
-		break;
+	//case CE131_CAPTURE_1MP: // 1280x960 
+	//	ce131_regbuf_capture_size[0] = 0x12;
+	//	break;
 	case CE131_CAPTURE_2MP: // 1600x1200 
 		ce131_regbuf_capture_size[0] = 0x0C;
+		printk("2m \n");
 		break;
 	case CE131_CAPTURE_W2MP: //2048x960
 		ce131_regbuf_capture_size[0] = 0x12;
+		printk("w2m\n");
 		break;
 	case CE131_CAPTURE_3MP: // 2048x1536 
+		//ce131_regbuf_capture_size[0] = 0x0F;//0x0D; 
 		ce131_regbuf_capture_size[0] = 0x0D; 
+		printk("3m \n");
 		break;
-	case CE131_CAPTURE_4MP: //2560x1440
-		("NOT IMPLEMENTED \n");
-		break;
+	//case CE131_CAPTURE_4MP: //2560x1440
+	//	("NOT IMPLEMENTED \n");
+	//	break;
 	case CE131_CAPTURE_W4MP: //2560x1536 
+		printk("4m \n");
 		ce131_regbuf_capture_size[0] = 0x14;
 		break;
 	case CE131_CAPTURE_5MP: // 2560x1920 
+		printk("5m \n");
 		ce131_regbuf_capture_size[0] = 0x0F;
 		break;
 	default:
 		printk("Default 3MP is set \n");
-		return -EINVAL;
+		ce131_regbuf_capture_size[0] = 0x0D; 
 	}
-*/
+
 	// Set capture image size 
 	err = ce131_i2c_write_multi(client, CMD_CAPTURE_SIZE, ce131_regbuf_capture_size, ce131_reglen_capture_size);
 	if(err < 0){
@@ -850,7 +928,7 @@ static int ce131_set_capture_size(struct i2c_client *client)
 	}
 
 
-	//printk("ce131set_capture_size: 0x%02x\n", index);
+	printk("CE131: set_capture_size: 0x%02x\n", index);
 
 	return 0;	
 }
@@ -861,8 +939,8 @@ static int ce131_set_frame_rate(struct i2c_client *client)
 	
 	unsigned char ce131_regbuf_fps[2] = { 0x1e, 0x00 }; 
 	unsigned int ce131_reglen_fps = 2;
-	
-/*
+	struct ce131_state *state = to_state(client);
+
 	switch(state->fps)
 	{
 		case FRAME_RATE_7:
@@ -890,7 +968,7 @@ static int ce131_set_frame_rate(struct i2c_client *client)
 
 		break;
 	}
-*/
+
 	err = ce131_i2c_write_multi(client, CMD_FPS, ce131_regbuf_fps, ce131_reglen_fps);
 	if(err < 0){
 		dev_err(&client->dev, "%s: failed: i2c_write for set_frame_rate\n", __func__);
@@ -1109,7 +1187,7 @@ static int ce131_set_flash(struct i2c_client *client)
 		break;
 
 		default:
-			ce131_buf_set_flash[1] = 0x00;
+			ce131_buf_set_flash[1] = 0x02; //standard AUTO
 
 		break;
 	}
@@ -1207,7 +1285,7 @@ static int ce131_set_white_balance(struct i2c_client *client, struct v4l2_contro
 		default:
 			printk("WHITE_BALANCE_default \n");
 			dev_err(&client->dev, "%s: failed: to set_white_balance, enum: %d\n", __func__, ctrl->value);
-			return -EINVAL;
+			ce131_buf_set_wb_auto[0] = 0x00;
 		break;
 	}
 
@@ -1371,7 +1449,7 @@ static int ce131_set_iso(struct i2c_client *client, struct v4l2_control *ctrl)
 
 		default:
 			dev_err(&client->dev, "%s: failed: to set_iso, enum: %d\n", __func__, ctrl->value);
-			return -EINVAL;
+			ce131_buf_set_iso[0] = 0x06;
 		break;
 	}
 
@@ -1473,7 +1551,7 @@ static int ce131_get_snapshot_data(struct i2c_client *client) //sub_1001A4E4, on
 
 /* Not sure what this routine does yet, at least not very important
 	#define CMD_DATA_CHECK 0x61
-	// 0x61 WINMO loc_1001A474 NOT IN CE147 
+	// 0x61 WINMO loc_1001A474 NOT IN CE131 
 		cmd_buf_setdata[0] = 0x01; //WINMO
 	err = ce131_i2c_read_multi(client, CMD_DATA_CHECK, cmd_buf_setdata, cmd_len_framesize, jpeg_status, jpeg_status_len);
 	if(err < 0){
@@ -1640,6 +1718,12 @@ static int ce131_set_sharpness(struct i2c_client *client, struct v4l2_control *c
 		return -EIO;
 	}
 
+	err = ce131_get_batch_reflection_status(client);
+	if(err < 0){
+		dev_err(&client->dev, "%s: failed: ce131_get_batch_reflection_status \n", __func__);
+		return -EIO; 
+	}
+
 	ce131_msg(&client->dev, "%s: done, SHARPNESS: 0x%02x\n", __func__, ce131_buf_set_SHARPNESS[1]);
 
 	return 0;
@@ -1667,8 +1751,8 @@ static int ce131_set_metering(struct i2c_client *client, struct v4l2_control *ct
 		break;
 
 		default:
-			dev_err(&client->dev, "%s: failed: to set_photometry\n");
-			return -EINVAL;
+			printk("set_photometry ->default\n");
+			ce131_buf_set_metering[0] = 0x00;
 		break;
 	}
 	
@@ -1704,19 +1788,16 @@ static int ce131_set_auto_focus(struct i2c_client *client, int type)
     switch (type)
 	{
 		case 0: //RELEASE
-			printk("AF Release choosen ? \n");
-			/*err = ce131_i2c_write_multi(client, CMD_STOP_LENS_MOVEMENT, ce131_buf_set_af, ce131_len_set_af);
-			if(err < 0){
-				dev_err(&client->dev, "%s: failed: i2c_write for auto_focus\n", __func__);
-			return -EIO;*/
+			printk("RELEASE AF choosen ? \n");
+			ret = 1;
 		break;
-
 		case 1: //SINGLE
 			printk("SINGLE AF choosen ? \n");
+			ret = 1;
 		break;
-
 		case 2: //AUTO
 			printk("AUTO AF choosen ? \n");
+			ce131_buf_set_af[0] =  0x00 ;
 			err = ce131_i2c_write_multi(client, CMD_START_AUTO_FOCUS_SEARCH, ce131_buf_set_af, ce131_len_set_af);
 			if(err < 0){
 				dev_err(&client->dev, "%s: failed: i2c_write for auto_focus\n", __func__);
@@ -1734,6 +1815,12 @@ static int ce131_set_auto_focus(struct i2c_client *client, int type)
 				if(ce131_buf_get_af_status[0] == 0x05) continue;
 				if(ce131_buf_get_af_status[0] == 0x00 || ce131_buf_get_af_status[0] == 0x02) break;
 			}	
+
+			/*err = ce131_i2c_write_multi(client, CMD_SET_AUTO_FOCUS_MODE, 0x1, 0x1); //HAVE TO CHECK WHERE TO PUT
+			if(err < 0){
+				dev_err(&client->dev, "%s: failed: i2c_write for auto_focus\n", __func__);
+				return -EIO;
+			}*/	
 		
 			if(ce131_buf_get_af_status[0] == 0x00)
 			{
@@ -1750,18 +1837,55 @@ static int ce131_set_auto_focus(struct i2c_client *client, int type)
 
 			}
 			break;
-
 		case 3: //INFINITY
-			printk("Infinity AF choosen ? \n");
-		break;
-
+			printk("INFINITY choosen ? \n");
+			ret = 1;
+			break;
 		case 4: //MACRO
+		case 5: //FIXED
 			printk("MACRO AF choosen ? \n");
+			ce131_buf_set_af[0] =  0x01 ;
+			err = ce131_i2c_write_multi(client, CMD_START_AUTO_FOCUS_SEARCH, ce131_buf_set_af, ce131_len_set_af);
+			if(err < 0){
+				dev_err(&client->dev, "%s: failed: i2c_write for auto_focus\n", __func__);
+			return -EIO;
+
+			for(count = 0; count < 600; count++)
+			{
+				msleep(10);
+				ce131_buf_get_af_status[0] = 0xFF;
+				err = ce131_i2c_read_multi(client, CMD_CHECK_AUTO_FOCUS_SEARCH, NULL, 0, ce131_buf_get_af_status, 1);
+				if(err < 0){
+					dev_err(&client->dev, "%s: failed: i2c_read for auto_focus\n", __func__);
+					return -EIO;
+				}
+				if(ce131_buf_get_af_status[0] == 0x05) continue;
+				if(ce131_buf_get_af_status[0] == 0x00 || ce131_buf_get_af_status[0] == 0x02) break;
+			}	
+
+			/*err = ce131_i2c_write_multi(client, CMD_SET_AUTO_FOCUS_MODE, 0x1, 0x1); //NEW!!
+			if(err < 0){
+				dev_err(&client->dev, "%s: failed: i2c_write for auto_focus\n", __func__);
+				return -EIO;
+			}*/	
+		
+			if(ce131_buf_get_af_status[0] == 0x00)
+			{
+				if(err < 0){
+					dev_err(&client->dev, "%s: failed: AF is failed\n", __func__);
+					return -EIO;
+				}
+				ret =0;
+			}
+			else 
+				ret = 1;
+
+			ce131_msg(&client->dev, "%s: done\n", __func__);
+
+			}
+			break;
 		break;
 
-		case 5: //FIXED
-			printk("Fixed AF choosen ? \n");
-		break;
 
 		default:
 			dev_err(&client->dev, "%s: failed: to set autofocus, enum: %d\n", __func__, type);
@@ -1958,7 +2082,7 @@ static int ce131_set_ev(struct i2c_client *client, struct v4l2_control *ctrl)
 
 		default:
 			dev_err(&client->dev, "%s: failed: to set_ev, enum: %d\n", __func__, ctrl->value);
-			return -EINVAL;
+			ce131_buf_set_ev[0] = 0x06;
 		break;
 	}
 
@@ -2029,14 +2153,14 @@ static int ce131_sensor_mode_set(struct i2c_client *client, int type)
 		printk("CMD_SET_FACE_DETECTION NOT HERE \n");
 
 
-		ctrl.value = METERING_MATRIX;
+		ctrl.value = state->metering;
 		err = ce131_set_metering(client, &ctrl);
 	   	if(err < 0){
-			dev_err(&client->dev, "%s: failed: Could not set anti banding\n", __func__);
+			dev_err(&client->dev, "%s: failed: Could not set metering\n", __func__);
 	        return -EIO;
 	   	}
 
-		ctrl.value = ISO_AUTO;
+		ctrl.value = state->iso;
 		err = ce131_set_iso(client, &ctrl);
 	   	if(err < 0){
 			dev_err(&client->dev, "%s: failed: Could not set anti banding\n", __func__);
@@ -2049,7 +2173,7 @@ static int ce131_sensor_mode_set(struct i2c_client *client, int type)
 	        return -EIO;
 	   	}
 
-		ctrl.value = ANTI_SHAKE_OFF;
+		ctrl.value = ANTI_SHAKE_STILL_ON; //STANDARD ON
 		err = ce131_set_anti_shake(client, &ctrl);
 	   	if(err < 0){
 			dev_err(&client->dev, "%s: failed: Could not set anti shake \n", __func__);
@@ -2070,7 +2194,7 @@ static int ce131_sensor_mode_set(struct i2c_client *client, int type)
 
 		err = ce131_set_capture_size(client); 
 	        if(err < 0){
-			dev_err(&client->dev, "%s: failed: Could not set fps\n", __func__);
+			dev_err(&client->dev, "%s: failed: Could not set capture size\n", __func__);
 	                return -EIO;
 	        }
 
@@ -2104,12 +2228,21 @@ static int ce131_sensor_mode_set(struct i2c_client *client, int type)
 			return err;
 		}
 
+		//ctrl.value = //state->af;
+		err = ce131_set_auto_focus(client, 2); //NEW, is this better?
+	   	if(err < 0){
+			dev_err(&client->dev, "%s: failed: Settings AF\n", __func__);
+	        return -EIO;
+	   	}
+
 		state->runmode = CE131_RUNMODE_RUNNING;
 	}
 	else if (type & SENSOR_CAPTURE)
 	{	//THIS IS ALL A MESS CAN GO AWAY TO MAKE IT WORK, D is the correct resolution
 
 		printk("#-> Capture \n");
+		printk("runmode = %x \n", state->runmode);
+		//state->runmode = CE131_RUNMODE_CAPTURE;
 
 		err = ce131_set_capture_size(client); //--> without same idea
 	        if(err < 0){
@@ -2122,6 +2255,13 @@ static int ce131_sensor_mode_set(struct i2c_client *client, int type)
 			dev_err(&client->dev, "%s: failed: Settings flash\n", __func__);
 	        return -EIO;
 	   	}
+
+		//ctrl.value = state->af; --> NOT WORKING, HERE
+/*		err = ce131_set_auto_focus(client, 2); //NEW, is this better?, DISABLE HW_AF IN ANDROID!
+	   	if(err < 0){
+			dev_err(&client->dev, "%s: failed: Settings AF\n", __func__);
+	        return -EIO;
+	   	}*/
 
 		ctrl.value = 0;
 		err = ce131_set_dzoom(client, &ctrl);
@@ -2150,7 +2290,9 @@ static int ce131_sensor_mode_set(struct i2c_client *client, int type)
 			dev_err(&client->dev, "%s: failed: ce131_set_capture_cmd\n", __func__);
 			return -EIO;
 		}
-
+		
+		//state->runmode = CE131_RUNMODE_RUNNING;
+		printk("runmode = %x \n", state->runmode);
 	}
 	else if (type & SENSOR_CAMCORDER )
 	{
@@ -2192,18 +2334,42 @@ static int ce131_sensor_command(struct i2c_client *client, unsigned int cmd, voi
 		case SENSOR_EFFECT:
 			printk("SENSOR_EFFECT\n");
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_effect(client, ctrl);
+			if(state->runmode != CE131_RUNMODE_RUNNING)
+			{
+				state->effect = ctrl->value;
+				ret = 0;
+			}
+			else
+			{
+				ret = ce131_set_effect(client, ctrl);
+			}
 			break;
 
 		case SENSOR_BRIGHTNESS:
 			printk("SENSOR_BRIGHTNESS\n");
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_ev(client, ctrl);
+			if(state->runmode != CE131_RUNMODE_RUNNING)
+			{
+				state->brightness = ctrl->value;
+				ret = 0;
+			}
+			else
+			{
+				ret = ce131_set_ev(client, ctrl);
+			}
 			break;
 
 		case SENSOR_WB:
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_white_balance(client, ctrl);
+			if(state->runmode != CE131_RUNMODE_RUNNING)
+			{
+				state->whitebalance = ctrl->value;
+				ret = 0;
+			}
+			else
+			{
+				ret = ce131_set_white_balance(client, ctrl);
+			}
 			break;
 
 		case SENSOR_SCENE_MODE:
@@ -2213,37 +2379,86 @@ static int ce131_sensor_command(struct i2c_client *client, unsigned int cmd, voi
 		case SENSOR_PHOTOMETRY:
 			printk("SENSOR_PHOTOMETRY\n");
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_metering(client, ctrl);
+			if(state->runmode != CE131_RUNMODE_RUNNING)
+			{
+				state->metering = ctrl->value;
+				ret = 0;
+			}
+			else
+			{
+				ret = ce131_set_metering(client, ctrl);
+			}
 			break;
 
 		case SENSOR_ISO:
 			printk("SENSOR_ISO \n");
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_iso(client, ctrl);
+			//ret = ce131_set_iso(client, ctrl); //HAVE TO BE CHANGED INTO 
+			if(state->runmode != CE131_RUNMODE_RUNNING)
+			{
+				state->iso = ctrl->value;
+				ret = 0;
+			}
+			else
+			{
+				ret = ce131_set_iso(client, ctrl);
+			}
 			break;
 
 		case SENSOR_CONTRAST:
 			printk("SENSOR_CONTRAST \n");
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_contrast(client, ctrl);
+			if(state->runmode != CE131_RUNMODE_RUNNING)
+			{
+				state->contrast = ctrl->value;
+				ret = 0;
+			}
+			else
+			{
+				ret = ce131_set_contrast(client, ctrl);
+			}
 			break;
 
 		case SENSOR_SATURATION:
 			printk("SENSOR_SATURATION \n");
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_saturation(client, ctrl);
+			if(state->runmode != CE131_RUNMODE_RUNNING)
+			{
+				state->saturation = ctrl->value;
+				ret = 0;
+			}
+			else
+			{
+				ret = ce131_set_saturation(client, ctrl);
+			}
 			break;
 
 		case SENSOR_SHARPNESS:
 			printk("SENSOR_SHARPNESS \n");
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_sharpness(client, ctrl);
+			if(state->runmode != CE131_RUNMODE_RUNNING)
+			{
+				state->sharpness = ctrl->value;
+				ret = 0;
+			}
+			else
+			{
+				ret = ce131_set_sharpness(client, ctrl);
+			}
 			break;
 
 		case SENSOR_AF:
 			printk("SENSOR_AF \n");
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_auto_focus(client, ctrl->value);
+			if(state->runmode != CE131_RUNMODE_RUNNING)
+			{
+				state->af = ctrl->value;
+				ret = 0;
+			}
+			else
+			{
+				ret = ce131_set_auto_focus(client, ctrl->value);
+			}
 			break;
 
 		case SENSOR_MODE_SET:
@@ -2251,7 +2466,7 @@ static int ce131_sensor_command(struct i2c_client *client, unsigned int cmd, voi
 			//printk("SENSOR_MODE_SET CTRL: %x \n", ctrl);
 			ce131_sensor_mode_set(client, ctrl->value);
 			break;
-
+/* REMOVE ASAP
 		case SENSOR_XGA:
 			printk("SENSOR_xga \n");
 			break;
@@ -2287,7 +2502,7 @@ static int ce131_sensor_command(struct i2c_client *client, unsigned int cmd, voi
 		case SENSOR_USER_READ:
 			printk("SENSOR_USER_READ \n");
 			break;
-	
+	*/
 		case SENSOR_FLASH_CAMERA:
 			printk("SENSOR_FLASH_CAMERA \n");	
 			state->flash = ctrl->value;
@@ -2308,10 +2523,13 @@ static int ce131_sensor_command(struct i2c_client *client, unsigned int cmd, voi
 			//ret = ce131_set_capture_start(client);	
 			break;
 		case SENSOR_FIX_FRAMERATE:
-			printk("SENSOR_FIX_FRAMERATE \n");	
+			printk("SENSOR_FIX_FRAMERATE \n");
+			state->fps = ctrl->value; //TODO		
 			break;
 		case SENSOR_SET_CAPTURE_SIZE:
-			printk("SENSOR_SET_CAPTURE_SIZE \n");	
+			ctrl = (struct v4l2_control *)arg;
+			printk("SENSOR_SET_CAPTURE_SIZE: %x \n", ctrl);
+			state->framesize_index = ctrl; //TODO	FOR NOW LIKE THIS OTHERWISE LOCK UP
 			break;
 		case SENSOR_GET_JPEG_SIZE:
 			printk("SENSOR_GET_JPEG_SIZE bytes = %d \n", state->jpeg.main_size);
@@ -2319,6 +2537,7 @@ static int ce131_sensor_command(struct i2c_client *client, unsigned int cmd, voi
 			break;
 		case SENSOR_SET_PREVIEW_SIZE:
 			printk("SENSOR_SET_PREVIEW_SIZE \n");	
+			state->preview_size = ctrl->value; //TODO NOT IMPLEMENTED IN ANDROID YET	
 			break;
 		case SENSOR_SET_JPEG_QUAL:
 			printk("SENSOR_SET_JPEG_QUAL \n");	
@@ -2326,15 +2545,15 @@ static int ce131_sensor_command(struct i2c_client *client, unsigned int cmd, voi
 		case SENSOR_DIG_ZOOM:
 			ctrl = (struct v4l2_control *)arg;
 			printk("SENSOR_DIG_ZOOM \n");
-			ret =ce131_set_dzoom(client, ctrl);		
+			ret =ce131_set_dzoom(client, ctrl);	//NOT USED IN ANDROID	
 			break;
 		case SENSOR_WDR:
 			printk("SENSOR_WDR \n");
 			ctrl = (struct v4l2_control *)arg;
-			ret = ce131_set_wdr(client, ctrl);
+			ret = ce131_set_wdr(client, ctrl); //NOT USED IN ANDROID
 			break;
 		case SENSOR_FW_UPDATE:
-			printk("SENSOR_FW_UPDATE \n");	
+			printk("CE131 SENSOR_FW_UPDATE -> NOT IMPLEMENTED \n");	
 			break;
 
 		default:

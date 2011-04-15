@@ -306,7 +306,7 @@ static int s3c_camif_convert_type(camif_cfg_t *cfg, int f)
 	int pixfmt;
 
 	__TRACE_CAMERA_DRV(printk("[CAM-DRV] +s3c_camif_convert_type\n"));
-
+	printk("CAMIF convert type: W:%d H:%d \n", cfg->v2.frmbuf.fmt.width, cfg->v2.frmbuf.fmt.height);
 	cfg->target_x = cfg->v2.frmbuf.fmt.width;
 	cfg->target_y = cfg->v2.frmbuf.fmt.height;
 
@@ -320,52 +320,28 @@ static int s3c_camif_convert_type(camif_cfg_t *cfg, int f)
 
 static int s3c_camif_get_sensor_format(unsigned int    in_width, unsigned int    in_height)
 {
-	int sensor_type = SENSOR_XGA;
+	int sensor_type = SENSOR_VGA;
 
 	__TRACE_CAMERA_DRV(printk("[CAM-DRV] +s3c_camif_get_sensor_format\n"));
 
-	#if defined(CONFIG_VIDEO_SAMSUNG_S5K4CA)
-	{
-		if(2048 <= in_width || 1536 <= in_height)
-			sensor_type = SENSOR_QXGA;
-		else
-			sensor_type = SENSOR_VGA; //XGA ORIGINAL
-	}
-	#elif defined(CONFIG_VIDEO_SAMSUNG_CE131)
-	{
-		if(2048 <= in_width || 1536 <= in_height)
-			sensor_type = SENSOR_QXGA;
-		else
-			sensor_type = SENSOR_VGA; //XGA ORIGINAL
-	}/*
-	{
-		if(2560 <= in_width || 1920 <= in_height)
+		if(2560 == in_width & 1920 == in_height)
 			sensor_type = SENSOR_QSXGA;
-		else
-			sensor_type = SENSOR_XGA;
-	}*/
-	#elif defined(CONFIG_VIDEO_SAMSUNG_S5K3AA)
-	{
-		if(1280 <= in_width || 1024 <= in_height)
+		if(2048 == in_width & 1536 == in_height)
+			sensor_type = SENSOR_QXGA;
+		if(1280 == in_width & 1024 == in_height)
 			sensor_type = SENSOR_SXGA;
-		else
-			sensor_type = SENSOR_VGA;
-	}
-	#elif defined(CONFIG_VIDEO_SAMSUNG_S5K3BA)
-	{
-		if(1600 <= in_width || 1024 <= in_height)
+		if(1600 == in_width & 1200 == in_height)
 			sensor_type = SENSOR_UXGA;
-		else
+		if(800 == in_width & 600 == in_height)
 			sensor_type = SENSOR_SVGA;
-	}
-	#elif defined(CONFIG_VIDEO_SAMSUNG_S5K4BA)
-	{
-		if(800 <= in_width || 600 <= in_height)
-			sensor_type = SENSOR_SVGA;
-		else
+		if(640 == in_width & 480 == in_height)
 			sensor_type = SENSOR_VGA;
-	}
-	#endif
+		//if(800 = in_width || 480 = in_height)
+		//	sensor_type = SENSOR_WVGA;
+
+	printk("[CAM-DRV] -s3c_camif_get_sensor_format sensor_type=%d\n",sensor_type)
+
+
 
 	__TRACE_CAMERA_DRV(printk("[CAM-DRV] -s3c_camif_get_sensor_format sensor_type=%d\n",sensor_type));
 	return sensor_type;
@@ -379,7 +355,7 @@ static int s3c_camif_start_capture(camif_cfg_t * cfg)
 	int ret = 0;
 
 	__TRACE_CAMERA_DRV(printk("[CAM-DRV] +s3c_camif_start_capture\n"));
-	printk("s3c_camif_start_capture  \n");
+	//printk("s3c_camif_start_capture  \n");
 	cfg->capture_enable = CAMIF_DMA_ON;
 	s3c_camif_start_dma(cfg);
 	cfg->status = CAMIF_STARTED;
@@ -396,7 +372,7 @@ static int s3c_camif_start_capture(camif_cfg_t * cfg)
 		s3c_camif_start_codec_msdma(cfg);
 #endif
 
-		printk(" CISRCFMT = %x \n", readl(cfg->regs + S3C_CISRCFMT));
+		/*printk(" CISRCFMT = %x \n", readl(cfg->regs + S3C_CISRCFMT));
 		printk(" CIGCTRL  = %x \n", readl(cfg->regs + S3C_CIGCTRL));
 		printk(" CIWDOFST   = %x \n", readl(cfg->regs + S3C_CIWDOFST ));
 		printk(" CICOTRGFMT  = %x \n", readl(cfg->regs + S3C_CICOTRGFMT));
@@ -404,7 +380,7 @@ static int s3c_camif_start_capture(camif_cfg_t * cfg)
 		printk(" CIPRSCCTRL = %x \n", readl(cfg->regs + S3C_CIPRSCCTRL));
 		printk(" CIPRCTRL = %x \n", readl(cfg->regs + S3C_CIPRCTRL));
 		printk(" MSCOCTRL = %x \n", readl(cfg->regs + S3C_MSCOCTRL));
-		printk(" MSPRCTRL = %x \n", readl(cfg->regs + S3C_MSPRWIDTH + 4));
+		printk(" MSPRCTRL = %x \n", readl(cfg->regs + S3C_MSPRWIDTH + 4));*/
 
 
 
@@ -526,36 +502,14 @@ static void s3c_camif_change_mode(camif_cfg_t *cfg, int mode)
 	int res = SENSOR_DEFAULT;
 
 	__TRACE_CAMERA_DRV(printk("[CAM-DRV] +s3c_camif_change_mode %d\n",mode));
-
+	printk("[CAM-DRV] +s3c_camif_change_mode %d\n",mode);
 	if (mode == SENSOR_MAX)
 	{
-		#if defined(CONFIG_VIDEO_SAMSUNG_S5K4CA)
-			res = SENSOR_QXGA;
-		#elif defined(CONFIG_VIDEO_SAMSUNG_CE131)
-			res = SENSOR_QXGA; //FIXME res = SENSOR_QSXGA;
-		#elif defined(CONFIG_VIDEO_SAMSUNG_S5K3AA)
-			res = SENSOR_SXGA;
-		#elif defined(CONFIG_VIDEO_SAMSUNG_S5K3BA)
-			res = SENSOR_UXGA;
-		#elif defined(CONFIG_VIDEO_SAMSUNG_S5K4BA)
-			res = SENSOR_SVGA;
-		#endif
+		res = SENSOR_QSXGA;
 	}
 	else if (mode == SENSOR_DEFAULT)
 	{
-		#if defined(CONFIG_VIDEO_SAMSUNG_S5K4CA)
-			res = SENSOR_VGA; //XGA original
-		#elif defined(CONFIG_VIDEO_SAMSUNG_CE131)
-			res = SENSOR_VGA;//			res = SENSOR_XGA;
-		#elif defined(CONFIG_VIDEO_SAMSUNG_S5K3AA)
 			res = SENSOR_VGA;
-		#elif defined(CONFIG_VIDEO_SAMSUNG_S5K3BA)
-			res = SENSOR_SVGA;
-		#elif defined(CONFIG_VIDEO_SAMSUNG_S5K4BA)
-			res = SENSOR_SVGA;
-		#else
-			res = SENSOR_VGA;
-		#endif
 	}
 	else
 		res = mode;
@@ -569,11 +523,9 @@ static void s3c_camif_change_mode(camif_cfg_t *cfg, int mode)
 			cis->source_x = 2560;
 			cis->source_y = 1920;
 
-			#if defined(CONFIG_VIDEO_SAMSUNG_CE131)
-				cfg->sc.scalerbypass = 1;
-			#else
-				cfg->sc.scalerbypass = 0;
-			#endif
+			cfg->sc.scalerbypass = 1;
+			//cfg->sc.scalerbypass = 0;
+
 
 			break;
 
@@ -609,6 +561,14 @@ static void s3c_camif_change_mode(camif_cfg_t *cfg, int mode)
 			cfg->sc.scalerbypass = 0;
 			break;
 
+/*		case SENSOR_W1MP:
+			printk("Resolution changed into XGA (1024x768) mode\n");
+			cis->source_x = 1600;
+			cis->source_y = 960;
+
+			cfg->sc.scalerbypass = 0;
+			break;*/
+
 		case SENSOR_SVGA:
 			printk("Resolution changed into SVGA (800x600) mode\n");
 			cis->source_x = 800;
@@ -625,8 +585,8 @@ static void s3c_camif_change_mode(camif_cfg_t *cfg, int mode)
 			cfg->sc.scalerbypass = 0;
 			break;
 	}
-
-	//cis->sensor->driver->command(cis->sensor, res, NULL);
+	printk("before SENSOR SET CAPTURE SIZE \n");
+	cis->sensor->driver->command(cis->sensor, SENSOR_SET_CAPTURE_SIZE, res); //MARC
 	
 	cis->win_hor_ofst = cis->win_hor_ofst2 = 0;
 	cis->win_ver_ofst = cis->win_ver_ofst2 = 0;
@@ -837,11 +797,8 @@ static int s3c_camif_v4l2_s_fmt(camif_cfg_t *cfg, unsigned long arg)
 			cfg->v2.frmbuf.fmt   = f->fmt.pix;
 			cfg->v2.status       |= CAMIF_v4L2_DIRTY;
 			cfg->v2.status      &= ~CAMIF_v4L2_DIRTY; /* dummy ? */
-#ifdef CONFIG_VIDEO_SAMSUNG_CE131
-			sensor_type = SENSOR_QXGA;  // FIXME 3M			sensor_type = SENSOR_QSXGA; // 5M 
-#else
-			sensor_type = SENSOR_QXGA;  // 3M
-#endif
+			sensor_type = s3c_camif_get_sensor_format(f->fmt.pix.width, f->fmt.pix.height);
+			printk("sensor format capture = W: %d, H: %d \n", f->fmt.pix.width, f->fmt.pix.height);
 			break;
 
 		case V4L2_BUF_TYPE_VIDEO_OVERLAY:
@@ -849,8 +806,8 @@ static int s3c_camif_v4l2_s_fmt(camif_cfg_t *cfg, unsigned long arg)
 			cfg->v2.frmbuf.fmt   = f->fmt.pix;
 			cfg->v2.status       |= CAMIF_v4L2_DIRTY;
 			cfg->v2.status      &= ~CAMIF_v4L2_DIRTY; /* dummy ? */
-
-			sensor_type = SENSOR_VGA; //FIXME original XGA
+			printk("sensor format preview = W: %d, H: %d \n", f->fmt.pix.width, f->fmt.pix.height);
+			sensor_type = SENSOR_VGA; //FIXME original XGA, FIXME DO THE SAME AS ABOVE
 			break;
 
 		default:
@@ -863,10 +820,9 @@ static int s3c_camif_v4l2_s_fmt(camif_cfg_t *cfg, unsigned long arg)
 	cfg->v2.frmbuf.fmt   = f->fmt.pix;
 	cfg->v2.status       |= CAMIF_v4L2_DIRTY;
 	cfg->v2.status      &= ~CAMIF_v4L2_DIRTY; // dummy ?
-			
+	*/		
 	// set source
-	sensor_type = s3c_camif_get_sensor_format(f->fmt.pix.width, f->fmt.pix.height);
-	*/
+
 	s3c_camif_change_mode(cfg, sensor_type);
 	
 	// set target
@@ -1041,15 +997,12 @@ static int s3c_camif_v4l2_g_ctrl(camif_cfg_t *cfg, unsigned long arg)
 */
 	case V4L2_CID_CAM_JPEG_MAIN_SIZE:
 		printk("## V4L2_CID_CAM_JPEG_MAIN_SIZE \n");
-		//ctrl->value = 4;//state->jpeg.main_size;
 		err = 0;
-		//ctrl = (struct v4l2_control *) arg; 
 		ctrl->value = cfg->cis->sensor->driver->command(cfg->cis->sensor, SENSOR_GET_JPEG_SIZE, (void *) arg);
-		//ctrl->value = 4;
 		break;
 
 	default:
-		printk("no such ctrl\n");
+		printk("no such ctrl: %x \n", ctrl->id);
 		break;
 	}
 	
