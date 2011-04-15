@@ -22,6 +22,7 @@
 #ifndef __SAMSUNG_SYSLSI_APDEV_S3C_MFC_H__
 #define __SAMSUNG_SYSLSI_APDEV_S3C_MFC_H__
 
+#include <linux/sched.h>
 #include <linux/wait.h>
 #include <linux/interrupt.h>
 

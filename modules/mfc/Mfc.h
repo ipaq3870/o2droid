@@ -148,6 +148,10 @@ typedef struct tagS3C6400_MFC_PARAM_REG_DEC_SEQ_INIT
 	unsigned int RET_DEC_SEQ_FRAME_DELAY;		// 0x1d0,
 	unsigned int RET_DEC_SEQ_INFO;			// 0x1d4,
 	unsigned int RET_DEC_SEQ_TIME_RES;			// 0x1d8,
+
+	// RainAde : added to get crop information (6410 since FW 1.3.E)
+	unsigned int RET_DEC_SEQ_CROP_LEFT_RIGHT;		// 0x1dc,
+	unsigned int RET_DEC_SEQ_CROP_TOP_BOTTOM;		// 0x1e0,
 	
 } S3C6400_MFC_PARAM_REG_DEC_SEQ_INIT;
 

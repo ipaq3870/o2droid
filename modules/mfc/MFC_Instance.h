@@ -113,16 +113,21 @@ typedef struct
 
 	int	isMp4DbkOn;	// yj: whether Mp4DbkOn bit is set or not
 
-	int				framBufAllocated;
-	int             cnf_PhyOutBuf;
+	int	framBufAllocated;
+	int	cnf_PhyOutBuf;
 
-	MFC_OUTBUF_POSITION  cnf_OutPos;
+	MFC_OUTBUF_POSITION	cnf_OutPos;
 
-	int             width,     height;
-	int             buf_width, buf_height;	// buf_width is stride.
-	
-	int				frambufCnt;   // Decoding case: RET_DEC_SEQ_FRAME_NEED_COUNT
-	                              // Encoding case: fixed at 2 (at lease 2 frame buffers)
+	int	width, height;
+	int	buf_width, buf_height;	// buf_width is stride.
+
+	// RainAde : added to get crop information (6410 since FW 1.3.E)
+	int	crop_value0;	// Crop left & right in H.264 Stream
+	int	crop_value1;	// Crop top & bottom in H.264 Stream
+
+	int	frambufCnt;	// Decoding case: RET_DEC_SEQ_FRAME_NEED_COUNT
+					// Encoding case: fixed at 2 (at lease 2 frame buffers)
+					
 	// decoding configuration info
 	unsigned int    PostRotMode;
 

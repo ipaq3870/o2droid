@@ -28,6 +28,15 @@
 #include <mach/hardware.h>
 #include <plat/reserved_mem.h>
 
+
+//#define ZERO_COPY
+
+#ifdef ZERO_COPY
+#define ZERO_COPY_HDR_SIZE 32
+#else
+#define ZERO_COPY_HDR_SIZE 0
+#endif
+
 // Physical Base Address for the MFC Host I/F Registers
 #define S3C6400_BASEADDR_MFC_SFR			0x7e002000
 

@@ -91,6 +91,8 @@
 #define USE_MFC_DOMAIN_GATING
 #endif /* CONFIG_S3C64XX_DOMAIN_GATING */
 
+int mfc_critial_error; //mfc.error.recovery
+
 static char banner[] __initdata = KERN_INFO "S3C6400 MFC Driver, (c) 2007 Samsung Electronics\n";
 
 static struct clk	*mfc_hclk;
@@ -370,6 +372,18 @@ static int s3c_mfc_release(struct inode *inode, struct file *file)
 	lcd_gamma_change(LCD_IDLE); // when finishing playing video, AMOLED gamma change to idle mode
 #endif
 
+    #if 1 //mfc.error.recovery
+    // If the last issued command is timed out, reset the MFC for error recovery
+    // When MFC doesn't respond with DEC_INIT command (timeout)
+    // It seems that it doesn't operate normally. It doesn't even respond
+    // to swfi command and locks up the cpu when going to sleep. 
+    // (SWFI instruction waits for the response from the DOMAIN-V)
+    // 
+    if(mfc_critial_error) {
+        printk(KERN_ERR "\x1b[1;31m" "@#@#@# Reset mfc for error recovery" "\x1b[0m \n");
+        MFC_HW_Init();
+    }
+    #endif
 	handle = (MFC_HANDLE *)file->private_data;
 	if (handle->mfc_inst == NULL) {
 		ret = -1;
@@ -709,11 +723,11 @@ static int s3c_mfc_ioctl(struct inode *inode, struct file *file, unsigned
 				args.get_buf_addr.out_buf_size	= (pMfcInst->buf_width * pMfcInst->buf_height * 3) >> 1;
 
 				tmp	= (unsigned int)args.get_buf_addr.in_usr_data + ( ((unsigned int) pMfcInst->pFramBuf)	\
-					+ (pMfcInst->idx) * (args.get_buf_addr.out_buf_size) - (unsigned int)GetDataBufVirAddr() );
+					+ (pMfcInst->idx) * (args.get_buf_addr.out_buf_size + ZERO_COPY_HDR_SIZE) - (unsigned int)GetDataBufVirAddr() );
 #if (MFC_ROTATE_ENABLE == 1)
 				if ( (pMfcInst->codec_mode != VC1_DEC) && (pMfcInst->PostRotMode & 0x0010) ) {
 					tmp	= (unsigned int)args.get_buf_addr.in_usr_data + ( ((unsigned int) pMfcInst->pFramBuf)	\
-					+ (pMfcInst->frambufCnt) * (args.get_buf_addr.out_buf_size) - (unsigned int)GetDataBufVirAddr() );	
+					+ (pMfcInst->frambufCnt) * (args.get_buf_addr.out_buf_size + ZERO_COPY_HDR_SIZE) - (unsigned int)GetDataBufVirAddr() );	
 				}
 #endif
 				args.get_buf_addr.out_buf_addr = tmp;
@@ -741,15 +755,16 @@ static int s3c_mfc_ioctl(struct inode *inode, struct file *file, unsigned
 
 			args.get_buf_addr.out_buf_size	= (pMfcInst->buf_width * pMfcInst->buf_height * 3) >> 1;
 //			args.get_buf_addr.out_buf_size	= ((pMfcInst->width+2*DIVX_PADDING) * (pMfcInst->height+2*DIVX_PADDING) * 3) >> 1;
-			tmp	= (unsigned int)S3C6400_BASEADDR_MFC_DATA_BUF + ( ((unsigned int) pMfcInst->pFramBuf)	\
-				+ (pMfcInst->idx) * (args.get_buf_addr.out_buf_size) - (unsigned int)GetDataBufVirAddr() );
+		tmp	= (unsigned int)S3C6400_BASEADDR_MFC_DATA_BUF + ( ((unsigned int) pMfcInst->pFramBuf)	\
+			+ (pMfcInst->idx) * (args.get_buf_addr.out_buf_size + ZERO_COPY_HDR_SIZE) - (unsigned int)GetDataBufVirAddr() );
 
 //.[ i: sichoi 081103 (ROTATE)
 #if (MFC_ROTATE_ENABLE == 1)
-            if ( (pMfcInst->codec_mode != VC1_DEC) && (pMfcInst->PostRotMode & 0x0010) ) {
-                tmp = (unsigned int)S3C6400_BASEADDR_MFC_DATA_BUF + ( ((unsigned int) pMfcInst->pFramBuf)   \
-                + (pMfcInst->frambufCnt) * (args.get_buf_addr.out_buf_size) - (unsigned int)GetDataBufVirAddr() );  
-            }
+        if ( (pMfcInst->codec_mode != VC1_DEC) && (pMfcInst->PostRotMode & 0x0010) ) 
+		{
+            tmp = (unsigned int)S3C6400_BASEADDR_MFC_DATA_BUF + ( ((unsigned int) pMfcInst->pFramBuf)   \
+            + (pMfcInst->frambufCnt) * (args.get_buf_addr.out_buf_size + ZERO_COPY_HDR_SIZE) - (unsigned int)GetDataBufVirAddr() );  
+        }
 #endif
 //.] sichoi 081103
 

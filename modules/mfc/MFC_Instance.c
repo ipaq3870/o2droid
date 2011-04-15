@@ -42,7 +42,7 @@
 #include <linux/delay.h>
 
 static MFCInstCtx _mfcinst_ctx[MFC_NUM_INSTANCES_MAX];
-
+extern int mfc_critial_error;
 
 MFCInstCtx *MFCInst_GetCtx(int inst_no)
 {
@@ -254,8 +254,7 @@ int MFCInst_GetFramBuf(MFCInstCtx *ctx, unsigned char **ppBuf, int *size)
 		return MFCINST_ERR_ETC;
 	}
 
-
-	*size  = (ctx->buf_width * ctx->buf_height * 3) >> 1;	// YUV420 frame size
+	*size  = ((ctx->buf_width * ctx->buf_height * 3) >> 1)  + ZERO_COPY_HDR_SIZE;	// YUV420 frame size
 
 	if (ctx->idx < 0)	// RET_DEC_PIC_IDX == -3  (No picture to be displayed)
 		*ppBuf = NULL;
@@ -293,7 +292,7 @@ int MFCInst_GetFramBufPhysical(MFCInstCtx *ctx, unsigned char **ppBuf, int *size
 	}
 
 #if (defined(DIVX_ENABLE) && (DIVX_ENABLE == 1))
-    *size  = (ctx->buf_width* ctx->buf_height* 3) >> 1;    // YUV420 frame size
+	*size  = ((ctx->buf_width* ctx->buf_height* 3) >> 1) + ZERO_COPY_HDR_SIZE;    // YUV420 frame size
 #else
 	*size  = (ctx->width * ctx->height * 3) >> 1;	// YUV420 frame size
 #endif
@@ -589,13 +588,23 @@ int MFCInst_Init(MFCInstCtx *ctx, MFC_CODECMODE codec_mode, unsigned long strm_l
 
 	MfcSetEos(0);
 	
+#if 0 //mfc.error.recovery test code
+    // if this code is enabled, MFC will not operate and it will causes
+    // SWFI error and cause cpu lockup
+    // Use this code for test only!!!!
+    memset(pPARAM_SEQ_INIT, 0x0, sizeof(S3C6400_MFC_PARAM_REG_DEC_SEQ_INIT));
+#endif
+    
 	// SEQ_INIT command
 	if (MfcIssueCmd(ctx->inst_no, ctx->codec_mode, SEQ_INIT) == FALSE) {
 		LOG_MSG(LOG_ERROR, "MFCInst_Init", "SEQ_INIT failed.\n");
 		MfcStreamEnd();
+        mfc_critial_error = 1; //mfc.error.recovery
 		return MFCINST_ERR_DEC_INIT_CMD_FAIL;
 	}
 
+    mfc_critial_error = 0; //mfc.error.recovery
+    
 	MfcStreamEnd();
 
 	if (pPARAM_SEQ_INIT->RET_SEQ_SUCCESS == TRUE) {
@@ -614,6 +623,16 @@ int MFCInst_Init(MFCInstCtx *ctx, MFC_CODECMODE codec_mode, unsigned long strm_l
 	// stride value is multiple of 16.
 	ctx->height = (pPARAM_SEQ_INIT->RET_DEC_SEQ_SRC_SIZE      ) & 0x03FF;
 	ctx->width  = (pPARAM_SEQ_INIT->RET_DEC_SEQ_SRC_SIZE >> 10) & 0x03FF;
+
+	// If codec mode is VC1_DEC,
+	// width & height value are not from return value of SEQ_INIT command
+	// but extracting from config stream.
+	if(ctx->codec_mode == VC1_DEC){
+		Mem_Cpy(&(ctx->height), ctx->pStrmBuf + 12, 4);
+                Mem_Cpy(&(ctx->width), ctx->pStrmBuf + 16, 4);
+                ctx->buf_width = ctx->width;
+	}
+
 	if ((ctx->width & 0x0F) == 0)	// 16 aligned (ctx->width%16 == 0)
 		ctx->buf_width  = ctx->width;
 	else
@@ -644,6 +663,13 @@ int MFCInst_Init(MFCInstCtx *ctx, MFC_CODECMODE codec_mode, unsigned long strm_l
 	LOG_MSG(LOG_TRACE, "MFCInst_Init", "SEQ_SRC_SIZE, (width=%d) (height=%d) (stride=%d)\r\n", 	\
 			ctx->width, ctx->height, ctx->buf_width);
 
+	// RainAde : added to get crop information (6410 since FW 1.3.E)
+	// Get the crop imformat at H.264 stream
+	if (ctx->codec_mode == AVC_DEC) 
+	{
+		ctx->crop_value0 = pPARAM_SEQ_INIT->RET_DEC_SEQ_CROP_LEFT_RIGHT;
+		ctx->crop_value1 = pPARAM_SEQ_INIT->RET_DEC_SEQ_CROP_TOP_BOTTOM;
+	}
 
 	////////////////////////////////////////////////
 	//                                            //
@@ -652,10 +678,10 @@ int MFCInst_Init(MFCInstCtx *ctx, MFC_CODECMODE codec_mode, unsigned long strm_l
 	////////////////////////////////////////////////
 	// nFramBufSize is (YUV420 frame size) * (required frame buffer count)
 #if (MFC_ROTATE_ENABLE == 1)
-	// If rotation is enabled, one more YUV buffer is required.
-	nFramBufSize = ((ctx->buf_width * ctx->buf_height * 3) >> 1)  *  (pPARAM_SEQ_INIT->RET_DEC_SEQ_FRAME_NEED_COUNT + 1);
+        // If rotation is enabled, one more YUV buffer is required.
+        nFramBufSize = (((ctx->buf_width * ctx->buf_height * 3) >> 1) + ZERO_COPY_HDR_SIZE)  *  (pPARAM_SEQ_INIT->RET_DEC_SEQ_FRAME_NEED_COUNT + 1);
 #else
-	nFramBufSize = ((ctx->buf_width * ctx->buf_height * 3) >> 1)  *  pPARAM_SEQ_INIT->RET_DEC_SEQ_FRAME_NEED_COUNT;
+        nFramBufSize = (((ctx->buf_width * ctx->buf_height * 3) >> 1) + ZERO_COPY_HDR_SIZE)  *  pPARAM_SEQ_INIT->RET_DEC_SEQ_FRAME_NEED_COUNT;
 #endif
     nFramBufSize += 60000;//27540;    // 27,540 bytes = MV(25,920) + MBTypes(1,620)
 	if ( Get_MfcFramBufAddr(ctx, nFramBufSize) == FALSE ) {
@@ -681,16 +707,16 @@ int MFCInst_Init(MFCInstCtx *ctx, MFC_CODECMODE codec_mode, unsigned long strm_l
 	// s/w divx use padding area, so mfc frame buffer must have stride.
 	for (i=0; i<pPARAM_SEQ_INIT->RET_DEC_SEQ_FRAME_NEED_COUNT; i++)
 	{
-		*((int *) (pPARAM_BUF + i*3*4))      = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + (ctx->buf_width)*ctx->paddingSize+ ctx->paddingSize;
-        *((int *) (pPARAM_BUF + i*3*4 + 4))  = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + frame_size + ((ctx->buf_width)/2)*(ctx->paddingSize/2)+ (ctx->paddingSize/2);
-        *((int *) (pPARAM_BUF + i*3*4 + 8))  = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + frame_size + (frame_size >> 2) + ((ctx->buf_width)/2)*(ctx->paddingSize/2)+ (ctx->paddingSize/2);
+		*((int *) (pPARAM_BUF + i*3*4))      = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + (ctx->buf_width)*ctx->paddingSize+ ctx->paddingSize + (i * ZERO_COPY_HDR_SIZE);
+		*((int *) (pPARAM_BUF + i*3*4 + 4))  = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + frame_size + ((ctx->buf_width)/2)*(ctx->paddingSize/2)+ (ctx->paddingSize/2) + (i * ZERO_COPY_HDR_SIZE);
+		*((int *) (pPARAM_BUF + i*3*4 + 8))  = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + frame_size + (frame_size >> 2) + ((ctx->buf_width)/2)*(ctx->paddingSize/2)+ (ctx->paddingSize/2) + (i * ZERO_COPY_HDR_SIZE);
 	}
 #else	
 	for (i=0; i<pPARAM_SEQ_INIT->RET_DEC_SEQ_FRAME_NEED_COUNT; i++)
 	{
-		*((int *) (pPARAM_BUF + i*3*4))      = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1);
-		*((int *) (pPARAM_BUF + i*3*4 + 4))  = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + frame_size;
-		*((int *) (pPARAM_BUF + i*3*4 + 8))  = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + frame_size + (frame_size >> 2);
+		*((int *) (pPARAM_BUF + i*3*4))      = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + (i * ZERO_COPY_HDR_SIZE);
+		*((int *) (pPARAM_BUF + i*3*4 + 4))  = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + frame_size + (i * ZERO_COPY_HDR_SIZE);
+		*((int *) (pPARAM_BUF + i*3*4 + 8))  = ctx->phyadrFramBuf + i * ((frame_size * 3) >> 1) + frame_size + (frame_size >> 2) + (i * ZERO_COPY_HDR_SIZE);
 	}
 #endif
 
