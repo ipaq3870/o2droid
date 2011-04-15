@@ -10,23 +10,26 @@
 #define RESERVED_PMEM_END_ADDR 		(DRAM_END_ADDR)
 
 
+//W/copybit ( 1953): stretch_copybit::run_render fail
+//W/libs3c2drender( 1953): int S3c2DRender::JustdoG2D(s3c_img*, s3c_rect*, s3c_img*, s3c_rect*)::FrameSize(1463040) is too bigger than //m_pmem_render_partition_size(1048576)
 
-#define RESERVED_MEM_CMM		(3 * 1024 * 1024)
-#define RESERVED_MEM_MFC		(6 * 1024 * 1024)
-#define RESERVED_PMEM_PICTURE		(6 * 1024 * 1024)	/* PMEM_PIC and MFC use share area */
-#define RESERVED_PMEM_JPEG		(3 * 1024 * 1024) //
-#define RESERVED_PMEM_PREVIEW		(2 * 1024 * 1024) //2 
-#define RESERVED_PMEM_RENDER	  	(6 * 1024 * 1024) //4 
-#define RESERVED_PMEM_STREAM	  	(6 * 1024 * 1024) //4
+
+#define RESERVED_MEM_CMM		(3 * 1024 * 1024) //original 3
+#define RESERVED_MEM_MFC		(4 * 1024 * 1024) //was 6,maybe decrease to 4 in the future?, latest working 9
+#define RESERVED_PMEM_PICTURE		(4 * 1024 * 1024)	/* PMEM_PIC and MFC use share area */
+#define RESERVED_PMEM_JPEG		(2 * 1024 * 1024) // could be done -1, maybe merge with preview in the future?
+#define RESERVED_PMEM_PREVIEW		(2 * 1024 * 1024) //2, 1 gives errors --> but they dont matter, could be 1 again
+#define RESERVED_PMEM_RENDER	  	(3 * 1024 * 1024) //4 
+#define RESERVED_PMEM_STREAM	  	(4 * 1024 * 1024) //4
 #define RESERVED_G3D			(32 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
 #define RESERVED_PMEM_GPU1		(0) //0
-#define RESERVED_PMEM			(12 * 1024 * 1024)//12 working well, i9000 16mb --> if we move to 16M then 16mb *FIX*
+#define RESERVED_PMEM			(16 * 1024 * 1024)//12 working well, i9000 16mb --> if we move to 16M then 16mb *FIX*
 #define RESERVED_PMEM_SKIA		(0)//0
 
-#define RESERVED_G3D_UI			(10 * 1024 * 1024)
+#define RESERVED_G3D_UI			(6 * 1024 * 1024)//was 4
 //3+6+6+3+2+6=28M
-#define RESERVED_G3D_SHARED		(RESERVED_MEM_CMM + RESERVED_MEM_MFC + RESERVED_PMEM_STREAM + RESERVED_PMEM_JPEG + RESERVED_PMEM_PREVIEW + RESERVED_PMEM_RENDER) //22
-#define RESERVED_G3D_APP		(RESERVED_G3D /*- RESERVED_G3D_UI*/ - RESERVED_G3D_SHARED) //32-26=6m
+#define RESERVED_G3D_SHARED		(RESERVED_MEM_CMM + RESERVED_MEM_MFC + RESERVED_PMEM_STREAM + RESERVED_PMEM_JPEG + RESERVED_PMEM_PREVIEW + RESERVED_PMEM_RENDER) //22 --> 18?
+#define RESERVED_G3D_APP		(RESERVED_G3D - RESERVED_G3D_UI - RESERVED_G3D_SHARED)
 
 //#if defined(CONFIG_RESERVED_MEM_CMM_JPEG_MFC_POST_CAMERA)
 #define CMM_RESERVED_MEM_START		(RESERVED_PMEM_END_ADDR - RESERVED_MEM_CMM) 		//3m	-3m
