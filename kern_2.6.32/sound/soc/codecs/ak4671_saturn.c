@@ -285,114 +285,6 @@ int amp_enable(int en)
 	return 0;
 }
 
-static void set_amp_gain(int mode)
-{
-	u8 spk_vol, left_ear_vol, right_ear_vol;
-    
-	spk_vol = 0x1F;
-	left_ear_vol = 0x1F;
-	right_ear_vol = 0x1F;
-  
-	P("SET AMP gain : 0x%x", mode);
-
-	/* Set output amp gain */
-            if( (0xf0 & mode) == MM_AUDIO_VOICECALL )
-            {
-                P("MM_AUDIO_VOICECALL amp gain setting", mode);
-                if( (0x0f & mode ) == MM_AUDIO_OUT_HP )
-                {
-                    P("Amp Gain Setting for MM_AUDIO_VOICECALL -> MM_AUDIO_OUT_HP");
-                    spk_vol = 0x00;
-                    left_ear_vol = 0x18; // 0x15 -> 0x18
-                    right_ear_vol = 0x18; // 0x15 -> 0x18
- 
-                }
-                else if ( (0x0f & mode) == MM_AUDIO_OUT_SPK)
-                {
-                    P("Amp Gain Setting for MM_AUDIO_VOICECALL -> MM_AUDIO_OUT_SPK");
-                    spk_vol = 0x17; // 0x16 -> 0x17
-                    left_ear_vol = 0x00;
-                    right_ear_vol = 0x00; 
-                }              
-            }
-            else if ( ( 0xf0 & mode ) == MM_AUDIO_PLAYBACK )
-            {
-                P("MM_AUDIO_PLAYBACK amp gain setting", mode);
-                if ( (0x0f & mode ) == MM_AUDIO_OUT_SPK_HP 
-                    || (0x0f & mode ) == MM_AUDIO_OUT_RING_SPK_HP) {/*when ringtone earphone level under 100db for ear : HW require  */
-                    P("Amp Gain Setting for MM_AUDIO_PLAYBACK -> MM_AUDIO_OUT_SPK_HP");
-                    spk_vol = 0x1F;
-                    left_ear_vol = 0x11; // 0x14 -> 0x11
-                    right_ear_vol = 0x11; // 0x14 -> 0x11
-                }else  if( (0x0f & mode ) == MM_AUDIO_OUT_HP )
-                {
-                    P("Amp Gain Setting for MM_AUDIO_PLAYBACK -> MM_AUDIO_OUT_HP");
-                    spk_vol = 0x00;
-                    left_ear_vol = 0x1F;
-                    right_ear_vol = 0x1F; 
-                }
-                else if ( (0x0f & mode) == MM_AUDIO_OUT_SPK)
-                {
-                    P("Amp Gain Setting for MM_AUDIO_PLAYBACK -> MM_AUDIO_OUT_SPK");
-                    spk_vol = 0x1F;
-                    left_ear_vol = 0x00;
-                    right_ear_vol = 0x00; 
-                }       
-            }
-            else if ( ( 0xf0 & mode ) == MM_AUDIO_FMRADIO )
-            {
-                P("MM_AUDIO_FMRADIO amp gain setting", mode);
-                if( (0x0f & mode ) == MM_AUDIO_OUT_HP )
-                {
-                    P("Amp Gain Setting for MM_AUDIO_FMRADIO -> MM_AUDIO_OUT_HP");
-                    spk_vol = 0x00;
-                    left_ear_vol = 0x1F;
-                    right_ear_vol = 0x1F; 
-                }
-                else if ( (0x0f & mode) == MM_AUDIO_OUT_SPK)
-                {
-                    P("Amp Gain Setting for MM_AUDIO_FMRADIO -> MM_AUDIO_OUT_SPK");
-                    spk_vol = 0x1F;
-                    left_ear_vol = 0x00;
-                    right_ear_vol = 0x00; 
-                }
-                else if ( (0x0f & mode ) == MM_AUDIO_OUT_SPK_HP )
-                {
-                    P("Amp Gain Setting for MM_AUDIO_FMRADIO -> MM_AUDIO_OUT_SPK_HP");
-                    spk_vol = 0x1F;
-                    left_ear_vol = 0x14;
-                    right_ear_vol = 0x14; 
-                }
-            }
-            else if ( (0xf0 & mode ) == MM_AUDIO_VOICEMEMO )
-            {
-                P("MM_AUDIO_VOICEMEMO amp gain setting", mode);
-                if( (0x0f & mode ) == MM_AUDIO_OUT_HP )
-                {
-                    P("Amp Gain Setting for MM_AUDIO_VOICEMEMO -> MM_AUDIO_OUT_HP");
-                    spk_vol = 0x00;
-                    left_ear_vol = 0x1F;
-                    right_ear_vol = 0x1F; 
-                }
-                else if ( (0x0f & mode) == MM_AUDIO_OUT_SPK)
-                {
-                    P("Amp Gain Setting for MM_AUDIO_VOICEMEMO -> MM_AUDIO_OUT_SPK");
-                    spk_vol = 0x1F;
-                    left_ear_vol = 0x00;
-                    right_ear_vol = 0x00; 
-                } 
-            }
-            else
-            {
-                P("unknown mode for amp gain setting = 0x%x",mode);
-            }
-            
-            P("Amp Gain Setting for spk_vol = 0x%02x, left_ear_vol = 0x%02x, right_ear_vol = 0x%02x",spk_vol,left_ear_vol,right_ear_vol);
-            max9877_write(&max9877_i2c_client, MAX9877_SPEAKER_VOLUME, spk_vol);
-            max9877_write(&max9877_i2c_client, MAX9877_LEFT_HEADPHONE_VOLUME,left_ear_vol); 
-            max9877_write(&max9877_i2c_client, MAX9877_RIGHT_HEADPHONE_VOLUME,right_ear_vol); 
-}
-
 int amp_set_path(int path)
 {
 #if MAX9877_SPECIFIC_DEBUG
@@ -534,89 +426,6 @@ int set_sample_rate(struct snd_soc_codec *codec, int bitRate)
 	return 0;
 }
 
-int voice_call_rec_enable(struct snd_soc_codec *codec, int mode)
-{
-	P("Rec Enable (mode : 0x%x)", mode);
-
-	switch(mode) {
-		case MM_AUDIO_VOICECALL_RCV :
-			P("enable REC (MM_AUDIO_VOICECALL_RCV)");
-			/* MIC-AMP Rch mixing A/P Rch -> RCP/RCN OFF */
-			codec->write(codec, 0x19, 0x04); 	// use soft mute to cut signal
-			mdelay(24);
-			codec->write(codec, 0x0A, 0x20); 	// only MIC-AMP-Rch to RCP/RCN
-			codec->write(codec, 0x00, 0x0D); 	// DAC-Rch power-up
-
-			/* MIC-AMP Lch->LOP/LON and ADC Lch->AP Lch */
-			codec->write(codec, 0x00, 0x3D); 	// ADC-Lch power-up
-			mdelay(24);
-			break;
-
-		case MM_AUDIO_VOICECALL_SPK :
-		case MM_AUDIO_VOICECALL_HP :
-			P("enable REC (MM_AUDIO_VOICECALL_HP_SPK)");
-			/* MIC-AMP Rch mixing A/P Rch -> Lout2/Rout OFF */
-			codec->write(codec, 0x19, 0x04); 	// use soft mute to cut signal
-			mdelay(24);
-			codec->write(codec, 0x0B, 0x00); 	// Swith-off DAC-Lch
-			codec->write(codec, 0x0C, 0x20); 	// Swith-off DAC-Rch
-			codec->write(codec, 0x00, 0x0D); 	// DAC-Rch power-up
-
-			/* MIC-AMP Lch->LOP/LON and ADC Lch->AP Lch */
-			codec->write(codec, 0x00, 0x3D); 	// ADC-Lch power-up
-			mdelay(24);
-			break;
-
-		case MM_AUDIO_VOICECALL_BT :
-			P("enable REC (MM_AUDIO_VOICECALL_BT)");
-			/* mixing ADC Rch and A/P Rch -> SRC-A -> PCM-A */
-			codec->write(codec, 0x15, 0x14); 	// 5-band-EQ-Lch: from SRC-B, Rch: from SVOLA Rch
-
-			/* SRC-B -> DAC Lch -> LOP/LON -> and -> A/P Lch */
-			codec->write(codec, 0x59, 0x10); 	// SDTO-Lch: from SRC-B
-			break;
-		default :
-				printk("[%s] Invalid mode\n", __func__);
-	}
-
-	codec->write(codec, 0x18, 0x06); 	// IVOLC, ADM Mono
-
-	return 0;
-}
-
-int voice_call_rec_disable(struct snd_soc_codec *codec, int mode) 
-{
-	P("Rec Disable (mode : 0x%x)", mode);
-
-	switch(mode) {
-		case MM_AUDIO_VOICECALL_RCV :
-			P("disable REC (MM_AUDIO_VOICECALL_RCV)");
-			/* MIC-AMP Lch->LOP/LON and ADC Lch->AP Lch */
-			codec->write(codec, 0x00, 0x0D); 	// DAC-Rch power-up
-			break;
-
-		case MM_AUDIO_VOICECALL_SPK :
-		case MM_AUDIO_VOICECALL_HP :
-			P("disable REC (MM_AUDIO_VOICECALL_HP_SPK)");
-			/* MIC-AMP Lch->LOP/LON and ADC Lch->AP Lch */
-			codec->write(codec, 0x00, 0x0D); 	// DAC-Rch power-up
-			break;
-
-		case MM_AUDIO_VOICECALL_BT :
-			P("disable REC (MM_AUDIO_VOICECALL_BT)");
-			/* SRC-B -> DAC Lch -> LOP/LON -> and -> A/P Lch */
-			codec->write(codec, 0x59, 0x00); 	// default
-			break;
-		
-		default :
-			printk("[%s] Invalid mode\n", __func__);
-	}
-
-	codec->write(codec, 0x18, 0x02); 	// IVOLC
-
-	return 0;
-}
-
 static void set_bias (struct snd_soc_codec *codec, int mode)
 {
 
@@ -681,6 +490,115 @@ static void set_bias (struct snd_soc_codec *codec, int mode)
 		amp_enable(0);	
 	}
 }
+
+static void set_amp_gain(int mode)
+{
+	u8 spk_vol, left_ear_vol, right_ear_vol;
+    
+	spk_vol = 0x1F;
+	left_ear_vol = 0x1F;
+	right_ear_vol = 0x1F;
+  
+	P("SET AMP gain : 0x%x", mode);
+
+	/* Set output amp gain */
+            if( (0xf0 & mode) == MM_AUDIO_VOICECALL )
+            {
+                P("MM_AUDIO_VOICECALL amp gain setting", mode);
+                if( (0x0f & mode ) == MM_AUDIO_OUT_HP )
+                {
+                    P("Amp Gain Setting for MM_AUDIO_VOICECALL -> MM_AUDIO_OUT_HP");
+                    spk_vol = 0x00;
+                    left_ear_vol = 0x18; // 0x15 -> 0x18
+                    right_ear_vol = 0x18; // 0x15 -> 0x18
+ 
+                }
+                else if ( (0x0f & mode) == MM_AUDIO_OUT_SPK)
+                {
+                    P("Amp Gain Setting for MM_AUDIO_VOICECALL -> MM_AUDIO_OUT_SPK");
+                    spk_vol = 0x17; // 0x16 -> 0x17
+                    left_ear_vol = 0x00;
+                    right_ear_vol = 0x00; 
+                }              
+            }
+            else if ( ( 0xf0 & mode ) == MM_AUDIO_PLAYBACK )
+            {
+                P("MM_AUDIO_PLAYBACK amp gain setting", mode);
+                if ( (0x0f & mode ) == MM_AUDIO_OUT_SPK_HP 
+                    || (0x0f & mode ) == MM_AUDIO_OUT_RING_SPK_HP) {/*when ringtone earphone level under 100db for ear : HW require  */
+                    P("Amp Gain Setting for MM_AUDIO_PLAYBACK -> MM_AUDIO_OUT_SPK_HP");
+                    spk_vol = 0x1F;
+                    left_ear_vol = 0x11; // 0x14 -> 0x11
+                    right_ear_vol = 0x11; // 0x14 -> 0x11
+                }else  if( (0x0f & mode ) == MM_AUDIO_OUT_HP )
+                {
+                    P("Amp Gain Setting for MM_AUDIO_PLAYBACK -> MM_AUDIO_OUT_HP");
+                    spk_vol = 0x00;
+                    left_ear_vol = 0x1F;
+                    right_ear_vol = 0x1F; 
+                }
+                else if ( (0x0f & mode) == MM_AUDIO_OUT_SPK)
+                {
+                    P("Amp Gain Setting for MM_AUDIO_PLAYBACK -> MM_AUDIO_OUT_SPK");
+                    spk_vol = 0x1F;
+                    left_ear_vol = 0x00;
+                    right_ear_vol = 0x00; 
+                }       
+            }
+            else if ( ( 0xf0 & mode ) == MM_AUDIO_FMRADIO )
+            {
+                P("MM_AUDIO_FMRADIO amp gain setting", mode);
+                if( (0x0f & mode ) == MM_AUDIO_OUT_HP )
+                {
+                    P("Amp Gain Setting for MM_AUDIO_FMRADIO -> MM_AUDIO_OUT_HP");
+                    spk_vol = 0x00;
+                    left_ear_vol = 0x1F;
+                    right_ear_vol = 0x1F; 
+                }
+                else if ( (0x0f & mode) == MM_AUDIO_OUT_SPK)
+                {
+                    P("Amp Gain Setting for MM_AUDIO_FMRADIO -> MM_AUDIO_OUT_SPK");
+                    spk_vol = 0x1F;
+                    left_ear_vol = 0x00;
+                    right_ear_vol = 0x00; 
+                }
+                else if ( (0x0f & mode ) == MM_AUDIO_OUT_SPK_HP )
+                {
+                    P("Amp Gain Setting for MM_AUDIO_FMRADIO -> MM_AUDIO_OUT_SPK_HP");
+                    spk_vol = 0x1F;
+                    left_ear_vol = 0x14;
+                    right_ear_vol = 0x14; 
+                }
+            }
+            else if ( (0xf0 & mode ) == MM_AUDIO_VOICEMEMO )
+            {
+                P("MM_AUDIO_VOICEMEMO amp gain setting", mode);
+                if( (0x0f & mode ) == MM_AUDIO_OUT_HP )
+                {
+                    P("Amp Gain Setting for MM_AUDIO_VOICEMEMO -> MM_AUDIO_OUT_HP");
+                    spk_vol = 0x00;
+                    left_ear_vol = 0x1F;
+                    right_ear_vol = 0x1F; 
+                }
+                else if ( (0x0f & mode) == MM_AUDIO_OUT_SPK)
+                {
+                    P("Amp Gain Setting for MM_AUDIO_VOICEMEMO -> MM_AUDIO_OUT_SPK");
+                    spk_vol = 0x1F;
+                    left_ear_vol = 0x00;
+                    right_ear_vol = 0x00; 
+                } 
+            }
+            else
+            {
+                P("unknown mode for amp gain setting = 0x%x",mode);
+            }
+            
+            P("Amp Gain Setting for spk_vol = 0x%02x, left_ear_vol = 0x%02x, right_ear_vol = 0x%02x",spk_vol,left_ear_vol,right_ear_vol);
+            max9877_write(&max9877_i2c_client, MAX9877_SPEAKER_VOLUME, spk_vol);
+            max9877_write(&max9877_i2c_client, MAX9877_LEFT_HEADPHONE_VOLUME,left_ear_vol); 
+            max9877_write(&max9877_i2c_client, MAX9877_RIGHT_HEADPHONE_VOLUME,right_ear_vol); 
+}
+
 
 static void set_input_path_gain(struct snd_soc_codec *codec, int mode)
 {
@@ -793,6 +711,90 @@ static void set_path_gain(struct snd_soc_codec *codec, int mode)
 		default :
 			printk("[%s] Invalid output gain path\n", __func__);
 	}
+}
+
+
+int voice_call_rec_enable(struct snd_soc_codec *codec, int mode)
+{
+	P("Rec Enable (mode : 0x%x)", mode);
+
+	switch(mode) {
+		case MM_AUDIO_VOICECALL_RCV :
+			P("enable REC (MM_AUDIO_VOICECALL_RCV)");
+			/* MIC-AMP Rch mixing A/P Rch -> RCP/RCN OFF */
+			codec->write(codec, 0x19, 0x04); 	// use soft mute to cut signal
+			mdelay(24);
+			codec->write(codec, 0x0A, 0x20); 	// only MIC-AMP-Rch to RCP/RCN
+			codec->write(codec, 0x00, 0x0D); 	// DAC-Rch power-up
+
+			/* MIC-AMP Lch->LOP/LON and ADC Lch->AP Lch */
+			codec->write(codec, 0x00, 0x3D); 	// ADC-Lch power-up
+			mdelay(24);
+			break;
+
+		case MM_AUDIO_VOICECALL_SPK :
+		case MM_AUDIO_VOICECALL_HP :
+			P("enable REC (MM_AUDIO_VOICECALL_HP_SPK)");
+			/* MIC-AMP Rch mixing A/P Rch -> Lout2/Rout OFF */
+			codec->write(codec, 0x19, 0x04); 	// use soft mute to cut signal
+			mdelay(24);
+			codec->write(codec, 0x0B, 0x00); 	// Swith-off DAC-Lch
+			codec->write(codec, 0x0C, 0x20); 	// Swith-off DAC-Rch
+			codec->write(codec, 0x00, 0x0D); 	// DAC-Rch power-up
+
+			/* MIC-AMP Lch->LOP/LON and ADC Lch->AP Lch */
+			codec->write(codec, 0x00, 0x3D); 	// ADC-Lch power-up
+			mdelay(24);
+			break;
+
+		case MM_AUDIO_VOICECALL_BT :
+			P("enable REC (MM_AUDIO_VOICECALL_BT)");
+			/* mixing ADC Rch and A/P Rch -> SRC-A -> PCM-A */
+			codec->write(codec, 0x15, 0x14); 	// 5-band-EQ-Lch: from SRC-B, Rch: from SVOLA Rch
+
+			/* SRC-B -> DAC Lch -> LOP/LON -> and -> A/P Lch */
+			codec->write(codec, 0x59, 0x10); 	// SDTO-Lch: from SRC-B
+			break;
+		default :
+				printk("[%s] Invalid mode\n", __func__);
+	}
+
+	codec->write(codec, 0x18, 0x06); 	// IVOLC, ADM Mono
+
+	return 0;
+}
+
+int voice_call_rec_disable(struct snd_soc_codec *codec, int mode) 
+{
+	P("Rec Disable (mode : 0x%x)", mode);
+
+	switch(mode) {
+		case MM_AUDIO_VOICECALL_RCV :
+			P("disable REC (MM_AUDIO_VOICECALL_RCV)");
+			/* MIC-AMP Lch->LOP/LON and ADC Lch->AP Lch */
+			codec->write(codec, 0x00, 0x0D); 	// DAC-Rch power-up
+			break;
+
+		case MM_AUDIO_VOICECALL_SPK :
+		case MM_AUDIO_VOICECALL_HP :
+			P("disable REC (MM_AUDIO_VOICECALL_HP_SPK)");
+			/* MIC-AMP Lch->LOP/LON and ADC Lch->AP Lch */
+			codec->write(codec, 0x00, 0x0D); 	// DAC-Rch power-up
+			break;
+
+		case MM_AUDIO_VOICECALL_BT :
+			P("disable REC (MM_AUDIO_VOICECALL_BT)");
+			/* SRC-B -> DAC Lch -> LOP/LON -> and -> A/P Lch */
+			codec->write(codec, 0x59, 0x00); 	// default
+			break;
+		
+		default :
+			printk("[%s] Invalid mode\n", __func__);
+	}
+
+	codec->write(codec, 0x18, 0x02); 	// IVOLC
+
+	return 0;
 }
 
 

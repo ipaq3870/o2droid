@@ -160,26 +160,25 @@ static struct platform_device sec_device_i2c_common = {
 	.dev.platform_data	= &i2c_common_platdata,
 };
 
+#define KXSD9_I2C_ADDRESS	0x30
 static struct i2c_board_info i2c_devs0[] __initdata = {
+	{ I2C_BOARD_INFO("kxsd9_2042", (KXSD9_I2C_ADDRESS >> 1)), },
 };
 
 static struct i2c_board_info i2c_devs1[] __initdata = {
 };
 
 static struct i2c_board_info i2c_devs2[] __initdata = {
-	{
-		I2C_BOARD_INFO("max8698", (0xcc >> 1)),
-	},
+	{ I2C_BOARD_INFO("max8698", (0xcc >> 1)), },
 };
 
-#define MAX9877_ADDRESS 0x9A
+#define MAX9877_I2C_ADDRESS	0x9A
+#define AK4671_I2C_ADDRESS	0x24
+#define SI4709_I2C_ADDRESS	0x20
 static struct i2c_board_info i2c_devs3[] __initdata = {
-	{
-		I2C_BOARD_INFO("MAX9877 I2C (AMP)", (MAX9877_ADDRESS >> 1)),
-	},
-	{
-		I2C_BOARD_INFO("AK4671 I2C Codec", (0x24 >> 1)),
-	},
+	{ I2C_BOARD_INFO("MAX9877 I2C (AMP)", (MAX9877_I2C_ADDRESS >> 1)), },
+	{ I2C_BOARD_INFO("AK4671 I2C Codec", (AK4671_I2C_ADDRESS >> 1)), },
+	{ I2C_BOARD_INFO("Si4709", (SI4709_I2C_ADDRESS >> 1)), },
 };
 
 

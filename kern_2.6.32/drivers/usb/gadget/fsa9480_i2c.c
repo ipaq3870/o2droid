@@ -42,7 +42,7 @@ extern int is_pmic_initialized(void);
 
 
 extern struct device *switch_dev;
-extern ftm_sleep;
+extern unsigned char ftm_sleep;
 
 #define FSA9480_UART 	1
 #define FSA9480_USB 	2
@@ -111,8 +111,8 @@ void get_usb_serial(char *usb_serial_number)
 	
 	serial_number = (system_serial_high << 16) + (system_serial_low >> 16);
 
+	sprintf(temp_serial_number,"GT-I8%08x",serial_number);
 #if defined(CONFIG_MACH_VINSQ)
-	sprintf(temp_serial_number,"M910%08x",serial_number);
 #elif defined(CONFIG_MACH_VITAL)
 	sprintf(temp_serial_number,"M920%08x",serial_number);
 #elif defined(CONFIG_MACH_QUATTRO)
@@ -261,10 +261,10 @@ static int fsa9480_modify(u8 reg, u8 data, u8 mask)
 /* UART <-> USB switch (for UART/USB JIG) */
 void fsa9480_check_usb_connection(void)
 {
-	DEBUG_FSA9480("[FSA9480]%s\n ", __func__);
 	u8 control, int1, deviceType1, deviceType2, manual1, manual2, pData,adc, carkitint1;
 	u8 oldmanual2;
 	bool bInitConnect = false;
+	DEBUG_FSA9480("[FSA9480]%s\n ", __func__);
 
 	fsa9480_read( REGISTER_INTERRUPT1, &int1); // interrupt clear
 	fsa9480_read( REGISTER_DEVICETYPE1, &deviceType1);
@@ -711,8 +711,8 @@ MODULE_LICENSE("GPL");
 ***********************************************************************/
 void fsa9480_SetManualSW(unsigned char valManualSw1, unsigned char valManualSw2)
 {
-	DEBUG_FSA9480("[FSA9480]%s \n", __func__);
 	unsigned char cont_reg, man_sw1, man_sw2;
+	DEBUG_FSA9480("[FSA9480]%s \n", __func__);
 
 	/*Set Manual switch*/
 	fsa9480_write( REGISTER_MANUALSW1, valManualSw1);
@@ -778,8 +778,8 @@ void fsa9480_SetAutoSWMode(void)
 ***********************************************************************/
 void fsa9480_MakeRxdLow(void)
 {
-	DEBUG_FSA9480("[FSA9480]%s\n ", __func__);
 	unsigned char hidden_reg;
+	DEBUG_FSA9480("[FSA9480]%s\n ", __func__);
 	
 	fsa9480_write( HIDDEN_REGISTER_MANUAL_OVERRDES1, 0x0a); 
 	mdelay(20);
