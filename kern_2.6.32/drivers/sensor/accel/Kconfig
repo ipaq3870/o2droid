@@ -23,7 +23,7 @@ config ACCEL_BMA020
 config ACCEL_KR3DM
 	depends on ACCEL
 	tristate "KR3DM driver for s3c6410"
-	default y
+	default n
 	help
 	  This option enables accelerometer sensors using kr3dm driver.
 	  It is optimized for s3c6410.
@@ -32,7 +32,7 @@ config ACCEL_KR3DM
 config ACCEL_KXSD9
 	depends on ACCEL
 	tristate "KXSD9 driver for s3c6410"
-	default n
+	default y
 	help
 	  This option enables accelerometer sensors using KXSD9 driver.
 	  It is optimized for s3c6410.
