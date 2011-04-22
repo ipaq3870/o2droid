@@ -7,7 +7,7 @@ snd-soc-ak4104-objs := ak4104.o
 snd-soc-ak4535-objs := ak4535.o
 snd-soc-ak4642-objs := ak4642.o
 
-snd-soc-ak4671-instinctq-objs := ak4671.o ak4671_instinctq.o 
+snd-soc-ak4671-omnia_II-objs := ak4671.o ak4671_Omnia_II.o 
 
 snd-soc-cs4270-objs := cs4270.o
 snd-soc-cx20442-objs := cx20442.o
@@ -59,7 +59,7 @@ obj-$(CONFIG_SND_SOC_AD73311) += snd-soc-ad73311.o
 obj-$(CONFIG_SND_SOC_AK4104)	+= snd-soc-ak4104.o
 obj-$(CONFIG_SND_SOC_AK4535)	+= snd-soc-ak4535.o
 obj-$(CONFIG_SND_SOC_AK4642)	+= snd-soc-ak4642.o
-obj-$(CONFIG_SND_SOC_AK4671)	+= snd-soc-ak4671-instinctq.o
+obj-$(CONFIG_SND_SOC_AK4671)	+= snd-soc-ak4671-omnia_II.o
 obj-$(CONFIG_SND_SOC_CS4270)	+= snd-soc-cs4270.o
 obj-$(CONFIG_SND_SOC_CX20442)	+= snd-soc-cx20442.o
 obj-$(CONFIG_SND_SOC_L3)	+= snd-soc-l3.o

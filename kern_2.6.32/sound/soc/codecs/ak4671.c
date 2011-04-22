@@ -832,15 +832,7 @@ static int ak4671_suspend(struct platform_device *pdev, pm_message_t state)
 		/* AUDIO_EN & MAX8906_AMP_EN Disable */
 		amp_enable(0); /* Board Specific function */
 		audio_power(0); /* Board Specific function */
-#if defined (CONFIG_MACH_MAX)
-//		if(!(gpio_get_value(GPIO_DET_35) ^ 1 && gpio_get_value(GPIO_MONOHEAD_DET_ISR) ^ 0))
-//		if(!(gpio_get_value(GPIO_DET_35) ^ 1))
-        		mic_enable(0);
-//		else if((GPIO_MONOHEAD_DET_ISR) ^ 0)
-//        		mic_enable(0);		
-#else		
-		    mic_enable(0); /* MICBIAS Disable (SPH-M900 Only) */
-#endif	
+		//mic_enable(0); /* MICBIAS Disable (SPH-M900 Only) */
 		ak4671_power = 0;
 		ak4671_idle_mode = IDLE_POWER_DOWN_MODE_ON;
 	}
