@@ -81,6 +81,13 @@
 
 #include <mach/sec_headset.h>
 
+#define CE131_ID			0x78
+#define LP8720_ID			0xFA
+#define MAX9877_I2C_ADDRESS		0x9A
+#define AK4671_I2C_ADDRESS		0x24
+#define SI4709_I2C_ADDRESS		0x20
+#define KXSD9_I2C_ADDRESS		0x30
+
 struct class *sec_class;
 EXPORT_SYMBOL(sec_class);
 
@@ -160,25 +167,23 @@ static struct platform_device sec_device_i2c_common = {
 	.dev.platform_data	= &i2c_common_platdata,
 };
 
-#define KXSD9_I2C_ADDRESS	0x30
 static struct i2c_board_info i2c_devs0[] __initdata = {
 	{ I2C_BOARD_INFO("kxsd9_2042", (KXSD9_I2C_ADDRESS >> 1)), },
 };
 
 static struct i2c_board_info i2c_devs1[] __initdata = {
+	{ I2C_BOARD_INFO("ce131", (CE131_ID >> 1)), },
 };
 
 static struct i2c_board_info i2c_devs2[] __initdata = {
 	{ I2C_BOARD_INFO("max8698", (0xcc >> 1)), },
 };
 
-#define MAX9877_I2C_ADDRESS	0x9A
-#define AK4671_I2C_ADDRESS	0x24
-#define SI4709_I2C_ADDRESS	0x20
 static struct i2c_board_info i2c_devs3[] __initdata = {
 	{ I2C_BOARD_INFO("MAX9877 I2C (AMP)", (MAX9877_I2C_ADDRESS >> 1)), },
 	{ I2C_BOARD_INFO("AK4671 I2C Codec", (AK4671_I2C_ADDRESS >> 1)), },
 	{ I2C_BOARD_INFO("Si4709", (SI4709_I2C_ADDRESS >> 1)), },
+	{ I2C_BOARD_INFO("lp8720", (LP8720_ID >> 1)), },
 };
 
 
