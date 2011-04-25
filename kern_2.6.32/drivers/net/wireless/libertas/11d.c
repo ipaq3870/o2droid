@@ -23,6 +23,7 @@ static struct region_code_mapping region_code_mapping[] = {
 	{"ES ", 0x31},		/* Spain       */
 	{"FR ", 0x32},		/* France      */
 	{"JP ", 0x40},		/* Japan       */
+	{"HU ", 0x30},		/* Hungary       */
 };
 
 /* Following 2 structure defines the supported channels */
@@ -56,8 +57,8 @@ static u8 lbs_region_2_code(u8 *region)
 			return (region_code_mapping[i].code);
 	}
 
-	/* default is US */
-	return (region_code_mapping[0].code);
+	/* default is ETSI */
+	return (region_code_mapping[3].code);
 }
 
 static u8 *lbs_code_2_region(u8 code)
@@ -68,8 +69,8 @@ static u8 *lbs_code_2_region(u8 code)
 		if (region_code_mapping[i].code == code)
 			return (region_code_mapping[i].region);
 	}
-	/* default is US */
-	return (region_code_mapping[0].region);
+	/* default is ETSI */
+	return (region_code_mapping[3].region);
 }
 
 /**

@@ -153,8 +153,8 @@ int lbs_update_hw_spec(struct lbs_private *priv)
 
 	/* if it's unidentified region code, use the default (USA) */
 	if (i >= MRVDRV_MAX_REGION_CODE) {
-		priv->regioncode = 0x10;
-		lbs_pr_info("unidentified region code; using the default (USA)\n");
+		priv->regioncode = 0x30;
+		lbs_pr_info("unidentified region code; using the default (ETSI)\n");
 	}
 
 	if (priv->current_addr[0] == 0xff)

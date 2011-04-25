@@ -179,6 +179,51 @@ static u8 fw_data_rates[MAX_RATES] =
       0x18, 0x24, 0x30, 0x48, 0x60, 0x6C, 0x00
 };
 
+static int lbs_set_rf_reg(struct lbs_private* priv, u16 offset, u8 value)
+{
+	struct lbs_offset_value offval;
+	int ret;
+
+	offval.offset = offset;
+	offval.value = value;
+
+	ret = lbs_prepare_and_send_command(priv,
+				CMD_BBP_REG_ACCESS, CMD_ACT_SET,
+				CMD_OPTION_WAITFORRSP, 0, &offval);
+
+	return ret;
+}
+
+static int lbs_set_mac_reg(struct lbs_private* priv, u16 offset, u32 value)
+{
+	struct lbs_offset_value offval;
+	int ret;
+
+	offval.offset = offset;
+	offval.value = value;
+
+	ret = lbs_prepare_and_send_command(priv,
+				CMD_MAC_REG_ACCESS, CMD_ACT_SET,
+				CMD_OPTION_WAITFORRSP, 0, &offval);
+
+	return ret;
+}
+
+static int lbs_set_bbp_reg(struct lbs_private* priv, u16 offset, u8 value)
+{
+	struct lbs_offset_value offval;
+	int ret;
+
+	offval.offset = offset;
+	offval.value = value;
+
+	ret = lbs_prepare_and_send_command(priv,
+				CMD_RF_REG_ACCESS, CMD_ACT_SET,
+				CMD_OPTION_WAITFORRSP, 0, &offval);
+
+	return ret;
+}
+
 /**
  *  @brief use index to get the data rate
  *
@@ -1011,6 +1056,24 @@ static int lbs_setup_firmware(struct lbs_private *priv)
 	if (ret)
 		goto done;
 
+//	lbs_set_antenna(priv,&ret,0);
+//	printk("RF_ANT: %d, set to 3\n",ret);
+//	ret=0xffff;
+//	lbs_set_antenna(priv,&ret,1);
+//	lbs_set_antenna(priv,&ret,0);
+//	printk("RF_ANT after: %d\n",ret);
+// From the Iphone IOS: !!!!!!!	
+//	lbs_set_mac_reg(priv, 0xA240, 0xA3000);
+
+	lbs_set_mac_reg(priv, 0xA5AC, 0xC8);
+	lbs_set_mac_reg(priv, 0xA5B0, 0xC8 << 2);
+	lbs_set_mac_reg(priv, 0xA5A8, 0xAF << 3);
+	lbs_set_mac_reg(priv, 0xA5B4, 0xAF << 4);
+	lbs_set_mac_reg(priv, 0xA5A4, 0xAF << 4);
+	lbs_set_mac_reg(priv, 0xA58C, 0x40214);
+	lbs_set_mac_reg(priv, 0xA5A0, 0x524D);
+	lbs_set_mac_reg(priv, 0xA5F0, 0xA2271814);
+	
 	/* Read power levels if available */
 	ret = lbs_get_tx_power(priv, &curlevel, &minlevel, &maxlevel);
 	if (ret == 0) {
@@ -1018,8 +1081,16 @@ static int lbs_setup_firmware(struct lbs_private *priv)
 		priv->txpower_min = minlevel;
 		priv->txpower_max = maxlevel;
 	}
-
+printk("txpower:%d min:%d max:%d\n",curlevel,minlevel,maxlevel);
 	lbs_set_mac_control(priv);
+
+	lbs_set_rf_reg(priv, 0x50, 0x50);
+	lbs_set_rf_reg(priv, 0x6B, 0xAE);
+	lbs_set_bbp_reg(priv, 0x4E, 0x1B);
+
+//	lbs_get_mac_reg(priv, 0x2048, &macv);
+//	lbs_set_mac_reg(priv, 0x2048, macv | 0x80);
+
 done:
 	lbs_deb_leave_args(LBS_DEB_FW, "ret %d", ret);
 	return ret;
