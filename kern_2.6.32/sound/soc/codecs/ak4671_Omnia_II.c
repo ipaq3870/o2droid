@@ -1,5 +1,5 @@
 /*
- * ak4671_instinctq.c  --  AK4671 Instinctq Board specific code
+ * ak4671_OmniaII.c  --  AK4671 OmniaII Board specific code
  *
  * Copyright (C) 2008 Samsung Electronics, Seung-Bum Kang
  *
@@ -32,10 +32,10 @@
 
 #include "ak4671.h"
 
-#define AUDIO_SPECIFIC_DEBUG	1
+#define AUDIO_SPECIFIC_DEBUG	0
 
 #if AUDIO_SPECIFIC_DEBUG
-#define SUBJECT "ak4671_instinctq.c"
+#define SUBJECT "ak4671_OmniaII.c"
 #define P(format,...)\
 	printk ("[ "SUBJECT " (%s,%d) ] " format "\n", __func__, __LINE__, ## __VA_ARGS__);
 #define FI \
