@@ -9,7 +9,7 @@
  * This is the maximum DMA address(physical address) that can be DMAd to.
  *
  */
-#define MAX_DMA_ADDRESS		0x40000000
+//#define MAX_DMA_ADDRESS		0x40000000
 #define MAX_DMA_TRANSFER_SIZE   0x100000 /* Data Unit is half word  */
 
 #define DMACH_LOW_LEVEL	(1<<28)	/* use this to specifiy hardware ch no */

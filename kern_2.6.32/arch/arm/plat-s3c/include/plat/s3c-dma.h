@@ -3,7 +3,7 @@
  */
 
 #ifndef __ARM_PLAT_S3C_DMA_H
-#define __ARM_PLAT_S3C_DMA_H 
+#define __ARM_PLAT_S3C_DMA_H
 
 extern struct sysdev_class dma_sysclass;
 extern struct s3c2410_dma_chan s3c2410_chans[S3C_DMA_CHANNELS];
@@ -29,7 +29,7 @@ struct s3c_dma_map {
 	unsigned long		channels[S3C_DMA_CHANNELS];
 	unsigned long		channels_rx[S3C_DMA_CHANNELS];
 
-        unsigned long            sdma_sel;
+        unsigned long           sdma_sel;
 };
 
 struct s3c_dma_selection {

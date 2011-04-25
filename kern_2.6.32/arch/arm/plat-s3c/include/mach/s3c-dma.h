@@ -2,15 +2,15 @@
  *
  */
 
-#ifndef __ARM_MACH_S3C_DMA_H 
-#define __ARM_MACH_S3C_DMA_H 
+#ifndef __ARM_MACH_S3C_DMA_H
+#define __ARM_MACH_S3C_DMA_H
 
 #include <linux/sysdev.h>
 #include <mach/hardware.h>
 
 #if defined(CONFIG_CPU_S3C6400) || defined(CONFIG_CPU_S3C6410)
 #include <mach/dma-pl080.h>
-#elif defined(CONFIG_CPU_S5PC100) || defined(CONFIG_CPU_S5P6440)
+#elif defined(CONFIG_CPU_S5PC100) || defined(CONFIG_CPU_S5PV210) || defined(CONFIG_CPU_S5P6442)
 #include <mach/dma-pl330.h>
 #endif
 
@@ -58,13 +58,24 @@ enum dma_ch {
 	DMACH_SPI0_OUT,
 	DMACH_SPI1_IN,
 	DMACH_SPI1_OUT,
+//	DMACH_SPI2_IN,
+//	DMACH_SPI2_OUT,
 	DMACH_AC97_PCM_OUT,
 	DMACH_AC97_PCM_IN,
 	DMACH_AC97_MIC_IN,
 	DMACH_ONENAND_IN,
-	DMACH_3D_M2M,
+	DMACH_3D_M2M0,
+	DMACH_3D_M2M1,
+	DMACH_3D_M2M2,
+	DMACH_3D_M2M3,
+	DMACH_3D_M2M4,
+	DMACH_3D_M2M5,
+	DMACH_3D_M2M6,
+	DMACH_3D_M2M7,
 	DMACH_MAX,		/* the end entry */
 };
+
+#define DMACH_3D_M2M	DMACH_3D_M2M0
 
 /* types */
 
@@ -139,6 +150,7 @@ enum s3c_chan_op {
 	S3C2410_DMAOP_FLUSH,
 	S3C2410_DMAOP_TIMEOUT,		/* internal signal to handler */
 	S3C2410_DMAOP_STARTED,		/* indicate channel started */
+	S3C2410_DMAOP_ABORT,		/* abnormal stop */
 };
 
 /* dma buffer */
@@ -268,7 +280,7 @@ struct s3c2410_dma_chan {
 
 	/* system device */
 	struct sys_device	dev;
-	
+
 	unsigned int            index;        	/* channel index */
 	unsigned int            config_flags;        /* channel flags */
 	unsigned int            control_flags;        /* channel flags */
@@ -297,7 +309,7 @@ struct s3c_sg_list {
 */
 
 extern int s3c2410_dma_request(unsigned int channel,
-			       struct s3c2410_dma_client *, void *dev);
+				struct s3c2410_dma_client *, void *dev);
 
 
 /* s3c2410_dma_ctrl
@@ -343,15 +355,14 @@ extern int s3c2410_dma_enqueue_sg(unsigned int channel, void *id,
  * configure the dma channel
 */
 
-extern int s3c2410_dma_config(unsigned int channel, int xferunit, int dcon);
+extern int s3c2410_dma_config(unsigned int channel, int xferunitint);
 
 /* s3c2410_dma_devconfig
  *
  * configure the device we're talking to
 */
 
-extern int s3c2410_dma_devconfig(int channel, enum s3c2410_dmasrc source,
-				 int hwcfg, unsigned long devaddr);
+extern int s3c2410_dma_devconfig(int channel, enum s3c2410_dmasrc source, unsigned long devaddr);
 
 /* s3c2410_dma_getposition
  *
@@ -364,8 +375,5 @@ extern int s3c2410_dma_getposition(unsigned int channel,
 
 extern int s3c2410_dma_set_opfn(unsigned int, s3c2410_dma_opfn_t rtn);
 extern int s3c2410_dma_set_buffdone_fn(unsigned int, s3c2410_dma_cbfn_t rtn);
-
-
-
 
 #endif //__ARM_MACH_S3C_DMA_H
