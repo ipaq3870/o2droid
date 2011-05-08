@@ -22,7 +22,6 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/freezer.h>
-#include <mach/instinctq.h>
 
 #include "ak8973b.h"
 
@@ -32,6 +31,7 @@
 #define I2C_DF_NOTIFY       0x01
 #define IRQ_COMPASS_INT IRQ_EINT(2) /* EINT(2) */
 
+//short gp2a_get_proximity_value(void){} //bss
 static struct i2c_client *this_client;
 
 struct ak8973b_data {
@@ -86,7 +86,7 @@ static int i2c_ak8973b_detect(struct i2c_client *, int kind, struct i2c_board_in
 
 unsigned short ignore[] = { I2C_CLIENT_END };
 static unsigned short normal_addr[] = { I2C_CLIENT_END };
-static unsigned short probe_addr[] = { 6, E_COMPASS_ADDRESS, I2C_CLIENT_END };
+static unsigned short probe_addr[] = { 1, E_COMPASS_ADDRESS, I2C_CLIENT_END };
 
 
 static struct i2c_client_address_data addr_data = {
@@ -286,9 +286,9 @@ static void AKECS_CloseDone(void)
 static void AKECS_Reset (void)
 {
       
-	gpio_set_value(GPIO_MSENSE_RST_N, GPIO_LEVEL_LOW);
+	gpio_set_value(GPIO_MSENSE_RST, GPIO_LEVEL_LOW);
 	udelay(120);
-	gpio_set_value(GPIO_MSENSE_RST_N, GPIO_LEVEL_HIGH);
+	gpio_set_value(GPIO_MSENSE_RST, GPIO_LEVEL_HIGH);
 	gprintk("[ak8973b] RESET COMPLETE\n");
 }
 
@@ -644,6 +644,13 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			if (rwbuf[0] < 1)
 				return -EINVAL;
 			ret = AKI2C_RxData(&rwbuf[1], rwbuf[0]);
+			// for akmd, must revert and re-sign the x,y values: x=-y, y=x!!
+			{
+				char ch = rwbuf[2];
+				rwbuf[2] = -rwbuf[3];
+				rwbuf[3] = ch;
+			}
+		
 			for(i=0; i<rwbuf[0]; i++){
 				gprintk(" %02x", rwbuf[i+1]);
 			}
@@ -660,6 +667,13 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			gprintk("\n");
 			if (rwbuf[0] < 2)
 				return -EINVAL;
+			if (rwbuf[0] == 4) {
+				// the calibratin feedback must be exchanged too  x=y, y=-x !!
+				char ch = -rwbuf[2];
+				rwbuf[2] = rwbuf[3];
+				rwbuf[3] = ch;
+			}			
+
 			ret = AKI2C_TxData(&rwbuf[1], rwbuf[0]);
 			gprintk(" ret = %d\n", ret);
 			if (ret < 0)
@@ -768,14 +782,14 @@ static void ak8973b_init_hw(void)
 	set_irq_type(IRQ_COMPASS_INT, IRQ_TYPE_EDGE_RISING);
 #endif
 
-	if(gpio_is_valid(GPIO_MSENSE_RST_N)){
-		if(gpio_request(GPIO_MSENSE_RST_N, S3C_GPIO_LAVEL(GPIO_MSENSE_RST_N)))
+	if(gpio_is_valid(GPIO_MSENSE_RST)){
+		if(gpio_request(GPIO_MSENSE_RST, S3C_GPIO_LAVEL(GPIO_MSENSE_RST)))
 		{
-			printk(KERN_ERR "Failed to request GPIO_MSENSE_RST_N!\n");
+			printk(KERN_ERR "Failed to request GPIO_MSENSE_RST!\n");
 		}
-		gpio_direction_output(GPIO_MSENSE_RST_N, GPIO_LEVEL_HIGH);
+		gpio_direction_output(GPIO_MSENSE_RST, GPIO_LEVEL_HIGH);
 	}
-	s3c_gpio_setpull(GPIO_MSENSE_RST_N, S3C_GPIO_PULL_NONE);
+	s3c_gpio_setpull(GPIO_MSENSE_RST, S3C_GPIO_PULL_NONE);
 
 	gprintk("gpio setting complete!\n");
 }
@@ -947,7 +961,7 @@ static int __devexit i2c_ak8973b_remove(struct i2c_client *client)
 	akm = NULL;	
 	this_client = NULL;
 	
-	gpio_free(GPIO_MSENSE_RST_N);
+	gpio_free(GPIO_MSENSE_RST);
 	
 	gprintk("end\n");
 	return 0;
