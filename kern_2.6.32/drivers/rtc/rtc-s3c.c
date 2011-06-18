@@ -44,6 +44,8 @@
 #ifdef I8000_RTC
 // The year value in the RTC (from WinMo) contains a +20 year difference in i8000
 #define I8000_YEAR_CORRECT 20
+extern int rtc_month_days(unsigned int month, unsigned int year);
+
 #endif
 
 #ifdef CONFIG_RTC_SYNC
@@ -350,9 +352,17 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
 	if (!already_set) {
 		zone_diff = rtc_tm->tm_hour;
 	} else {
-		rtc_tm->tm_hour += zone_diff + 1; //1 is an unknown offset??
-		if (rtc_tm->tm_hour<0) { rtc_tm->tm_hour+=24; rtc_tm->tm_mday--;} // todo: month,year
-		if (rtc_tm->tm_hour>=24) { rtc_tm->tm_hour-=24; rtc_tm->tm_mday++;}
+		rtc_tm->tm_hour += zone_diff;
+		if (rtc_tm->tm_hour < 0 ) { rtc_tm->tm_hour+=24; rtc_tm->tm_mday--; } // todo: month,year
+		else if (rtc_tm->tm_hour >= 24 ) { rtc_tm->tm_hour-=24; rtc_tm->tm_mday++; }
+		if (rtc_tm->tm_mday > rtc_month_days(rtc_tm->tm_mon, rtc_tm->tm_year + 1900)) {
+			rtc_tm->tm_mday=1; rtc_tm->tm_mon++;
+			if (rtc_tm->tm_mon > 11 ) { rtc_tm->tm_mon=0; rtc_tm->tm_year++; }
+		} else if (rtc_tm->tm_mday < 1 ) {
+			rtc_tm->tm_mon--;
+			if (rtc_tm->tm_mon < 0) { rtc_tm->tm_mon=11; rtc_tm->tm_year--; }
+			rtc_tm->tm_mday = rtc_month_days(rtc_tm->tm_mon, rtc_tm->tm_year + 1900);
+		}
 	}
 #endif
 	pr_debug("read time %02d.%02d.%02d %02d:%02d:%02d\n",
@@ -366,7 +376,11 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
 {
 	void __iomem *base = s3c_rtc_base;
 	int year = tm->tm_year - 100;
-
+#ifdef I8000_RTC
+	int hour = tm->tm_hour;
+	int day = tm->tm_mday;
+	int mon = tm->tm_mon + 1;
+#endif
 	pr_debug("set time %02d.%02d.%02d %02d:%02d:%02d\n",
 		 tm->tm_year, tm->tm_mon, tm->tm_mday,
 		 tm->tm_hour, tm->tm_min, tm->tm_sec);
@@ -380,12 +394,21 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
 	if ( !already_set ) {
 		already_set=1;
 		zone_diff=tm->tm_hour-zone_diff;	// the difference in tz + 1!
+		zone_diff++;				//1 is an unknown offset??
 		printk("I8000 TZ diff: %d hours\n",zone_diff);
 		return 0;
 	}
-	tm->tm_hour-=zone_diff;
-	if (tm->tm_hour<0) { tm->tm_hour+=24; tm->tm_mday--;}
-	if (tm->tm_hour>=24) { tm->tm_hour-=24; tm->tm_mday++;}
+	hour-=zone_diff;
+	if (hour<0) { hour+=24; day--; }
+	else if (hour>=24) { hour-=24; day++; }
+	if (day > rtc_month_days(mon-1, year + 2000)) {
+		day=1; mon++;
+		if (mon > 12) { mon=1; year++; }
+	} else if (day < 1 ) {
+		mon--;
+		if (mon < 1) { mon=12; year--; }
+		day = rtc_month_days(mon-1, year + 2000);
+	}
 #endif
 	/* we get around y2k by simply not supporting it */
 
@@ -396,9 +419,15 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
 
 	writeb(bin2bcd(tm->tm_sec),  base + S3C_RTCSEC);
 	writeb(bin2bcd(tm->tm_min),  base + S3C_RTCMIN);
+#ifdef I8000_RTC
+	writeb(bin2bcd(hour), base + S3C_RTCHOUR);
+	writeb(bin2bcd(day), base + S3C_RTCDATE);
+	writeb(bin2bcd(mon), base + S3C_RTCMON);
+#else
 	writeb(bin2bcd(tm->tm_hour), base + S3C_RTCHOUR);
 	writeb(bin2bcd(tm->tm_mday), base + S3C_RTCDATE);
 	writeb(bin2bcd(tm->tm_mon + 1), base + S3C_RTCMON);
+#endif
 	writeb(bin2bcd(year + I8000_YEAR_CORRECT), base + S3C_RTCYEAR); //bss
 
 	return 0;
@@ -409,7 +438,9 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
 	struct rtc_time *alm_tm = &alrm->time;
 	void __iomem *base = s3c_rtc_base;
 	unsigned int alm_en;
-
+#ifdef I8000_RTC
+	int daydiff = 0;
+#endif
 	alm_tm->tm_sec  = readb(base + S3C_ALMSEC);
 	alm_tm->tm_min  = readb(base + S3C_ALMMIN);
 	alm_tm->tm_hour = readb(base + S3C_ALMHOUR);
@@ -439,14 +470,20 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
 	else
 		alm_tm->tm_min = 0xff;
 
-	if (alm_en & S3C_RTCALM_HOUREN)
+	if (alm_en & S3C_RTCALM_HOUREN) {
 		alm_tm->tm_hour = bcd2bin(alm_tm->tm_hour);
-	else
+#ifdef I8000_RTC
+		alm_tm->tm_hour += zone_diff;
+		if (alm_tm->tm_hour<0) { alm_tm->tm_hour+=24; daydiff = -1;} // todo: month,year
+		else if (alm_tm->tm_hour>=24) { alm_tm->tm_hour-=24; daydiff = 1;}
+#endif
+
+	} else
 		alm_tm->tm_hour = 0xff;
 
-	if (alm_en & S3C_RTCALM_DAYEN)
+	if (alm_en & S3C_RTCALM_DAYEN) {
 		alm_tm->tm_mday = bcd2bin(alm_tm->tm_mday);
-	else
+	} else
 		alm_tm->tm_mday = 0xff;
 
 	if (alm_en & S3C_RTCALM_MONEN) {
@@ -461,6 +498,24 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
 		alm_tm->tm_year += 100;
 	} else
 		alm_tm->tm_year = 0xffff;
+#ifdef I8000_RTC
+	if (daydiff) {
+		alm_tm->tm_mday += daydiff;
+		if (alm_tm->tm_mon!=0xff) {
+			if (alm_tm->tm_mday > rtc_month_days(alm_tm->tm_mon,(alm_en & S3C_RTCALM_YEAREN)? alm_tm->tm_year + 1900 : 2011)) {
+				alm_tm->tm_mday=1; alm_tm->tm_mon++;
+				if (alm_tm->tm_mon > 11 ) { alm_tm->tm_mon=0; if (alm_en & S3C_RTCALM_YEAREN) alm_tm->tm_year++; }
+			} else if (alm_tm->tm_mday < 1 ) {
+				alm_tm->tm_mon--;
+				if (alm_tm->tm_mon < 0) { alm_tm->tm_mon=11; if (alm_en & S3C_RTCALM_YEAREN) alm_tm->tm_year--; }
+				alm_tm->tm_mday = rtc_month_days(alm_tm->tm_mon, (alm_en & S3C_RTCALM_YEAREN)? alm_tm->tm_year + 1900 : 2011);
+			}
+		} else {
+			if (alm_tm->tm_mday>31)  alm_tm->tm_mday=1;
+			else if (alm_tm->tm_mday<1) alm_tm->tm_mday=31;	//????
+		}
+	}
+#endif
 
 	return 0;
 }
@@ -470,7 +525,11 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
 	struct rtc_time *tm = &alrm->time;
 	void __iomem *base = s3c_rtc_base;
 	unsigned int alrm_en;
-
+#ifdef I8000_RTC
+	int hour = tm->tm_hour;
+	int day = tm->tm_mday;
+	int mon = tm->tm_mon + 1;
+#endif
 	int year = tm->tm_year - 100;
 
 	pr_debug("s3c_rtc_setalarm: %d, %02d/%02d/%02d %02d:%02d:%02d\n",
@@ -493,17 +552,42 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
 
 	if (tm->tm_hour < 24 && tm->tm_hour >= 0) {
 		alrm_en |= S3C_RTCALM_HOUREN;
+#ifdef I8000_RTC
+		hour -= zone_diff;
+		if ( hour < 0 ) { hour+=24; day -= 1; }
+		if ( hour >= 24 ) { hour-=24; day += 1; }
+		if (mon<1 || mon>12) mon=7;	//protection, otherwise set nothing
+		
+		if (day > rtc_month_days(mon-1,(year<0 || year>100)?2011 : year + 2000)) {
+			day=1; mon++;
+			if (mon > 12) { mon=1; year++; }
+		} else if (day < 1 ) {
+			mon--;
+			if (mon < 1) { mon=12; year--; }
+			day = rtc_month_days(mon-1, (year<0 || year>100)?2011 : year + 2000);
+		}
+		writeb(bin2bcd(hour), base + S3C_ALMHOUR);
+#else
 		writeb(bin2bcd(tm->tm_hour), base + S3C_ALMHOUR);
+#endif
 	}
 
 	if (tm->tm_mday >= 0) {
 		alrm_en |= S3C_RTCALM_DAYEN;
+#ifdef I8000_RTC
+		writeb(bin2bcd(day), base + S3C_ALMDATE);
+#else
 		writeb(bin2bcd(tm->tm_mday), base + S3C_ALMDATE);
+#endif
 	}
 
-	if (tm->tm_mon < 13 && tm->tm_mon >= 0) {
+	if (tm->tm_mon < 12 && tm->tm_mon >= 0) {
 		alrm_en |= S3C_RTCALM_MONEN;
+#ifdef I8000_RTC
+		writeb(bin2bcd(mon), base + S3C_ALMMON);
+#else
 		writeb(bin2bcd(tm->tm_mon + 1), base + S3C_ALMMON);
+#endif
 	}
 
 	if (year < 100 && year >= 0) {
