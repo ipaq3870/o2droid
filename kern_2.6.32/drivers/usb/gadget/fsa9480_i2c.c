@@ -272,7 +272,8 @@ void fsa9480_check_usb_connection(void)
 
 	//in case of carkit we should process the extra interrupt. 1: attach interrupt, 2: carkit interrupt
 	//  (interrupt_cr3 & 0x0) case is when power on after TA is inserted.
-	if (((int1 & ATTACH) /*|| !(int1 & 0x0)*/) && 
+	// bss if (((int1 & ATTACH) /*|| !(int1 & 0x0)*/) && 
+	if (((int1 & ATTACH) || !(int1 & 0x0)) && 
 		               (( deviceType1 & CRA_CARKIT) || adc == CEA936A_TYPE_1_CHARGER ))
 	{
 		DEBUG_FSA9480("[FSA9480] %s : Carkit is inserted! 1'st resolve insert interrupt\n ",__func__);
@@ -405,6 +406,13 @@ EXPORT_SYMBOL(fsa9480_check_usb_connection);
 
 static void usb_sel(int sel)
 {  
+    DEBUG_FSA9480("[FSA9480]%s\n ", __func__);
+	if (sel == SWITCH_PDA) { // PDA
+		gpio_set_value(GPIO_USB_SEL, 0);
+	} else { // MODEM
+		gpio_set_value(GPIO_USB_SEL, 1);
+	}
+
 	usb_path = sel;
 }
 
@@ -583,6 +591,14 @@ static int __devinit fsa9480_codec_probe(struct i2c_client *client, const struct
 	s3c_gpio_cfgpin(GPIO_JACK_INT_N, S3C_GPIO_SFN(GPIO_JACK_INT_N_AF));
 	s3c_gpio_setpull(GPIO_JACK_INT_N, S3C_GPIO_PULL_NONE);
 
+	/* USB_SEL */
+	if (gpio_is_valid(GPIO_USB_SEL)) {
+		if (gpio_request(GPIO_USB_SEL, S3C_GPIO_LAVEL(GPIO_USB_SEL))) 
+			DEBUG_FSA9480(KERN_ERR "[FSA9480]Failed to request GPIO_USB_SEL! \n");
+		gpio_direction_output(GPIO_USB_SEL, 0);
+	}
+	s3c_gpio_setpull(GPIO_USB_SEL, S3C_GPIO_PULL_NONE);
+	
 	init_waitqueue_head(&usb_detect_waitq); 
 	INIT_WORK(&fsa9480_work, mode_switch);
 	fsa9480_workqueue = create_singlethread_workqueue("fsa9480_workqueue");

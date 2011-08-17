@@ -1434,7 +1434,7 @@ static int s3c_udc_suspend(struct platform_device *pdev, pm_message_t state)
 			DEBUG_PM("[%s] skip~~ s3c_udc_power_down() at suspend\n", __func__);
 			spin_unlock_irqrestore(&dev->lock, flags);
 		return 0;
-	}
+		}
 	}
 
 	switch(pm_policy)
