@@ -26,7 +26,7 @@
 #include "gp2aP002S00F.h"
 
 /*********** for debug **********************************************************/
-#if 1 
+#if 0 
 #define gprintk(fmt, x... ) printk( "%s(%d): " fmt, __FUNCTION__ ,__LINE__, ## x)
 #else
 #define gprintk(x...) do { } while (0)

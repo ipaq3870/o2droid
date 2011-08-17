@@ -31,7 +31,7 @@
 #define I2C_DF_NOTIFY       0x01
 #define IRQ_COMPASS_INT IRQ_EINT(2) /* EINT(2) */
 
-//short gp2a_get_proximity_value(void){} //bss
+static int change_sign = 3; //bss for m910 froyo on omnia_II
 static struct i2c_client *this_client;
 
 struct ak8973b_data {
@@ -464,7 +464,7 @@ static void AKECS_DATA_Measure(void)
 	value[9]=mag_sensor[1];		/* mag_x */
 	value[10]=mag_sensor[2];	/* mag_y */
 	value[11]=mag_sensor[3];	/* mag_z */
-	//value[12]=gp2a_get_proximity_value();
+	value[12]=gp2a_get_proximity_value();
 
 	AKECS_Report_Value(value);
 }
@@ -604,6 +604,39 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 	gprintk("start\n");
 
 	switch (cmd) {
+#if 0 //bss to find the correct settings		
+		case 10:
+			change_sign = 0;
+			break;
+
+		case 11:
+			change_sign = 1;
+			break;
+
+		case 12:
+			change_sign = 2;
+			break;
+
+		case 13:
+			change_sign = 3;
+			break;
+
+		case 14:
+			change_sign = 4;
+			break;
+
+		case 15:
+			change_sign = 5;
+			break;
+
+		case 16:
+			change_sign = 6;
+			break;
+
+		case 17:
+			change_sign = 7;
+			break;
+#endif			
 		case ECS_IOCTL_READ:
 		case ECS_IOCTL_WRITE:
 			if (copy_from_user(&rwbuf, argp, sizeof(rwbuf)))
@@ -644,13 +677,22 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			if (rwbuf[0] < 1)
 				return -EINVAL;
 			ret = AKI2C_RxData(&rwbuf[1], rwbuf[0]);
+#if 1  //bss for m910 froyo on omnia_II
+
+			if ( change_sign & 1) rwbuf[2] *= -1;
+			if ( change_sign & 2) rwbuf[3] *= -1;
+			if ( change_sign & 4) rwbuf[4] *= -1;
+
+#endif 
+
+#if 0 //bss for i6500 eclair akmd2 on onmia_II
 			// for akmd, must revert and re-sign the x,y values: x=-y, y=x!!
 			{
 				char ch = rwbuf[2];
 				rwbuf[2] = -rwbuf[3];
 				rwbuf[3] = ch;
 			}
-		
+#endif		
 			for(i=0; i<rwbuf[0]; i++){
 				gprintk(" %02x", rwbuf[i+1]);
 			}
@@ -667,13 +709,22 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			gprintk("\n");
 			if (rwbuf[0] < 2)
 				return -EINVAL;
+
+#if 1  //bss for m910 froyo on omnia_II
+			if ( change_sign & 1) rwbuf[2] *= -1;
+			if ( change_sign & 2) rwbuf[3] *= -1;
+			if ( change_sign & 4) rwbuf[4] *= -1;
+
+#endif 
+
+#if 0 //bss for i6500 eclair akmd2 on onmia_II
 			if (rwbuf[0] == 4) {
 				// the calibratin feedback must be exchanged too  x=y, y=-x !!
 				char ch = -rwbuf[2];
 				rwbuf[2] = rwbuf[3];
 				rwbuf[3] = ch;
 			}			
-
+#endif 
 			ret = AKI2C_TxData(&rwbuf[1], rwbuf[0]);
 			gprintk(" ret = %d\n", ret);
 			if (ret < 0)

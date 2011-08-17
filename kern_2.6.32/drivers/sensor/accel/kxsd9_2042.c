@@ -13,6 +13,9 @@
 
 #include "kxsd9_2042.h"
 
+static int change_sign = 3;
+static int print_flag = 0;
+static int div_val = 12;
 static struct i2c_client *g_i2c_client;
 
 struct kxsd9_data {
@@ -95,30 +98,39 @@ static int kxsd9_i2c_read(char *buf_to_read, int length)
 		return 0;
 }
 
+int kxsd9_set_mode(unsigned char mode)
+{
+	char buf_write[2];
+	buf_write[0] = KXSD9_REG_CTRL_REGB;
+		
+	switch(mode)
+	{
+		case KXSD9_MODE_NORMAL:
+		case KXSD9_MODE_WAKE_UP:
+			buf_write[1] = REGB_VALUE_NORMAL;
+			break;
+		case KXSD9_MODE_SLEEP:
+			buf_write[1] = REGB_VALUE_STANDBY;
+			break;
+		default:
+			return -2;
+	}
+
+	return kxsd9_i2c_write(buf_write, 2);	
+}
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void kxsd9_early_suspend(struct early_suspend *handler)
 {
-	char buf_write[2];
-
-	// switch to low-power standby now
-	buf_write[0] = KXSD9_REG_CTRL_REGB;
-	buf_write[1] = REGB_VALUE_STANDBY;
-	
-	kxsd9_i2c_write(buf_write, 2);	
+	kxsd9_set_mode(KXSD9_MODE_SLEEP);
 
 	gprintk("kxsd9 suspend\n");
 }
 
 static void kxsd9_early_resume(struct early_suspend *handler)
 {
-	char buf_write[2];
-
-	// switch to normal operation now
-	buf_write[0] = KXSD9_REG_CTRL_REGB;
-	buf_write[1] = REGB_VALUE_NORMAL;
-	
-	kxsd9_i2c_write(buf_write, 2);	
-
+	kxsd9_set_mode(KXSD9_MODE_NORMAL);
+	msleep(3);
 	gprintk("ksxd9 resume\n");
 }
 #endif	/* CONFIG_HAS_EARLYSUSPEND */
@@ -163,14 +175,19 @@ static void kxsd9_read_accel(void)
 	y = kxsd9_get_valid_value(&buf_read[2]);
 	z = kxsd9_get_valid_value(&buf_read[4]);
 
-	acc_data.x = (x - 2080) / -3;
-	acc_data.y = (y - 2080) / -3;
-	acc_data.z = (z - 2080) / -3;
+	acc_data.x = (x - 2080) / div_val; 
+	acc_data.y = (y - 2080) / div_val;
+	acc_data.z = (z - 2080) / div_val;
+
+	if ( change_sign & 1) acc_data.x *= -1;
+	if ( change_sign & 2) acc_data.y *= -1;
+	if ( change_sign & 4) acc_data.z *= -1;
 
 
-//	printk("Read value [x=%d, y=%d, z=%d]\n", x, y, z);
-	gprintk("Read value [x=%d, y=%d, z=%d]\n", acc_data.x, acc_data.y, acc_data.z);
-
+	if ( print_flag ) {
+		printk("Read value_o [x=%d, y=%d, z=%d]\n", x, y, z);
+		printk("Read value   [x=%d, y=%d, z=%d]\n", acc_data.x, acc_data.y, acc_data.z);
+	}
 //	printk("============ END ============\n");
 }
 
@@ -193,14 +210,147 @@ static int bma150_release(struct inode *inode, struct file *file) {
 static int bma150_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-	
+	unsigned char data[3];
 	switch(cmd)
 	{
-		case BMA150_CALIBRATE:
-		case BMA150_SET_RANGE:
-		case BMA150_SET_BANDWIDTH:
+		case 10:
+			change_sign = 0;
 			break;
+
+		case 11:
+			change_sign = 1;
+			break;
+
+		case 12:
+			change_sign = 2;
+			break;
+
+		case 13:
+			change_sign = 3;
+			break;
+
+		case 14:
+			change_sign = 4;
+			break;
+
+		case 15:
+			change_sign = 5;
+			break;
+
+		case 16:
+			change_sign = 6;
+			break;
+
+		case 17:
+			change_sign = 7;
+			break;
+		case 30:
+			div_val = 0;
+			break;
+
+		case 31:
+			div_val = 1;
+			break;
+
+		case 32:
+			div_val = 2;
+			break;
+
+		case 33:
+			div_val = 3;
+			break;
+
+		case 34:
+			div_val = 4;
+			break;
+
+		case 35:
+			div_val = 5;
+			break;
+
+		case 36:
+			div_val = 6;
+			break;
+
+		case 37:
+			div_val = 7;
+			break;
+
+		case 38:
+			div_val = 8;
+			break;
+
+		case 39:
+			div_val = 9;
+			break;
+
+		case 40:
+			div_val = 10;
+			break;
+
+		case 41:
+			div_val = 11;
+			break;
+
+		case 42:
+			div_val = 12;
+			break;
+
+		case 43:
+			div_val = 13;
+			break;
+
+		case 44:
+			div_val = 14;
+			break;
+
+		case 45:
+			div_val = 15;
+			break;
+
+		case 46:
+			div_val = 16;
+			break;
+
+		case 20:
+			print_flag = 0;
+			break;
+
+		case 21:
+			print_flag = 0;
+			break;
+
+		case BMA150_SET_RANGE:
+			if(copy_from_user(data,(unsigned char*)arg,1)!=0)
+			{
+				printk("[KR3DM] copy_from_user error\n");
+				return -EFAULT;
+			}
+			//ret = kxsd9_set_range(*data);
+			printk("BMA150_SET_RANGE: %d\n", *data);
+			return ret;
+
 		case BMA150_SET_MODE:
+			if(copy_from_user(data,(unsigned char*)arg,1)!=0)
+			{
+				printk("[KR3DM] copy_from_user error\n");
+				return -EFAULT;
+			}
+			printk("BMA150_SET_MODE: %d\n", *data);
+			ret = kxsd9_set_mode(*data);
+			return ret;
+
+		case BMA150_SET_BANDWIDTH:
+			if(copy_from_user(data,(unsigned char*)arg,1)!=0)
+			{
+				printk("[KR3DM] copy_from_user error\n");
+				return -EFAULT;
+			}
+			//ret = kxsd9_set_bandwidth(*data);
+			printk("BMA150_SET_BANDWIDTH: %d\n", *data);
+			return ret;
+
+		case BMA150_CALIBRATE:
 			break;
 		case BMA150_READ_ACCEL_XYZ:
 			kxsd9_read_accel();
