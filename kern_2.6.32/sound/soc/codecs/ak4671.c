@@ -752,7 +752,7 @@ static int ak4671_set_dai_fmt(struct snd_soc_dai *codec_dai,
 
 static int ak4671_mute(struct snd_soc_dai *dai, int mute)
 {
-#if 0
+#if 1
 	P("mute %d", mute);
 	struct snd_soc_codec *codec = dai->codec;
 
