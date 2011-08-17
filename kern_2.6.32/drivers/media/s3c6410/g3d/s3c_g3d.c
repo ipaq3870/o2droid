@@ -1376,9 +1376,9 @@ int s3c_g3d_probe(struct platform_device *pdev)
 
 	DEBUG("s3c_g3d probe() called\n");
 
-#ifdef USE_G3D_DOMAIN_GATING
+//#ifdef USE_G3D_DOMAIN_GATING MARC!
 	DOMAIN_POWER_ON;
-#endif /* USE_G3D_DOMAIN_GATING */
+//#endif /* USE_G3D_DOMAIN_GATING */
 
 	g3d_clock = clk_get(&pdev->dev, "hclk_g3d");
 	if(g3d_clock == NULL) {
