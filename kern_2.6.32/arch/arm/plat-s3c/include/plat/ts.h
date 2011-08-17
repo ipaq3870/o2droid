@@ -11,7 +11,8 @@
 #ifndef __ASM_ARCH_TS_H
 #define __ASM_ARCH_TS_H __FILE__
 
-#ifdef CONFIG_S3C64XX_ADC
+//#ifdef CONFIG_S3C64XX_ADC
+#if 1   //bss adc.c removed because of wrong operation the s3c-ts.c provides the s3c_adc_get_adc_data() function
 enum s3c_adc_type {
 	ADC_TYPE_0,
 	ADC_TYPE_1,	/* S3C2416, S3C2450 */

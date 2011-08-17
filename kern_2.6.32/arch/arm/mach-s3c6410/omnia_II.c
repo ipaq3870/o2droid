@@ -221,7 +221,7 @@ struct platform_device sec_device_ts = {
 
 
 struct platform_device sec_device_battery = {
-        .name   = "saturn-battery",
+        .name   = "omnia-II-battery",
         .id             = -1,
 };
 
@@ -356,8 +356,8 @@ static void __init init_spi(void)
 static struct s3c6410_pmem_setting pmem_setting = {
         .pmem_start = RESERVED_PMEM_START,
         .pmem_size = RESERVED_PMEM,
-        .pmem_gpu1_start = GPU1_RESERVED_PMEM_START,
-        .pmem_gpu1_size = RESERVED_PMEM_GPU1,
+//        .pmem_gpu1_start = GPU1_RESERVED_PMEM_START,
+//        .pmem_gpu1_size = RESERVED_PMEM_GPU1,
         .pmem_render_start = RENDER_RESERVED_PMEM_START,
         .pmem_render_size = RESERVED_PMEM_RENDER,
         .pmem_stream_start = STREAM_RESERVED_PMEM_START,
@@ -368,8 +368,8 @@ static struct s3c6410_pmem_setting pmem_setting = {
         .pmem_picture_size = RESERVED_PMEM_PICTURE,
         .pmem_jpeg_start = JPEG_RESERVED_PMEM_START,
         .pmem_jpeg_size = RESERVED_PMEM_JPEG,
-        .pmem_skia_start = SKIA_RESERVED_PMEM_START,
-        .pmem_skia_size = RESERVED_PMEM_SKIA,
+//        .pmem_skia_start = SKIA_RESERVED_PMEM_START,
+//        .pmem_skia_size = RESERVED_PMEM_SKIA,
 };
 
 
@@ -585,9 +585,6 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 	&s3c_device_g3d,
 	&sec_device_dpram,
 	&sec_device_backlight,
-#ifdef CONFIG_S3C64XX_ADC
-	&s3c_device_adc,
-#endif
 	&s3c_device_rtc,
 #ifdef CONFIG_SND_S3C64XX_SOC_I2S
 	&s3c64xx_device_iis0,
@@ -606,7 +603,6 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 	&s3c64xx_device_spi1,
 };
 
-#ifdef CONFIG_S3C64XX_ADC
 static struct s3c_ts_mach_info s3c_ts_platform __initdata = {
 	.delay 			= 10000, //41237
 	.presc 			= 49,
@@ -614,14 +610,6 @@ static struct s3c_ts_mach_info s3c_ts_platform __initdata = {
 	.resol_bit 			= 12,
 	.s3c_adc_con		= ADC_TYPE_2,
 };
-
-static struct s3c_adc_mach_info s3c_adc_platform = {
-	/* s3c6410 support 12-bit resolution */
-	.delay	= 	10000,
-	.presc 	= 	99,
-	.resolution = 	12,
-};
-#endif
 
 static void __init omnia_II_map_io(void)
 {
@@ -649,10 +637,7 @@ static void __init omnia_II_machine_init(void)
 	s3c_i2c0_set_platdata(NULL);
 	s3c_i2c1_set_platdata(NULL);
 
-#ifdef CONFIG_S3C64XX_ADC
 	s3c_ts_set_platdata(&s3c_ts_platform);
-	s3c_adc_set_platdata(&s3c_adc_platform);
-#endif
 
 	init_spi();
 
@@ -902,10 +887,10 @@ static void check_pmic(void)
 		pr_info("%s: OTGI 1.2V (%d)\n", __func__, reg_buff);
 	}
 	if (Get_MAX8698_PM_REG(ELDO4, &reg_buff)) {
-		pr_info("%s: VLED 3.3V (%d)\n", __func__, reg_buff);
+		pr_info("%s: VTF 3.0V (%d)\n", __func__, reg_buff);
 	}
 	if (Get_MAX8698_PM_REG(ELDO5, &reg_buff)) {
-		pr_info("%s: VTF 3.0V (%d)\n", __func__, reg_buff);
+		pr_info("%s: VMMC 3.0V (%d)\n", __func__, reg_buff);
 		if (reg_buff)
 			Set_MAX8698_PM_REG(ELDO5, 0);
 	}
@@ -920,6 +905,23 @@ static void check_pmic(void)
 	}
 }
 
+static void print_gpios()
+{
+	printk("===============================\n");
+	printk("GPIO_PHONE_RST_N: %d\n", gpio_get_value(GPIO_PHONE_RST_N));
+	printk("GPIO_PHONE_ACTIVE: %d\n", gpio_get_value(GPIO_PHONE_ACTIVE));
+	printk("GPIO_PHONE_ON: %d\n", gpio_get_value(GPIO_PHONE_ON));
+	printk("GPIO_ONEDRAM_INT_N: %d\n", gpio_get_value(GPIO_ONEDRAM_INT_N));
+	printk("GPIO_VREG_MSMP_26V: %d\n", gpio_get_value(GPIO_VREG_MSMP_26V));
+
+	printk("GPIO_USIM_BOOT: %d\n", gpio_get_value(GPIO_USIM_BOOT));
+	printk("GPIO_FLM_SEL: %d\n", gpio_get_value(GPIO_FLM_SEL));
+
+	printk("GPIO_USB_SEL: %d\n", gpio_get_value(GPIO_USB_SEL));
+	printk("GPIO_PDA_ACTIVE: %d\n", gpio_get_value(GPIO_PDA_ACTIVE));
+	printk("GPIO_PM_INT_N: %d\n", gpio_get_value(GPIO_PM_INT_N));
+}
+
 void s3c_config_sleep_gpio(void)
 {	
 	int spcon_val;
@@ -927,6 +929,7 @@ void s3c_config_sleep_gpio(void)
 	check_pmic();
 	s3c_config_gpio_table(ARRAY_SIZE(omnia_II_sleep_gpio_table),
 	omnia_II_sleep_gpio_table);
+	print_gpios();
 
 	spcon_val = __raw_readl(S3C64XX_SPCON);
 	spcon_val = spcon_val & (~0xFFEC0000);
@@ -945,10 +948,11 @@ void s3c_config_wakeup_gpio(void)
 {
 	unsigned char reg_buff = 0;
 	if (Get_MAX8698_PM_REG(ELDO5, &reg_buff)) {
-		pr_info("%s: VTF 3.0V (%d)\n", __func__, reg_buff);
+		pr_info("%s: VMMC 3.0V (%d)\n", __func__, reg_buff);
 		if (!reg_buff)
 			Set_MAX8698_PM_REG(ELDO5, 1);
 	}
+	print_gpios();
 }
 EXPORT_SYMBOL(s3c_config_wakeup_gpio);
 
@@ -965,11 +969,13 @@ void s3c_config_wakeup_source(void)
 	 */
 	eint0pend_val= __raw_readl(S3C64XX_EINT0PEND);
 	eint0pend_val |= (0x1 << 25) | (0x1 << 22) | (0x1 << 19) |
-		(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
+		//bss (0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
+		(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
 	__raw_writel(eint0pend_val, S3C64XX_EINT0PEND);
 
 	eint0pend_val = (0x1 << 25) | (0x1 << 22) | (0x1 << 19) |
-		(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
+		//bss (0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
+		(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
 	__raw_writel(~eint0pend_val, S3C64XX_EINT0MASK);
 
 	__raw_writel((0x0FFFFFFF & ~eint0pend_val), S3C_EINT_MASK);	

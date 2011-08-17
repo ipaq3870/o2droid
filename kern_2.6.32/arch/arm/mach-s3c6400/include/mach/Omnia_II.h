@@ -29,15 +29,6 @@
 
 #define CONFIG_RESERVED_MEM_CMM_JPEG_MFC_POST_CAMERA
 
-/* Device Virtual Memory Map. */
-#define VOLANS_PA_DPRAM			(0x5D000000)
-#define VOLANS_VA_DPRAM			(0xF3000000)
-
-/* Target booting mode. */
-#define VOLANS_PA_BM			(0x50400000)
-#define VOLANS_BM_MAGIC			(0x12341211)
-
-
 /*
  * GPIO Configuration.
  */
@@ -272,8 +263,8 @@
 #define GPIO_CAM_3M_nSTBY_AF	(1)
 #define GPIO_VIB_EN             S3C64XX_GPL(4)
 #define GPIO_VIB_EN_AF          (1)
-#define GPIO_CP_USB_ON		S3C64XX_GPL(5)
-#define GPIO_CP_USB_ON_AF	(1)
+#define GPIO_USB_SEL		S3C64XX_GPL(5)
+#define GPIO_USB_SEL_AF		(1)
 #define GPIO_PHONE_ON		S3C64XX_GPL(6)
 #define GPIO_PHONE_ON_AF	(1)
 #define GPIO_USIM_BOOT          S3C64XX_GPL(7)
@@ -283,7 +274,7 @@
 #define GPIO_FM_INT             S3C64XX_GPL(10)
 #define GPIO_FM_INT_AF          (3)
 #define GPIO_TA_nCONNECTED      S3C64XX_GPL(11)
-#define GPIO_TA_nCONNECTED_AF   (0)
+#define GPIO_TA_nCONNECTED_AF   (3)
 #define GPIO_PS_VOUT		S3C64XX_GPL(12)
 #define GPIO_PS_VOUT_AF		(3)
 #define GPIO_ALS_EN		S3C64XX_GPL(13)
@@ -501,8 +492,6 @@
 #define GPIO_MIC_SEL_N	GPIO_MIC_SEL
 #define GPIO_MIC_SEL_N_AF	GPIO_MIC_SEL_AF
 
-#define GPIO_USB_SEL		GPIO_CP_USB_ON
-#define GPIO_USB_SEL_AF		GPIO_CP_USB_ON_AF
 #define GPIO_CP_BOOT_SEL	GPIO_FLM_SEL
 #define GPIO_CP_BOOT_SEL_AF	GGPIO_FLM_SEL_AF
 
