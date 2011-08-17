@@ -26,7 +26,7 @@
 #include <mach/param.h>
 
 #define PARAM_LEN		(32 * 2048)
-#define PARAM_FILE		"/efs/param.bin"
+#define PARAM_FILE		"/param.bin"
 
 struct file             *filp_param;
 mm_segment_t            old_fs;

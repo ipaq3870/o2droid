@@ -157,6 +157,7 @@ static int modem_wait_count = 0;
 
 static int sim_state = 0;
 
+static void dpram_print_gpios();
 static int dpram_phone_getstatus();
 #define DPRAM_VBASE dpram_base
 static struct tty_driver *dpram_tty_driver;
@@ -950,7 +951,7 @@ static void dpram_nvdata_load(struct _param_nv *param) {
 		}
 #endif 
 		if(*onedram_sem) {
-	   		WRITE_TO_DPRAM( 0xF80000 - 0x5000, param->addr, param->size);
+	   		WRITE_TO_DPRAM(DPRAM_NVDATA_BLOCK_OFFSET, param->addr, param->size);
 	 //          WRITE_TO_DPRAM( DPRAM_DGS_INFO_BLOCK_OFFSET, aDGSBuf, DPRAM_DGS_INFO_BLOCK_SIZE);   
 		}
 		else
@@ -966,7 +967,7 @@ static void dpram_phone_power_on(void)
 	if( phone_power_state ) {
 		printk("[OneDram] phone off (before phone power on).\n");
 		gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_LOW);
-//		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
 		interruptible_sleep_on_timeout(&dpram_wait, 100);	//	mdelay(500);
 		printk("[OneDram] phone rst low 500ms).\n");
 	}
@@ -976,13 +977,13 @@ static void dpram_phone_power_on(void)
 	gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_HIGH);
 	gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_HIGH);
 
-//	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
 	interruptible_sleep_on_timeout(&dpram_wait, 40);	//	mdelay(200);
 
 	gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_HIGH);
 	interruptible_sleep_on_timeout(&dpram_wait, 6);		//	mdelay(30);
 	
-//	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
+	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
 	interruptible_sleep_on_timeout(&dpram_wait, 100);	//	mdelay(500);
 
 	gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_LOW);
@@ -994,256 +995,190 @@ static void dpram_phone_power_on(void)
 
 static irqreturn_t dpram_irq_handler(int irq, void *dev_id);
 
-static void dpram_phone_boot_start(void) {
-	volatile unsigned int send_mail;
-	volatile unsigned int retranmit_send_mail;
-	volatile unsigned int recieved_mail;
-	volatile unsigned int retry_recieved_mail;
+static int dpram_phone_boot_start(void)
+{
+	unsigned int send_mail;
 
-	unsigned char *write_base = (unsigned char *)DPRAM_VBASE;
-
-	int retval = 0;
-	int i, j;
-
-return;
-	free_irq(IRQ_ONEDRAM_INT_N, NULL);
-		  
 	if(!dump_on)
-		send_mail = 0x45674567;
+	    send_mail = 0x45674567;
 	else
-		send_mail = 0x34563456;
+	    send_mail = 0x34563456;
 
-	retranmit_send_mail = 0x45674567;
-
-print_onedram_status();
-
-	*onedram_sem = 0x0;    
+    if(!dump_on)
+    {
+	    printk(" +---------------------------------------------+\n");
+	    printk(" |   FINISH IMAGE LOAD  &  START PHONE BOOT    |\n");
+	    printk(" +---------------------------------------------+\n");
+	    printk("  - Send to MailboxBA 0x%8x\n", send_mail);
+	*onedram_sem = 0x0;
 	*onedram_mailboxBA = send_mail;
+	    printk("  - Waiting 0xabcdabcd in MailboxAB ...");
+	    modem_wait_count = 0;
+	    while(1)
+		{
+		    if(boot_complete == 1) 
+		    {
+			    printk("Done.\n");
+			    printk(" +---------------------------------------------+\n");
+			    printk(" |             PHONE BOOT COMPLETE             |\n");
+			    printk(" +---------------------------------------------+\n");
+                         printk(" modem_wait_count : %d \n", modem_wait_count);
+			    //printk("  - MailboxAB: 0x%8x\n", *onedram_mailboxAB);
+			    //boot_complete = 1;
+			    break;
+		    }
+		    msleep(10);
+//		    if (*onedram_mailboxAB != 0x12341234) printk("  - MailboxAB: 0x%8x\n", *onedram_mailboxAB);
+		    printk(".");
+			if(++modem_wait_count > 1000) {
+				printk("Modem Boot Fail!!!");
+				return 0;
+			}	
+	    }
+		printk("\n");
+    }
+	return 0;
+}
+
+static int ReadPhoneFile(unsigned char *PsiBuffer, 	unsigned char *ImageBuffer, 
+						unsigned long Psi_Length, 	unsigned long Total_length )
+{
+	// open file for modem image
+	static char *modem_filename = "/sd/modem.bin"; 
+	int buf_size = 4096;
+	int dpram_offset=0x0;
+	int bytes_remained=0;
+	int ret = 0;
+	struct file *file_p=NULL;
+	int old_fs = get_fs();
+	loff_t offset_t = 0;
+	void *pCpData = NULL;
 	
-print_onedram_status();
-	i = 0; j = 0;
-		while(*onedram_checkBA == 0x1 && i++ < 100)
-			mdelay(10);
+	bytes_remained = Total_length - Psi_Length - MAX_DEFAULT_NV_SIZE;
 
-		if (i > 98) {
-			printk("Sanya DP exit 1: i: %d\n", i);
-			retval = request_irq(IRQ_ONEDRAM_INT_N, dpram_irq_handler, IRQF_DISABLED, "dpram_irq", NULL);
-			if (retval)
-				printk("DPRAM interrupt handler failed.\n");
-print_onedram_status();
-			return;
-		}
-		if(!dump_on) {
-			printk(" Waiting 0xabcdabcd in MailboxAB ... \n");
-				
-			while(1 && j++ < 100) {
-				i = 0;
-				while(gpio_get_value(GPIO_ONEDRAM_INT_N) && i++ < 1000 )
-				       mdelay(10);
-		      
-					recieved_mail = *onedram_mailboxAB;
-			
-				if (i > 98 || j > 98) {
-					printk("Sanya DP exit 2: i: %d, j: %d\n", i, j);
-					retval = request_irq(IRQ_ONEDRAM_INT_N, dpram_irq_handler, IRQF_DISABLED, "dpram_irq", NULL);
-					if (retval)
-						printk("DPRAM interrupt handler failed.\n");
-					return;
-print_onedram_status();
-				}
-print_onedram_status();
-				i = 0;
-				if(recieved_mail == 0xabcdabcd) {
-					  // printk("Done.\n");
-					  // printk(" +---------------------------------------------+\n");
-					  printk(" |             PHONE BOOT COMPLETE              |\n");
-					  // printk(" +---------------------------------------------+\n");
-					  printk(" - MailboxAB : 0x%8x\n", *onedram_mailboxAB);
-				    
-					  retval = request_irq(IRQ_ONEDRAM_INT_N, dpram_irq_handler, IRQF_DISABLED, "dpram_irq", NULL);
-					  if (retval)
-						    printk("DPRAM interrupt handler failed.\n");
-						
-					  mdelay(10);
-					  boot_complete = 1;
-					  break;
-				}
-				else if(recieved_mail == 0x7890abcd) {
-					int i;
-									  
-					/* Trying to read/write RAM */
-					printk("Recieved 0x7890abcd, Trying to read/write RAM.\n");  
-					if(*onedram_sem) {
-						for(i=255; i>=0; i--) {
-							*write_base = i;
-							write_base++;
-						}
-						//bss dpram_cp_dump(FIRST);
-						//bss while(1);
-					} 
-					else {
-						printk("Need SMP\n");
-					} 
-				}
-				else if(recieved_mail == 0x78907890) {
-					printk("Received 0x78907890, Re-Send 0x45674567\n");
-					*onedram_sem = 0x0;
-					*onedram_mailboxBA = retranmit_send_mail;
-				}
-				else {
-					mdelay(10);
-					retry_recieved_mail = *onedram_mailboxAB;
-					printk("retry_recieved_mail = 0x%x\n", retry_recieved_mail);
+	set_fs(KERNEL_DS);
 
-					if(retry_recieved_mail == 0xabcdabcd) {
-						retval = request_irq(IRQ_ONEDRAM_INT_N, dpram_irq_handler, IRQF_DISABLED, "dpram_irq", NULL);
-						if (retval)
-							printk("DPRAM interrupt handler failed.\n");
+	file_p = filp_open((const char*)modem_filename, O_RDONLY , 00644);
 
-						mdelay(10);
-						boot_complete = 1;
-						break;
-					}
-					else {
-						printk("Received Others, Re-Send 0x45674567\n");
-						*onedram_sem = 0x0;
-						*onedram_mailboxBA = retranmit_send_mail;
-					}
-				}
-			}
+	if (IS_ERR(file_p))
+	{
+	    printk("\n %s open failed(%d)\n",modem_filename, ERR_PTR(file_p));
+	    file_p = NULL;
+	    set_fs(old_fs);    
+	    return file_p;
+	}
+
+	pCpData = kmalloc(buf_size,GFP_KERNEL);
+	if (pCpData == NULL) {
+		printk("[%s]fail to allocate cp buffer for modem image\n",__func__);
+		return -1;
+	}
+	
+	// read modem image to onedram base
+
+	offset_t = file_p->f_op->llseek(file_p, MAX_DBL_IMG_SIZE, SEEK_SET);
+	while(bytes_remained > 0) {
+		if (bytes_remained < buf_size) {
+			ret = file_p->f_op->read(file_p, (void*)(pCpData), bytes_remained, &file_p->f_pos);
+			memcpy((void*)(dpram_base + dpram_offset), (void *)pCpData, bytes_remained);
+			break;
 		} else {
-		    // DUMP MODE
-			//PGH
-			preempt_enable();
-			old_fs = get_fs();
-			set_fs(KERNEL_DS);
-			filp_for_dump = filp_open("/data/dump_for_cp", O_CREAT|O_WRONLY, 0666);
-			if(IS_ERR(filp_for_dump))
-				printk("Can't creat /data/dump_for_cp file\n");
-			
+			ret = file_p->f_op->read(file_p, (void*)(pCpData), buf_size, &file_p->f_pos);
+			memcpy((void*)(dpram_base + dpram_offset), (void *)pCpData, buf_size);
+		}
+		bytes_remained = bytes_remained - buf_size;
+		dpram_offset = dpram_offset + buf_size;
+	}
 
-			// FIRST DATA
-		    printk("Waiting 1st Data");
-		    while(gpio_get_value(GPIO_ONEDRAM_INT_N))
-				printk(".");
-			printk("\n");
+#if 0		//print buf
+	int i;
 
-			if(*onedram_mailboxAB == 0x23452345)
-			{
-			    printk("GOT DATA\n");
+	printk("\n[MODEM image data : offset 0x100000]\n");
+	char * dataptr =(char*)(dpram_base + 0x100000);
+	for (i=0 ; i < 512 ; i++) {
+		printk("%02x  ",*(dataptr + i));
+		if ((i+1)%16 == 0) printk("\n");
+	}
+#endif
 
-				if(*onedram_sem)
-				{
-					dpram_cp_dump(FIRST);
+	printk("Sanya Phone image loaded\n");
+	if(pCpData)
+		kfree(pCpData);
+	
 
-					*onedram_mailboxBA = send_mail;
-			    *onedram_sem = 0x0;
-				}
-				else
-				{
-					printk("NEED SMP\n");
-					while(1);
-				}
-					
-			}
-			else
-			{
-			    printk("STRANGE\n");
-				while(1);
-			}
+	filp_close(file_p,NULL);
 
-		// SECOND DATA 
-			printk("Waiting 2nd Data");
-		    while(gpio_get_value(GPIO_ONEDRAM_INT_N))
-				printk(".");
-			printk("\n");
+	set_fs(old_fs); 
 
-			if(*onedram_mailboxAB == 0x23452345)
-			{
-			    printk("GOT DATA\n");
+	return 0;
+}
 
-				if(*onedram_sem)
-				{
-					dpram_cp_dump(SECOND);
+static void dpram_phone_image_load(void)
+{
 
-					*onedram_mailboxBA = send_mail;
-			    *onedram_sem = 0x0;
-				}
-				else
-				{
-					printk("NEED SMP\n");
-					while(1);
-				}
-					
-			}
-			else
-			{
-			    printk("STRANGE\n");
-				while(1);
-			}
+	gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_LOW);
+	gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_LOW);
 
-			// THIRD DATA 
-			printk("Waiting 3rd Data");
-		    while(gpio_get_value(GPIO_ONEDRAM_INT_N))
-				printk(".");
-			printk("\n");
+	int count=0;
 
-			if(*onedram_mailboxAB == 0x23452345)
-			{
-			    printk("GOT DATA\n");
-
-				if(*onedram_sem)
-				{
-					dpram_cp_dump(THIRD);
-				}
-				else
-				{
-					printk("NEED SMP\n");
-					while(1);
-				}
-					
-			}
-			else
-			{
-			    printk("STRANGE\n");
-				while(1);
-			}    
-			//PGH
-			filp_close(filp_for_dump, NULL);
-			set_fs(old_fs);
-			preempt_disable();
-
+	printk(" +---------------------------------------------+\n");
+	printk(" |   CHECK PSI DOWNLOAD  &  LOAD PHONE IMAGE   |\n");
+	printk(" +---------------------------------------------+\n");
+	printk("  - Waiting 0x12341234 in MailboxAB ...!");
+	while(1) {
+		if(*onedram_mailboxAB == 0x12341234)
+			break;
+		msleep(10);
+		printk(".");
+		count++;
+		if(count > 200)
+		{
+			printk("dpram_phone_image_load fail %d\n", count);
+			return -1;
 		}
 	}
+	printk("Done.\n");
 
-	static void dpram_phone_image_load(void)
+    if (!dump_on)
+    {
+	    if(*onedram_sem == 0x1)
+	 	    ReadPhoneFile(dbl_buf, dpram_base, MAX_DBL_IMG_SIZE, MAX_MODEM_IMG_SIZE);
+	    else
+		    printk("[OneDRAM] %s failed.. sem: %d\n", __func__, *onedram_sem);
+    }
+	else
 	{
+	    dprintk("CP DUMP MODE !!! \n");
+	}
+	return 0;
 
-		gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_LOW);
-		gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_LOW);
+}
+	
+static int dpram_phone_getstatus(void)
+{
+	return gpio_get_value(GPIO_PHONE_ACTIVE);
+}
+
+static void dpram_phone_reset(void)
+{
+    dprintk("[OneDRAM] Phone power Reset.\n");
+	if(*onedram_sem) {
+		dprintk("[OneDRAM} semaphore: %d\n", *onedram_sem);
+			*onedram_sem = 0x00;
 	}
 
-	static int dpram_phone_getstatus(void)
-	{
-		return gpio_get_value(GPIO_PHONE_ACTIVE);
-	}
+	dpram_print_gpios();
+	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+	mdelay(100);
+	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
+	dpram_print_gpios();
 
-	static void dpram_phone_reset(void)
-	{
-	    dprintk("[OneDRAM] Phone power Reset.\n");
-		if(*onedram_sem) {
-			dprintk("[OneDRAM} semaphore: %d\n", *onedram_sem);
-//			*onedram_sem = 0x00;
-		}
-//		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
-		mdelay(100);
-//		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
+	// Wait until phone is stable
+	mdelay(200);
+	boot_complete = 0;
+}
 
-		// Wait until phone is stable
-		mdelay(200);
-	}
-
-
+	
 static int dpram_phone_ramdump_on(void)
 {
 	const u16 rdump_flag1 = 0x554C;
@@ -1339,6 +1274,7 @@ static void dpram_dump_bs()
 	unsigned int	index, writelen;
 	struct file		*filp_dpram_dump;
 	char			buf_for_dump[2048]; //2KB
+	int 	length = (8192 - 1);
 	
 	if(*onedram_sem) {
 		dprintk("DPRAM Dump start!!!\n");
@@ -1349,7 +1285,7 @@ static void dpram_dump_bs()
 		if(IS_ERR(filp_dpram_dump))
 			printk("Can't creat /data/dump_for_dpram file\n");
 
-    	for (index = 0; index < 16; index ++)
+    	for (index = 0; index < length; index ++)
     	{
 	
 			memset(buf_for_dump, 0x0, 2048);
@@ -1369,6 +1305,23 @@ static void dpram_dump_bs()
 	}
 	else
 		dprintk("fail to get semaphore\n");
+}
+
+static void dpram_print_gpios()
+{
+	printk("===============================\n");
+	printk("GPIO_PHONE_RST_N: %d\n", gpio_get_value(GPIO_PHONE_RST_N));
+	printk("GPIO_PHONE_ACTIVE: %d\n", gpio_get_value(GPIO_PHONE_ACTIVE));
+	printk("GPIO_PHONE_ON: %d\n", gpio_get_value(GPIO_PHONE_ON));
+	printk("GPIO_ONEDRAM_INT_N: %d\n", gpio_get_value(GPIO_ONEDRAM_INT_N));
+	printk("GPIO_VREG_MSMP_26V: %d\n", gpio_get_value(GPIO_VREG_MSMP_26V));
+
+	printk("GPIO_USIM_BOOT: %d\n", gpio_get_value(GPIO_USIM_BOOT));
+	printk("GPIO_FLM_SEL: %d\n", gpio_get_value(GPIO_FLM_SEL));
+
+	printk("GPIO_USB_SEL: %d\n", gpio_get_value(GPIO_USB_SEL));
+	printk("GPIO_PDA_ACTIVE: %d\n", gpio_get_value(GPIO_PDA_ACTIVE));
+	printk("GPIO_PM_INT_N: %d\n", gpio_get_value(GPIO_PM_INT_N));
 }
 
 static void dpram_dump_mem()
@@ -1649,7 +1602,7 @@ static int dpram_tty_ioctl(struct tty_struct *tty, struct file *file,
 
 			dump_on = 0;
 			gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_LOW);
-boot_complete = 1; //bss
+//boot_complete = 1;  //bss
 			if(boot_complete) {
 				if(dpram_init_and_report() < 0) {
 					printk("  - Failed.. unexpected error when ipc transfer start.\n");
@@ -1672,6 +1625,7 @@ boot_complete = 1; //bss
 
 		case DPRAM_PHONEIMG_LOAD:
 			dpram_phone_image_load();
+
 			return 0;
 
 		case DPRAM_PHONE_MDUMP:
@@ -1700,7 +1654,8 @@ boot_complete = 1; //bss
 			return 0;
 
 		case DPRAM_PHONE_OFF:
-			dpram_dump_mem();
+			dpram_print_gpios();
+//			dpram_dump_mem();
 #if 0			
 			print_onedram_status();
  
@@ -1923,7 +1878,7 @@ static void cmd_error_display_handler(void)
 		if (irq_mask != 0xC9)
 		{
 			printk("[is not PHONE ERROR] ipc cmd : 0x%x\n", irq_mask);
-			return 0;
+			return;
 		}	
 		else
 		{	
@@ -2141,6 +2096,7 @@ static irqreturn_t dpram_irq_handler(int irq, void *dev_id)
 
 #endif
 
+	u32 mailboxAB = *onedram_mailboxAB;
 	irq_mask = *onedram_mailboxAB;
 	check_int_pin_level();
 
@@ -2163,6 +2119,18 @@ static irqreturn_t dpram_irq_handler(int irq, void *dev_id)
 	}
 #endif
 
+	
+	if(mailboxAB == 0xabcdabcd) 
+	{
+		printk("Recieve .0xabcdabcd\n");
+		boot_complete = 1;
+		return IRQ_HANDLED;
+	} else if (mailboxAB == 0x12341234)
+	{
+		printk("  - Received 0x12341234 from MailboxAB (DBL download OK).\n");
+		return IRQ_HANDLED;
+	}
+	
 
 	/* valid bit verification. @LDK@ */
 	if (!(irq_mask & INT_MASK_VALID)) {
@@ -2358,7 +2326,8 @@ static void init_hw_setting(void)
 	/* initial pin settings - dpram driver control */
 
 	s3c_gpio_cfgpin(GPIO_PHONE_ACTIVE, S3C_GPIO_SFN(GPIO_PHONE_ACTIVE_AF));
-	s3c_gpio_setpull(GPIO_PHONE_ACTIVE, S3C_GPIO_PULL_NONE); 
+//	s3c_gpio_setpull(GPIO_PHONE_ACTIVE, S3C_GPIO_PULL_NONE); 
+	s3c_gpio_setpull(GPIO_PHONE_ACTIVE, S3C_GPIO_PULL_DOWN); 
 	set_irq_type(IRQ_PHONE_ACTIVE, IRQ_TYPE_EDGE_BOTH);
 
 	s3c_gpio_cfgpin(GPIO_ONEDRAM_INT_N, S3C_GPIO_SFN(GPIO_ONEDRAM_INT_N_AF));
@@ -2396,7 +2365,7 @@ static void init_hw_setting(void)
 	if (gpio_is_valid(GPIO_PHONE_RST_N)) {
 		if (gpio_request(GPIO_PHONE_RST_N, S3C_GPIO_LAVEL(GPIO_PHONE_RST_N)))
 			printk(KERN_ERR "Filed to request GPIO_PHONE_RST_N!\n");
-//		gpio_direction_output(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+		gpio_direction_output(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
 	}
 	s3c_gpio_setpull(GPIO_PHONE_RST_N, S3C_GPIO_PULL_NONE); 
 
@@ -2472,13 +2441,13 @@ static void check_miss_interrupt(void)
 
 static int dpram_suspend(struct platform_device *dev, pm_message_t state)
 {
-	gpio_set_value(GPIO_PDA_ACTIVE, GPIO_LEVEL_LOW);
+//	gpio_set_value(GPIO_PDA_ACTIVE, GPIO_LEVEL_LOW);
 	return 0;
 }
 
 static int dpram_resume(struct platform_device *dev)
 {
-	gpio_set_value(GPIO_PDA_ACTIVE, GPIO_LEVEL_HIGH);
+//	gpio_set_value(GPIO_PDA_ACTIVE, GPIO_LEVEL_HIGH);
 	check_miss_interrupt();
 	return 0;
 }
@@ -2508,7 +2477,7 @@ static int __devinit dpram_probe(struct platform_device *dev)
 #endif /* _ENABLE_ERROR_DEVICE */
 
 	/* @LDK@ H/W setting */
-//	init_hw_setting();
+	init_hw_setting();
 
 	dpram_shared_bank_remap();
 

@@ -1,17 +1,10 @@
-#subdir-y += fm_si4709
-subdir-y += vibetonz
-subdir-y += rotator
-subdir-y += mfc
-subdir-y += jpeg
-subdir-y += g3d 
-subdir-y += g2d 
-subdir-y += cmm 
-subdir-y += pp
+subdir-y += fm_si4709
 subdir-y += rotator
 subdir-y += camera
 subdir-y += dpram
 subdir-y += multipdp
 subdir-y += param
+subdir-y += vibetonz
 
 SUBDIRS := $(subdir-y)
 

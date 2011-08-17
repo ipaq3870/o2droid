@@ -1,21 +1,4 @@
-/* fm_si4709/Si4709_i2c_drv.c
- *
- * Copyright (c) 2008 Samsung Electronics
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
+
 #include <linux/kernel.h>
 #include <linux/i2c.h>
 
@@ -31,54 +14,21 @@ static int Si4709_probe (struct i2c_client *);
 static int Si4709_remove(struct i2c_client *);
 static int Si4709_suspend(struct i2c_client *, pm_message_t mesg);
 static int Si4709_resume(struct i2c_client *);
-static int si4709_i2c_probe(struct i2c_adapter *, int, int);
 
+static struct i2c_client *Si4709_i2c_client;
+
+
+struct si4709_data {
+	struct i2c_client		*client;
+};
 
 /*I2C Setting*/
 #define SI4709_I2C_ADDRESS      0x20
 
-static unsigned short Si4709_normal_i2c[] = { I2C_CLIENT_END };
-static unsigned short Si4709_ignore[] = { SI4709_I2C_ADDRESS >> 1, I2C_CLIENT_END };
-static unsigned short Si4709_i2c_probe[] = {5, SI4709_I2C_ADDRESS >> 1, I2C_CLIENT_END };
- 
-//static struct i2c_client Si4709_i2c_client;
-static struct i2c_driver Si4709_i2c_driver;
 
-static struct i2c_client_address_data Si4709_addr_data = {
-	.normal_i2c = Si4709_normal_i2c,
-	.ignore     = Si4709_ignore,
-	.probe      = Si4709_i2c_probe,
-};
-
-static int Si4709_i2c_attach(struct i2c_adapter *adap)
-{
-	return i2c_probe(adap, &Si4709_addr_data, si4709_i2c_probe);
-}
-
-static int Si4709_i2c_detach(struct i2c_client *client)
-{
-	i2c_detach_client(client);
-	Si4709_remove(client);
-
-	return 0;
-}
-
-static struct i2c_driver Si4709_i2c_driver =
-{
-    .driver = {
-        .name = "Si4709_driver",
-    },
-	
-	.attach_adapter = &Si4709_i2c_attach,
-	.detach_client =  &Si4709_i2c_detach,
-
-    .suspend = &Si4709_suspend,
-    .resume = &Si4709_resume,
-};
-
-static struct i2c_client Si4709_i2c_client = {
-    .name =   "Si4709",
-	.driver = &Si4709_i2c_driver,
+static const struct i2c_device_id si4709_id[] = {
+	{"Si4709", 0},
+	{}
 };
 
 static int Si4709_probe (struct i2c_client *client)
@@ -100,24 +50,6 @@ static int Si4709_probe (struct i2c_client *client)
     return ret;
 }
 
-static int si4709_i2c_probe(struct i2c_adapter *adapter, int address, int kind)
-{
-	int err = 0;         
-
-	printk("----- %s %d\n", __func__, __LINE__);
-
-	Si4709_i2c_client.addr = address; 
-	Si4709_i2c_client.adapter = adapter;
-	Si4709_i2c_client.driver = &Si4709_i2c_driver;
-
-	if ((err = i2c_attach_client(&Si4709_i2c_client)))
-		return err;
-
-	Si4709_probe(&Si4709_i2c_client);
-
-	return 0;
-}
-
 static int Si4709_remove(struct i2c_client *client)
 {
     int ret = 0;
@@ -136,6 +68,68 @@ static int Si4709_remove(struct i2c_client *client)
 
     return ret;
 }
+
+static int si4709_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+{
+	int err = 0;         
+	struct si4709_data *si4709_dev;
+
+	debug("----- %s %d\n", __func__, __LINE__);
+
+	si4709_dev = kzalloc(sizeof(struct si4709_data), GFP_KERNEL);
+	
+	if(!si4709_dev)
+	{
+		err = -ENOMEM;
+		return err;
+	}
+
+	Si4709_i2c_client = client;
+	i2c_set_clientdata(client, si4709_dev);
+	
+	if(Si4709_i2c_client == NULL)
+	{
+        error("Si4709 i2c_client is NULL");
+		return -ENODEV;
+	}
+	
+	Si4709_probe(Si4709_i2c_client);
+
+	return 0;
+}
+
+static int __exit si4709_i2c_remove(struct i2c_client *client)
+{
+	int err;
+
+	struct si4709_data *si4709_dev = i2c_get_clientdata(client);
+
+	printk("----- %s %d\n", __func__, __LINE__);
+
+	Si4709_remove(Si4709_i2c_client);
+	kfree(si4709_dev);
+	kfree(client); 
+	si4709_dev = NULL;	
+	Si4709_i2c_client = NULL;
+	
+	return 0;
+}
+
+
+MODULE_DEVICE_TABLE(i2c, si4709_id);
+
+static struct i2c_driver Si4709_i2c_driver =
+{
+    .driver = {
+		.owner = THIS_MODULE,
+        .name = "Si4709",
+    },
+	.id_table = si4709_id,
+	.probe = si4709_i2c_probe,
+	.remove = __devexit_p(si4709_i2c_remove),
+    .suspend = Si4709_suspend,
+    .resume = Si4709_resume,
+};
 
 static int Si4709_suspend(struct i2c_client *client, pm_message_t mesg)
 {
