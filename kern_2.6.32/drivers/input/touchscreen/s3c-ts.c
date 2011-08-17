@@ -68,6 +68,7 @@
 #define ANDROID_TS_RESOLUTION_X  480
 #define ANDROID_TS_RESOLUTION_Y  800 //CHECK
 
+static int prev_val[9];	
 unsigned long xtemp, ytemp;
 unsigned long x, y; 
 static int pointercal[7] = { 20348, -207, -26813464, 369, -26067, 78543672, 65536 };
@@ -159,7 +160,20 @@ unsigned int get_s3c_adc_value(unsigned int s3c_adc_port)
 
         return adc_return;
 }
-EXPORT_SYMBOL(get_s3c_adc_value);
+
+int s3c_adc_get_adc_data(int channel)
+{	
+	int adc_val;
+
+	if ((adc_val = get_s3c_adc_value(channel)) == 0) 
+		return prev_val[channel];
+	else {
+		prev_val[channel] = adc_val;
+		return adc_val;
+	}	
+}
+EXPORT_SYMBOL(s3c_adc_get_adc_data);
+
 
 static void touch_timer_fire(unsigned long data)
 {
