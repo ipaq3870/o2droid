@@ -119,8 +119,8 @@ typedef enum s3c_adc_channel {
  */
 const unsigned int gpio_ta_connected	= GPIO_TA_CONNECTED_N;
 const unsigned int gpio_ta_connected_af	= GPIO_TA_CONNECTED_N_AF;
-const unsigned int gpio_chg_ing		= GPIO_TA_nCHG;
-const unsigned int gpio_chg_ing_af	= GPIO_TA_nCHG_AF;
+const unsigned int gpio_chg_ing		= GPIO_CHG_ING_N;
+const unsigned int gpio_chg_ing_af	= GPIO_CHG_ING_N_AF;
 const unsigned int gpio_chg_en		= GPIO_CHG_EN;
 const unsigned int gpio_chg_en_af	= GPIO_CHG_EN_AF;
 
