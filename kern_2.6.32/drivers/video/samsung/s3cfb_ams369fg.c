@@ -102,7 +102,6 @@ typedef enum {
 extern void s3cfb_enable_clock_power(void);
 extern int s3cfb_is_clock_on(void);
 extern int lcd_late_resume;
-//extern void s3c_bat_set_compensation_for_drv(int mode,int offset); *FIXME*
 
 
 void lcd_reset(void)
@@ -110,16 +109,6 @@ void lcd_reset(void)
 	gpio_set_value(GPIO_LCD_RST_N, GPIO_LEVEL_LOW);
 };
 EXPORT_SYMBOL(lcd_reset);
-
-s3cfb_stop_progress(void)
-{
-};
-s3cfb_display_logo(void)
-{
-};
-s3cfb_start_progress(void)
-{
-};
 
 int lcd_power = OFF;
 EXPORT_SYMBOL(lcd_power);
@@ -144,10 +133,6 @@ int lcd_gamma_present = 0;
 
 static s32 ams320fs01_backlight_brightness = AMS320FS01_DEFAULT_BACKLIGHT_BRIGHTNESS;
 static DEFINE_MUTEX(ams320fs01_backlight_lock);
-static s32 ams320fs01_backlight_off;
-static u8 ams320fs01_backlight_last_level = 33;
-
-
 
 
 static void s3cfb_set_fimd_info(void)
@@ -457,11 +442,13 @@ static void setting_table_write(struct setting_table *table)
 
 void lcd_gamma_change(int gamma_status)
 {
+	int i;
+
 	if(old_level < 1)
 		return;
 		
 	//printk("[S3C LCD] %s : level %d, gamma_status %d\n", __FUNCTION__, (old_level-1), gamma_status);
-	int i;
+
 
 	if(gamma_status == LCD_IDLE)
 	{
@@ -489,6 +476,7 @@ EXPORT_SYMBOL(lcd_gamma_change);
 
 void lcd_power_ctrl(s32 value)
 {
+
 	//printk("lcd_power_ctrl value=%x \n", value);
 	s32 i;	
 	u8 data;
@@ -508,12 +496,7 @@ void lcd_power_ctrl(s32 value)
 		//printk("Lcd power on sequence start\n");
 
 		/* Power On Sequence */
-			//s3c_bat_set_compensation_for_drv(1,OFFSET_LCD_ON); *FIXME*
 
-			/* Reset Asseert */
-			gpio_set_value(GPIO_LCD_RST_N, GPIO_LEVEL_LOW);
-			//gpio_set_value(GPIO_LCD_RST_N, GPIO_LEVEL_HIGH);
-			msleep(20);
 	
 			/* Power Enable */
 			if(pmic_read(MAX8698_ID, ONOFF2, &data, 1) != PMIC_PASS) {
@@ -534,8 +517,10 @@ void lcd_power_ctrl(s32 value)
 				printk(KERN_ERR "LCD POWER CONTROL can't write the command to PMIC\n");
 			//return -1;
 			}
-
-
+			gpio_set_value(GPIO_LCD_RST_N, GPIO_LEVEL_HIGH);
+			udelay(50);
+			gpio_set_value(GPIO_LCD_RST_N, GPIO_LEVEL_LOW);
+			udelay(50);
 			gpio_set_value(GPIO_LCD_RST_N, GPIO_LEVEL_HIGH);
 
 			msleep(20);		
@@ -576,8 +561,6 @@ void lcd_power_ctrl(s32 value)
 			//printk("Lcd power off sequence start\n");
 			/* Power Off Sequence */
 
-			//s3c_bat_set_compensation_for_drv(0,OFFSET_LCD_ON); *FIXME*
-
 			for (i = 0; i < DISPLAY_OFF_SETTINGS; i++)
 				setting_table_write(&display_off_setting_table[i]);	
 			
@@ -605,17 +588,16 @@ void lcd_power_ctrl(s32 value)
 			msleep(1);
 			printk("Lcd power off sequence end\n");
 		}
-	
+
 		lcd_power = value;
-	}
+}
 
 
 void backlight_ctrl(s32 value)
 {
+
 	//printk("backlight_ctrl is called VALUE = %x \n", value);
 	s32 i, level;
-	u8 data;
-	int param_lcd_level = value;
 
 	value &= BACKLIGHT_LEVEL_VALUE;
 
@@ -672,7 +654,8 @@ void backlight_ctrl(s32 value)
 	else {
 		//printk("lcd_power_ctrl(OFF) \n");
 		old_level = level;
-		lcd_power_ctrl(OFF);			
+		lcd_power_ctrl(OFF);	
+		
 	}
 }
 
@@ -692,14 +675,16 @@ void backlight_level_ctrl(s32 value)
 	}
 
 
-	//if (backlight_power)
+	if (backlight_power)
 	backlight_ctrl(value);	
 	
-	backlight_level = value;	
+	backlight_level = value;
+	
 }
 
 void backlight_power_ctrl(s32 value)
 {
+
 	//printk("backlight_power_ctrl VALUE: %x \n", value);
 	if ((value < OFF) ||	/* Invalid Value */
 		(value > ON))
@@ -754,7 +739,6 @@ static int ams320fs01_ioctl(struct inode *inode, struct file *filp,
 	                        unsigned int ioctl_cmd,  unsigned long arg)
 {
 	int ret = 0;
-	void __user *argp = (void __user *)arg;   
 
 	if( _IOC_TYPE(ioctl_cmd) != AMS320FS01_IOC_MAGIC )
 	{

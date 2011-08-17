@@ -515,7 +515,6 @@ extern int s3cfb_spi_gpio_free(int ch);
 extern void s3cfb_pre_init(void);
 extern void s3cfb_display_logo(int win_num);
 extern void s3cfb_start_progress(void);
-extern void s3cfb_stop_progress(void);
 extern void s3cfb_set_lcd_power(int to);
 extern void s3cfb_set_backlight_power(int to);
 extern void s3cfb_set_backlight_level(int to);

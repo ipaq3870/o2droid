@@ -1369,9 +1369,6 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
 	return 0;
 }
 
-#ifdef CONFIG_FB_S3C
-extern void s3cfb_stop_progress(void);
-#endif
 
 static int
 fb_open(struct inode *inode, struct file *file)
@@ -1405,9 +1402,7 @@ __releases(&info->lock)
 	if (info->fbdefio)
 		fb_deferred_io_open(info, inode, file);
 #endif
-#ifdef CONFIG_FB_S3C
-	s3cfb_stop_progress();
-#endif
+
 out:
 	mutex_unlock(&info->lock);
 	return res;

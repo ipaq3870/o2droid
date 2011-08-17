@@ -1110,9 +1110,6 @@ int s3cfb_init_registers(s3c_fb_info_t *fbi)
 	}	
 	#endif
 
-#if defined(S3C_FB_DISPLAY_LOGO)
-		s3cfb_display_logo(win_num);
-#endif	
 
 	writel(video_phy_temp_f1, S3C_VIDW00ADD0B0 + (0x08 * win_num));
 	writel(S3C_VIDWxxADD1_VBASEL_F((unsigned long) video_phy_temp_f1 + (page_width + offset) * (var->yres)), S3C_VIDW00ADD1B0 + (0x08 * win_num));
@@ -1168,9 +1165,6 @@ int s3cfb_init_registers(s3c_fb_info_t *fbi)
 			writel(s3c_fimd.wpalcon,  S3C_WPALCON);
 
 			s3cfb_onoff_win(fbi, OFF);
-#if defined(S3C_FB_DISPLAY_LOGO)
-			s3cfb_start_progress();
-#endif
 			break;
 
 		case 3:
@@ -1939,7 +1933,7 @@ static int s3cfb_suspend_sub(s3c_fb_info_t *fbi)
 
 
 #ifdef USE_LCD_DOMAIN_GATING
-     // s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_LCD);
+      s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_LP_MODE, S3C64XX_LCD);
 #endif /* USE_LCD_DOMAIN_GATING */
 
 
@@ -1952,10 +1946,10 @@ static int s3cfb_resume_sub(s3c_fb_info_t *fbi)
 
 #ifdef USE_LCD_DOMAIN_GATING
         s3c_set_normal_cfg(S3C64XX_DOMAIN_F, S3C64XX_ACTIVE_MODE, S3C64XX_LCD);
-//        if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_F)) {
-//               printk(KERN_ERR "[%s] Domain F is not ready\n", __func__);
-//                return -1;
-//        }
+       if(s3c_wait_blk_pwr_ready(S3C64XX_BLK_F)) {
+               printk(KERN_ERR "[%s] Domain F is not ready\n", __func__);
+               return -1;
+        }
 #endif /* USE_LCD_DOMAIN_GATING */
 
         clk_enable(fbi->clk);
