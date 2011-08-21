@@ -563,10 +563,10 @@ static void vnet_defer_xmit(struct work_struct *data)
 	}
 
 	dev_kfree_skb_any(skb);
+	mutex_unlock(&pdp_lock);
+	vnet_start_xmit_flag = 0; 
 	netif_wake_queue(net);
 
-	vnet_start_xmit_flag = 0; 
-	mutex_unlock(&pdp_lock);
     
    DPRINTK(2, "END\n");
 }
