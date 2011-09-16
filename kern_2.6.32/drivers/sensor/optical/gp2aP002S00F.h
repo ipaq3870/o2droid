@@ -1,7 +1,7 @@
 #ifndef __GP2A_H__
 #define __GP2A_H__
 
-#define IRQ_GP2A_INT IRQ_EINT(20)  /*s3c64xx int number */
+#define IRQ_GP2A_INT	IRQ_EINT(20)  /*s3c64xx int number */
 #define I2C_DF_NOTIFY	0x01 /* for i2c */
 #define GP2A_ADDR	0x88 /* slave addr for i2c */
 
@@ -17,10 +17,10 @@
 #define OFF	0
 
 /* IOCTL for proximity sensor */
-#define SHARP_GP2AP_IOC_MAGIC   'C'                                 
-#define SHARP_GP2AP_OPEN    _IO(SHARP_GP2AP_IOC_MAGIC,1)            
-#define SHARP_GP2AP_CLOSE   _IO(SHARP_GP2AP_IOC_MAGIC,2)      
-#define BSS_PRINT_PROX_VALUE   _IO(SHARP_GP2AP_IOC_MAGIC,3)      
+#define SHARP_GP2AP_IOC_MAGIC		'C'                                 
+#define SHARP_GP2AP_IOCTL_GET_ENABLED	_IOR(SHARP_GP2AP_IOC_MAGIC, 0x1, int)            
+#define SHARP_GP2AP_IOCTL_ENABLE	_IOW(SHARP_GP2AP_IOC_MAGIC, 0x2, int)            
+#define SHARP_GP2AP_PRINT_PROX_VALUE	_IO(SHARP_GP2AP_IOC_MAGIC, 0x3)      
 
 /* input device for proximity sensor */
 #define USE_INPUT_DEVICE 	1

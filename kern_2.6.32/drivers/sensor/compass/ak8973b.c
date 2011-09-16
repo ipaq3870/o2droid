@@ -31,6 +31,7 @@
 #define I2C_DF_NOTIFY       0x01
 #define IRQ_COMPASS_INT IRQ_EINT(2) /* EINT(2) */
 
+static int swap = 0; 
 static int change_sign = 3; //bss for m910 froyo on omnia_II
 static struct i2c_client *this_client;
 
@@ -118,16 +119,6 @@ static struct i2c_driver ak8973b_i2c_driver = {
 
 static char ak_e2prom_data[3];
 
-void report_value_for_prx(int value)
-{
-		
-	struct ak8973b_data *data = i2c_get_clientdata(this_client);
-	printk("[AK8973] Proximity = %d\n", value);
-	input_report_abs(data->input_dev, ABS_DISTANCE,value );
-	input_sync(data->input_dev);
-
-}
-
 static int AKI2C_RxData(char *rxData, int length)
 {
 	struct i2c_msg msgs[] = {
@@ -201,13 +192,13 @@ static void AKECS_Report_Value(short *rbuf)
 {
 	struct ak8973b_data *data = i2c_get_clientdata(this_client);
 	#if 0
-	gprintk("Orientaion: yaw = %d, pitch = %d, roll = %d\n", rbuf[0],
+	printk("Orientaion: yaw = %d, pitch = %d, roll = %d\n", rbuf[0],
 			rbuf[1], rbuf[2]);
-	gprintk("tmp = %d, m_stat= %d, g_stat=%d\n", rbuf[3],
+	printk("tmp = %d, m_stat= %d, g_stat=%d\n", rbuf[3],
 			rbuf[4], rbuf[5]);
-	gprintk("Acceleration:   x = %d LSB, y = %d LSB, z = %d LSB\n",
+	printk("Acceleration:   x = %d LSB, y = %d LSB, z = %d LSB\n",
 			rbuf[6], rbuf[7], rbuf[8]);
-	gprintk("Magnetic:   x = %d LSB, y = %d LSB, z = %d LSB\n\n",
+	printk("Magnetic:   x = %d LSB, y = %d LSB, z = %d LSB\n\n",
 			rbuf[9], rbuf[10], rbuf[11]);
 	#endif
 	/*if flag is set, execute report */
@@ -238,12 +229,12 @@ static void AKECS_Report_Value(short *rbuf)
 		input_report_abs(data->input_dev, ABS_BRAKE, rbuf[11]);
 	}
 	/* Report proximity information */
-	if (atomic_read(&p_flag)) {
+/*	if (atomic_read(&p_flag)) {
 		rbuf[12]=gp2a_get_proximity_value();
 		gprintk("Proximity = %d\n", rbuf[12]);
 		input_report_abs(data->input_dev, ABS_DISTANCE, rbuf[12]);
 	}
-	
+*/	
 	input_sync(data->input_dev);
 }
 
@@ -464,7 +455,8 @@ static void AKECS_DATA_Measure(void)
 	value[9]=mag_sensor[1];		/* mag_x */
 	value[10]=mag_sensor[2];	/* mag_y */
 	value[11]=mag_sensor[3];	/* mag_z */
-	value[12]=gp2a_get_proximity_value();
+	//value[12]=gp2a_get_proximity_value();
+	value[12]=0;
 
 	AKECS_Report_Value(value);
 }
@@ -604,7 +596,7 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 	gprintk("start\n");
 
 	switch (cmd) {
-#if 0 //bss to find the correct settings		
+#if 1 //bss to find the correct settings		
 		case 10:
 			change_sign = 0;
 			break;
@@ -635,6 +627,22 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 
 		case 17:
 			change_sign = 7;
+			break;
+
+		case 20:
+			swap = 0;
+			break;
+
+		case 21:
+			swap = 1;
+			break;
+
+		case 22:
+			swap = 2;
+			break;
+
+		case 23:
+			swap = 3;
 			break;
 #endif			
 		case ECS_IOCTL_READ:
@@ -678,11 +686,31 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 				return -EINVAL;
 			ret = AKI2C_RxData(&rwbuf[1], rwbuf[0]);
 #if 1  //bss for m910 froyo on omnia_II
+#define X (2)			
+#define Y (3)			
+#define Z (4)			
 
-			if ( change_sign & 1) rwbuf[2] *= -1;
-			if ( change_sign & 2) rwbuf[3] *= -1;
-			if ( change_sign & 4) rwbuf[4] *= -1;
+			if ( change_sign & 1) rwbuf[X] *= -1;
+			if ( change_sign & 2) rwbuf[Y] *= -1;
+			if ( change_sign & 4) rwbuf[Z] *= -1;
 
+			if (swap == 1) { // X <-> Y
+				char ch = rwbuf[X];
+				rwbuf[X] = rwbuf[Y];
+				rwbuf[Y] = ch;
+			}
+
+			if (swap == 2) { // X <-> Z
+				char ch = rwbuf[X];
+				rwbuf[X] = rwbuf[Z];
+				rwbuf[Z] = ch;
+			}
+
+			if (swap == 3) { // Y <-> Z
+				char ch = rwbuf[Y];
+				rwbuf[Y] = rwbuf[Z];
+				rwbuf[Z] = ch;
+			}
 #endif 
 
 #if 0 //bss for i6500 eclair akmd2 on onmia_II
@@ -715,6 +743,23 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			if ( change_sign & 2) rwbuf[3] *= -1;
 			if ( change_sign & 4) rwbuf[4] *= -1;
 
+			if (swap == 1) { // X <-> Y
+				char ch = rwbuf[X];
+				rwbuf[X] = rwbuf[Y];
+				rwbuf[Y] = ch;
+			}
+
+			if (swap == 2) { // X <-> Z
+				char ch = rwbuf[X];
+				rwbuf[X] = rwbuf[Z];
+				rwbuf[Z] = ch;
+			}
+
+			if (swap == 3) { // Y <-> Z
+				char ch = rwbuf[Y];
+				rwbuf[Y] = rwbuf[Z];
+				rwbuf[Z] = ch;
+			}
 #endif 
 
 #if 0 //bss for i6500 eclair akmd2 on onmia_II
@@ -941,7 +986,7 @@ static int __devinit i2c_ak8973b_probe(struct i2c_client *client, const struct i
 	/* z-axis of raw magnetic vector */
 	input_set_abs_params(akm->input_dev, ABS_BRAKE, -2048, 2032, 0, 0);
 	/* proximity sensor */	
-	input_set_abs_params(akm->input_dev, ABS_DISTANCE, -3, 3, 0, 0);
+//	input_set_abs_params(akm->input_dev, ABS_DISTANCE, -3, 3, 0, 0);
 	
 	akm->input_dev->name = "compass";
 

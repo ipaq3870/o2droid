@@ -19,6 +19,7 @@
 #include <mach/hardware.h>
 #include <plat/gpio-cfg.h>
 #include <plat/regs-gpio.h>
+#include <asm/uaccess.h>
 
 #include <linux/input.h>
 #include <linux/workqueue.h>
@@ -35,11 +36,10 @@
 
 /* global var */
 static struct i2c_client *opt_i2c_client = NULL;
+static struct gp2a_data *gp2a;
 
 static bool proximity_enable = OFF;
-
 static short proximity_value = 0;
-
 
 static struct file_operations proximity_fops = {
 	.owner  = THIS_MODULE,
@@ -136,7 +136,6 @@ EXPORT_SYMBOL(gp2a_get_proximity_value);
  *                when INT signal is occured , it gets value from VO register.   
  */
 void gp2a_work_func_prox(struct work_struct *work) {
-	struct gp2a_data *gp2a = container_of(work, struct gp2a_data, work_prox);
 	
 	unsigned char value;
 	unsigned char vout = 0;
@@ -248,7 +247,7 @@ void gp2a_chip_init(void) {
 	set_irq_type(IRQ_GP2A_INT, IRQ_TYPE_EDGE_FALLING);
 }
 
-void gp2a_on(struct gp2a_data *gp2a) {
+void gp2a_on(void) {
 	int i;
 	if(proximity_enable == OFF) {
 		gprintk("gp2a power on\n");
@@ -269,7 +268,7 @@ void gp2a_on(struct gp2a_data *gp2a) {
 	}
 }
 
-void gp2a_off(struct gp2a_data *gp2a) {
+void gp2a_off(void) {
 	gprintk("gp2a_off\n");
 	if(proximity_enable == ON) {
 		gprintk("disable irq for proximity \n");
@@ -280,7 +279,6 @@ void gp2a_off(struct gp2a_data *gp2a) {
 }
 
 static int gp2a_opt_probe( struct platform_device* pdev ) {
-	struct gp2a_data *gp2a;
 	int irq;
 	int i;
 	int ret;
@@ -351,9 +349,6 @@ static int gp2a_opt_probe( struct platform_device* pdev ) {
 
 	gprintk("INT Settings complete\n");
 
-	/* set platdata */
-	platform_set_drvdata(pdev, gp2a);
-	i2c_set_clientdata(opt_i2c_client, gp2a);	
 	/* GP2A Regs INIT SETTINGS */
 	for(i = 1;i < 5;i++) {
 		opt_i2c_write((u8)(i), gp2a_original_image[i]);
@@ -363,13 +358,12 @@ static int gp2a_opt_probe( struct platform_device* pdev ) {
 
 	/* maintain power-down mode before using sensor */
 	proximity_enable = ON;
-//	gp2a_off(gp2a);
+//	gp2a_off();
 		
 	return 0;
 }
 
 static int gp2a_opt_suspend( struct platform_device* pdev, pm_message_t state ) {
-	struct gp2a_data *gp2a = platform_get_drvdata(pdev);
 
 	if(proximity_enable) {
 		disable_irq_nosync(gp2a ->irq);
@@ -379,7 +373,6 @@ static int gp2a_opt_suspend( struct platform_device* pdev, pm_message_t state ) 
 }
 
 static int gp2a_opt_resume( struct platform_device* pdev ) {
-	struct gp2a_data *gp2a = platform_get_drvdata(pdev);
 	int i;
 
 	if(proximity_enable) {
@@ -408,29 +401,37 @@ static int proximity_release(struct inode *ip, struct file *fp) {
 }
 
 static long proximity_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
-	struct gp2a_data *gp2a = i2c_get_clientdata(opt_i2c_client);
-	int ret=0;
+	int ret = 0;
+	int value = 0;
+
+	void __user *argp = (void __user *)arg;
+
 	switch(cmd) {
-		case SHARP_GP2AP_OPEN:
-			{
-				printk(KERN_INFO "[PROXIMITY] %s : case OPEN\n", __FUNCTION__);
-				gp2a_on(gp2a);
+		case SHARP_GP2AP_IOCTL_ENABLE:
+			if (copy_from_user(&value, argp, sizeof(value)))
+				return -EFAULT;
+
+			printk(KERN_INFO "[PROXIMITY] %s : case ENABLE: %d\n", __FUNCTION__, value);
+			if (value == ON && proximity_enable == OFF) {	
+				gp2a_on();
 				proximity_enable = ON;
-			}
+			} 
+			else if (value == OFF && proximity_enable == ON) {	
+				gp2a_off();
+				proximity_enable = OFF;
+			}	
 			break;
 
-		case SHARP_GP2AP_CLOSE:
-			{
-				printk(KERN_INFO "[PROXIMITY] %s : case CLOSE\n", __FUNCTION__);
-				gp2a_off(gp2a);
-				proximity_enable = OFF;
-			}
+		case SHARP_GP2AP_IOCTL_GET_ENABLED:
+			value = proximity_enable;
+			if (copy_to_user(argp, &value, sizeof(value)))	
+				return -EFAULT;
 			break;
-		case BSS_PRINT_PROX_VALUE:
-			{
+
+		case SHARP_GP2AP_PRINT_PROX_VALUE:
 				printk(KERN_INFO "[PROXIMITY] %s, value: %d \n", __FUNCTION__, proximity_value);
-			}
 			break;
+
 		default:
 			printk(KERN_INFO "[PROXIMITY] unknown ioctl %d\n", cmd);
 			ret = -1;
@@ -458,7 +459,6 @@ static int __init gp2a_opt_init(void) {
 }
 
 static void __exit gp2a_opt_exit(void) {
-	struct gp2a_data *gp2a = i2c_get_clientdata(opt_i2c_client);
 	if (gp2a_wq)
 		destroy_workqueue(gp2a_wq);
 

@@ -905,7 +905,7 @@ static void check_pmic(void)
 	}
 }
 
-static void print_gpios()
+static void print_gpios(void)
 {
 	printk("===============================\n");
 	printk("GPIO_PHONE_RST_N: %d\n", gpio_get_value(GPIO_PHONE_RST_N));
@@ -969,7 +969,7 @@ void s3c_config_wakeup_source(void)
 	 */
 	eint0pend_val= __raw_readl(S3C64XX_EINT0PEND);
 	eint0pend_val |= (0x1 << 25) | (0x1 << 22) | (0x1 << 19) |
-		//bss (0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
+	//bss	(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 9) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
 		(0x1 << 17) | (0x1 << 11) | (0x1 << 10) | (0x1 << 6) | (0x1 << 5) | (0x1 << 1) | 0x1;
 	__raw_writel(eint0pend_val, S3C64XX_EINT0PEND);
 

@@ -19,6 +19,7 @@
 #include <mach/hardware.h>
 #include <plat/gpio-cfg.h>
 #include <plat/regs-gpio.h>
+#include <asm/uaccess.h>
 
 #include <linux/input.h>
 #include <linux/workqueue.h>
@@ -35,16 +36,19 @@
 
 /* global var */
 static struct i2c_client *isl_i2c_client = NULL;
+struct light_data *light;
 
 struct class *lightsensor_class;
 struct device *switch_cmd_dev;
 
 static int lightsensor_adc = 0;
 static int lux_value = 0;
+static int print_log = 0;
 static int int_op_mode = 1; // set to 1 to diable irq in probe (light_off) at init time
 static u16 op_mode;
 static bool light_enable = ON;
 static int  cur_state = 0;
+
 
 static unsigned short isl_normal_i2c[] = {(LIGHT_ADDR>>1),I2C_CLIENT_END};
 static unsigned short isl_ignore[] = {1,(LIGHT_ADDR>>1),I2C_CLIENT_END};
@@ -141,7 +145,6 @@ void set_new_state(void) {
  *  function    : work_func_light 
  */
 void work_func_light(struct work_struct *work) {
-	struct light_data *light = container_of(work, struct light_data, work_light);
 
 	/* read light data from sensor i2c */
 	unsigned char v_msb;
@@ -165,11 +168,12 @@ void work_func_light(struct work_struct *work) {
 	lux_value = adc_to_lux(vout);	
 	set_new_state();
 #if USE_INPUT_DEVICE 
-    		input_report_abs(light->input_dev,ABS_DISTANCE, lux_value);
+    		input_report_abs(light->input_dev,ABS_MISC, lux_value);
 		input_sync(light->input_dev);
 		mdelay(1);
 #endif
-	printk("Ligh Sensor LCD = %d ADC= %d LUX= %d\n", 
+	if (print_log) 	
+		printk("Ligh Sensor LCD = %d ADC= %d LUX= %d\n", 
 					cur_state, vout, lux_value);
 	if (int_op_mode) {
 		gprintk("enable irq for light sensor\n");
@@ -193,7 +197,6 @@ irqreturn_t light_irq_handler(int irq, void *dev_id) {
 }
 
 static enum hrtimer_restart light_timer_func(struct hrtimer *timer) {
-	struct light_data *light = container_of(timer, struct light_data, timer);
 	
 	queue_work(light_wq, &light->work_light);
 	hrtimer_start(&light->timer,ktime_set(LIGHT_PERIOD,0),HRTIMER_MODE_REL);
@@ -268,16 +271,6 @@ int isl_i2c_write( u8 reg, int val ) {
 void light_chip_init(void) {
 	gprintk("\n");
 	
-	/* Power On */
-	if (gpio_is_valid(GPIO_ALS_EN)) {
-		if (gpio_request(GPIO_ALS_EN, S3C_GPIO_LAVEL(GPIO_ALS_EN)))
-			printk(KERN_ERR "Filed to request GPIO_ALS_EN!\n");
-		gpio_direction_output(GPIO_ALS_EN, GPIO_LEVEL_HIGH);
-		s3c_gpio_setpull(GPIO_ALS_EN, S3C_GPIO_PULL_NONE); 
-	}
-
-	mdelay(5);
-	
 	/* set INT 	*/
 	s3c_gpio_cfgpin(GPIO_AMBIENT_INT_N, S3C_GPIO_SFN(GPIO_AMBIENT_INT_N_AF));
 	s3c_gpio_setpull(GPIO_AMBIENT_INT_N, S3C_GPIO_PULL_UP);
@@ -289,11 +282,9 @@ void light_chip_init(void) {
  *  function    : light_on 
  *  description : This function is power-on function for optical sensor.
  */
-void light_on(struct light_data *light) {
+void light_on(void) {
 	if( light_enable == OFF) {
 		gprintk("light power on \n");
-		gpio_direction_output(GPIO_ALS_EN, GPIO_LEVEL_HIGH);
-		mdelay(5);
 		if (int_op_mode) {
 			queue_work(light_wq, &light->work_light);
 		} 
@@ -309,7 +300,7 @@ void light_on(struct light_data *light) {
  *  function    : light_off 
  *  description : This function is power-off function for optical sensor.
  */
-void light_off(struct light_data *light) {
+void light_off(void) {
 	if(light_enable == ON) {
 		gprintk("Light sensor power off \n");
 
@@ -325,7 +316,6 @@ void light_off(struct light_data *light) {
 		isl_i2c_write((u8)(REGS_COMMAND_I), 0x0);
 		isl_i2c_write((u8)(REGS_COMMAND_II), 0x0);
 
-		gpio_direction_output(GPIO_ALS_EN, GPIO_LEVEL_LOW);
 		mdelay(5);
 	}
 }
@@ -369,7 +359,6 @@ static ssize_t lightsensor_file_cmd_show(struct device *dev,
 static ssize_t lightsensor_file_cmd_store(struct device *dev,
         struct device_attribute *attr, const char *buf, size_t size)
 {
-	struct light_data *light = dev_get_drvdata(dev);
 	int value;
 	sscanf(buf, "%x", &value);
 
@@ -385,11 +374,11 @@ static ssize_t lightsensor_file_cmd_store(struct device *dev,
 			int_op_mode = ((value >> 16 ) & 0x1);
 			op_mode = (value & 0xffff);
 		}
-		light_on(light);
+		light_on();
 		light_enable = ON;
 	}
 	else if(!value && light_enable ==ON) {
-		light_off(light);
+		light_off();
 		light_enable = OFF;
 	}
 	else if(value && light_enable ==ON) {
@@ -400,8 +389,74 @@ static ssize_t lightsensor_file_cmd_store(struct device *dev,
 
 static DEVICE_ATTR(lightsensor_file_cmd,0644, lightsensor_file_cmd_show, lightsensor_file_cmd_store);
 
+static int isl_light_open(struct inode *ip, struct file *fp) {
+	return 0;
+}
+
+static int isl_light_release(struct inode *ip, struct file *fp) {
+	return 0;
+}
+
+static long isl_light_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
+	int ret = 0;
+	int value = 0;
+
+	void __user *argp = (void __user *)arg;
+
+	switch(cmd) {
+		case KIONIX_ISL_IOCTL_ENABLE:
+			if (copy_from_user(&value, argp, sizeof(value)))
+				return -EFAULT;
+
+			printk(KERN_INFO "[LIGHT_SENSOR] %s : case ENABLE: %d\n", __FUNCTION__, value);
+			if(value == ON && light_enable == OFF) {
+				light_on();
+				light_enable = ON;
+			}
+			else if(value == OFF && light_enable ==ON) {
+				light_off();
+				light_enable = OFF;
+			}
+			break;
+
+		case KIONIX_ISL_IOCTL_GET_ENABLED:
+			value = light_enable;
+			if (copy_to_user(argp, &value, sizeof(value)))	
+				return -EFAULT;
+			break;
+
+		case KIONIX_ISL_PRINT_ON:
+			print_log = 1;
+			printk("KIONIX_ISL_PRINT_ON\n");
+			break;
+
+		case KIONIX_ISL_PRINT_OFF:
+			print_log = 0;
+			printk("KIONIX_ISL_PRINT_OFF\n");
+			break;
+
+		default:
+			printk(KERN_INFO "[LIGHT_SENSOR] unknown ioctl %d\n", cmd);
+			ret = -1;
+			break;
+	}
+	return ret;
+}
+
+static struct file_operations isl_light_fops = {
+	.owner  = THIS_MODULE,
+	.open   = isl_light_open,
+	.release = isl_light_release,
+	.unlocked_ioctl = isl_light_ioctl,
+};
+                 
+static struct miscdevice isl_light_device = {
+	.minor  = MISC_DYNAMIC_MINOR,
+	.name   = "lightsensor",
+	.fops   = &isl_light_fops,
+};
+
 static int isl_light_probe( struct platform_device* pdev ) {
-	struct light_data *light;
 	int irq;
 	int ret;
 
@@ -443,9 +498,6 @@ static int isl_light_probe( struct platform_device* pdev ) {
 	light->irq = irq;
 	gprintk("INT Settings complete\n");
 
-	/* set platdata */
-	platform_set_drvdata(pdev, light);
-
 	/* set sysfs for light sensor */
 	lightsensor_class = class_create(THIS_MODULE, "lightsensor");
 	if (IS_ERR(lightsensor_class))
@@ -464,9 +516,6 @@ static int isl_light_probe( struct platform_device* pdev ) {
         if (device_create_file(switch_cmd_dev, &dev_attr_lightsensor_file_adc) < 0)
                 pr_err("Failed to create device file(%s)!\n", dev_attr_lightsensor_file_adc.attr.name);
 
-
-	dev_set_drvdata(switch_cmd_dev,light);
-
 #if USE_INPUT_DEVICE	
 	/* Input device Settings */
 	light->input_dev = input_allocate_device();
@@ -479,7 +528,7 @@ static int isl_light_probe( struct platform_device* pdev ) {
 	set_bit(EV_SYN,light->input_dev->evbit);
 	set_bit(EV_ABS,light->input_dev->evbit);
 	
-	input_set_abs_params(light->input_dev, ABS_DISTANCE, 0, 1, 0, 0);
+	input_set_abs_params(light->input_dev, ABS_MISC, 0, 1, 0, 0);
 
 	ret = input_register_device(light->input_dev);
 	if (ret) {
@@ -490,16 +539,24 @@ static int isl_light_probe( struct platform_device* pdev ) {
 	}
 #endif
 
+	/* misc device Settings */
+	ret = misc_register(&isl_light_device);
+	if(ret) {
+		pr_err(KERN_ERR "misc_register failed \n");
+	}
 
-	light_off(light);
+	light_off();
 	light_enable = OFF;
+
+	op_mode = 0x2001; //default operation mode 
+	int_op_mode = 0;
+
 	printk("ISL29023 Light Sensor initialized\n");
 	
 	return 0;
 }
 
 static int isl_light_suspend( struct platform_device* pdev, pm_message_t state ) {
-	struct light_data *light = platform_get_drvdata(pdev);
 
 	if(light_enable) {
 		if (int_op_mode)
@@ -512,8 +569,9 @@ static int isl_light_suspend( struct platform_device* pdev, pm_message_t state )
 
 
 static int isl_light_resume( struct platform_device* pdev ) {
-	struct light_data *light = platform_get_drvdata(pdev);
 
+	mdelay(5);
+	
 	if(light_enable) {
 		if (int_op_mode)
 			queue_work(light_wq, &light->work_light);
@@ -542,7 +600,6 @@ static int __init isl_light_init(void) {
 }
 
 static void __exit isl_light_exit(void) {
-	struct light_data *light = dev_get_drvdata(switch_cmd_dev);
 	if (light_wq)
 		destroy_workqueue(light_wq);
 

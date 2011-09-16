@@ -15,6 +15,7 @@
 
 static int change_sign = 3;
 static int print_flag = 0;
+static int swap = 0;
 static int div_val = 12;
 static struct i2c_client *g_i2c_client;
 
@@ -178,6 +179,22 @@ static void kxsd9_read_accel(void)
 	acc_data.x = (x - 2080) / div_val; 
 	acc_data.y = (y - 2080) / div_val;
 	acc_data.z = (z - 2080) / div_val;
+	
+	if (swap == 1) {
+		acc_data.x = (y - 2080) / div_val; 
+		acc_data.y = (x - 2080) / div_val;
+	}	
+
+	if (swap == 2) {
+		acc_data.x = (z - 2080) / div_val; 
+		acc_data.z = (x - 2080) / div_val;
+	}	
+
+	if (swap == 3) {
+		acc_data.y = (z - 2080) / div_val;
+		acc_data.z = (y - 2080) / div_val;
+	}	
+
 
 	if ( change_sign & 1) acc_data.x *= -1;
 	if ( change_sign & 2) acc_data.y *= -1;
@@ -192,8 +209,8 @@ static void kxsd9_read_accel(void)
 }
 
 /* BMA150 IOCTL */
-#define BMA150_IOC_MAGIC 				'B'
-#define BMA150_CALIBRATE				_IOW(BMA150_IOC_MAGIC,2, unsigned char)
+#define BMA150_IOC_MAGIC 		'B'
+#define BMA150_CALIBRATE		_IOW(BMA150_IOC_MAGIC,2, unsigned char)
 #define BMA150_SET_RANGE            	_IOWR(BMA150_IOC_MAGIC,4, unsigned char)
 #define BMA150_SET_MODE             	_IOWR(BMA150_IOC_MAGIC,6, unsigned char)
 #define BMA150_SET_BANDWIDTH            _IOWR(BMA150_IOC_MAGIC,8, unsigned char)
@@ -312,12 +329,27 @@ static int bma150_ioctl(struct inode *inode, struct file *file, unsigned int cmd
 			div_val = 16;
 			break;
 
+		case 50:
+			swap = 0;
+			break;
+
+		case 51:
+			swap = 1;
+			break;
+
+		case 52:
+			swap = 2;
+			break;
+
+		case 53:
+			swap = 3;
+			break;
 		case 20:
 			print_flag = 0;
 			break;
 
 		case 21:
-			print_flag = 0;
+			print_flag = 1;
 			break;
 
 		case BMA150_SET_RANGE:
