@@ -47,11 +47,6 @@ static struct setting_table display_off_setting_table[] = {
 };
 
 
-static struct setting_table power_off_setting_table[] = {
-    { 0x1400, 80 },
-    { 0x1DA1, 200 },
-};
-
 static struct setting_table gamma_setting_table[CAMMA_LEVELS][GAMMA_SETTINGS] = {
 	{	// set 1.1
 		{ 0x4000,	0},
@@ -1166,8 +1161,4 @@ static struct setting_table gamma_setting_table_cam[CAMMA_LEVELS][GAMMA_SETTINGS
 	},
 };
 
-static struct setting_table standby_off_table[] = {
-   	{ 0x1DA0 , 250},
-   	{ 0x1403 ,  0 },
-};
 

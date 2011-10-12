@@ -31,6 +31,7 @@
 #include <linux/miscdevice.h>
 #include "s3cfb_ams320fs01_ioctl.h"
 #include "AMS369FG06.h"
+#include "omnia2_bootlogo.h"
 
 #include <mach/param.h>
 #include <mach/gpio.h>
@@ -90,6 +91,8 @@
 
 #define ONOFF2_ELDO6	(0x01 << 7)
 #define ONOFF2_ELDO7	(0x03 << 6)
+
+#define LOGO_MEM_SIZE		(S3C_FB_HRES * S3C_FB_VRES * 2)
 
 
 typedef enum {
@@ -847,5 +850,12 @@ void s3cfb_init_hw(void)
 	lcd_gpio_init();
 }
 
+
+void s3cfb_display_logo(int win_num)
+{
+	s3c_fb_info_t *fbi = &s3c_fb_info[0];
+	memset(fbi->map_cpu_f1, 0x00, 800*480*2);
+	memcpy(fbi->map_cpu_f1, pixel_data, 480*160*2);		
+}
 
 

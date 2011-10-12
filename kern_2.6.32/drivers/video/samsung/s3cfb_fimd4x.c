@@ -1110,6 +1110,8 @@ int s3cfb_init_registers(s3c_fb_info_t *fbi)
 	}	
 	#endif
 
+		s3cfb_display_logo(win_num);
+
 
 	writel(video_phy_temp_f1, S3C_VIDW00ADD0B0 + (0x08 * win_num));
 	writel(S3C_VIDWxxADD1_VBASEL_F((unsigned long) video_phy_temp_f1 + (page_width + offset) * (var->yres)), S3C_VIDW00ADD1B0 + (0x08 * win_num));
@@ -2007,14 +2009,12 @@ void s3cfb_late_resume(struct early_suspend *h)
 	/* Power Enable */ //CAUSES FLASH WHEN TURNING ON WITH LATE RESUME, TRY WITH LEAVING?)
 	if(pmic_read(MAX8698_ID, ONOFF2, &data, 1) != PMIC_PASS) {
 		printk(KERN_ERR "LCD POWER CONTROL can't read the status from PMIC\n");
-		return -1;
 	}
 	data |= (ONOFF2_ELDO6 | ONOFF2_ELDO7);
 		
 	if(pmic_write(MAX8698_ID, ONOFF2, &data, 1) != PMIC_PASS) {
 		printk(KERN_ERR "LCD POWER CONTROL can't write the command to PMIC\n");
-		return -1;
-		} 
+	} 
 
 	if (lcd_pm_status == 0) {
 		s3cfb_resume_sub(info);
