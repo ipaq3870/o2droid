@@ -116,7 +116,7 @@ static int max9877_write(struct i2c_client *client, u8 reg, u8 data)
 static int max9877_i2c_probe(struct i2c_client *client,
 			                 const struct i2c_device_id *id)
 {
-	u8 pData = 0, i;
+//	u8 pData = 0, i;
 
 	FI
 	max9877_i2c_client = client;
@@ -131,7 +131,7 @@ static int max9877_i2c_probe(struct i2c_client *client,
 		(0 << 4) |  /* Class D : 1176, CHARGE-PUMP : 588  */
 		(0x9) );  	/* SPK:INA1+INA2+INB1+INB2, LHP:INA1+INB2, RHP:INA2+INB2 */
 
-#if AUDIO_SPECIFIC_DEBUG
+#if AUDIO_SPECIFIC_DEBUG_bss 
 	/* real all */
     for(i = 0; i <= 0x4; i++) {
 		max9877_read(max9877_i2c_client, i, &pData);
@@ -248,7 +248,7 @@ int amp_enable(int en)
 
 int amp_set_path(int path)
 {
-#if AUDIO_SPECIFIC_DEBUG
+#if AUDIO_SPECIFIC_DEBUG_bss
 	int i; 
 	u8 pData;
 
@@ -283,7 +283,7 @@ int amp_set_path(int path)
 			// (0x3) );  	/* SPK:INA1+INA2   LHP:INA1, RHP:INA2 */
 	}
 
-#if AUDIO_SPECIFIC_DEBUG
+#if AUDIO_SPECIFIC_DEBUG_bss
 	/* real all */
     for(i = 0; i <= 0x4; i++) {
 		max9877_read(max9877_i2c_client, i, &pData);
@@ -330,16 +330,9 @@ int mic_enable(int en)
 	P("MIC EN : %d", en);
 	if (en)
 		gpio_set_value(GPIO_MICBIAS_EN, 1);
-	else
-		gpio_set_value(GPIO_MICBIAS_EN, 0);
+	else if (!get_headset_status())
+			gpio_set_value(GPIO_MICBIAS_EN, 0);
 
-	return 0;
-}
-//EXPORT_SYMBOL(mic_enable);
-
-int mic_ear_enable(int en)
-{
-	P("EAR MIC EN : %d", en);
 	return 0;
 }
 
@@ -405,17 +398,14 @@ int set_sample_rate(struct snd_soc_codec *codec, int bitRate)
 
 static void set_bias (struct snd_soc_codec *codec, int mode)
 {
-	P("BIAS Control (%d)", mode);
+	P("BIAS Control (%x)", mode);
 
 	/* Set MIC BIAS */
-	/* VOICECALL, VOICEMEMO, PLAYBACK_HP */
+	/* VOICECALL, VOICEMEMO */
 	if ((mode & 0xf0) == MM_AUDIO_VOICECALL || 
-		(mode & 0xf0) == MM_AUDIO_VOICEMEMO ||
-		(mode & 0x0f) == MM_AUDIO_PLAYBACK_HP ||
-		(mode & 0x0f) == MM_AUDIO_PLAYBACK_RING_SPK_HP ||
-		(mode & 0x0f) == MM_AUDIO_PLAYBACK_SPK_HP) /* for earjack send/end key interrupt */
+		(mode & 0xf0) == MM_AUDIO_VOICEMEMO) 
 	{
-		if( mode== MM_AUDIO_VOICECALL_RCV || 
+		if( mode == MM_AUDIO_VOICECALL_RCV || 
 		    mode == MM_AUDIO_VOICEMEMO_MAIN || 
 		    mode == MM_AUDIO_VOICEMEMO_SUB) 
 		{
@@ -428,20 +418,21 @@ static void set_bias (struct snd_soc_codec *codec, int mode)
 			mic_set_path(AK4671_MIC_PATH_SUB);
 		}
 
+		P("Mic En : 1");
 		mic_enable(1);
+	}
+	else 
+	{	
+		P("Mic En : 0");
+		mic_enable(0);
+	}	
 
-		if (((mode & 0x0f) == MM_AUDIO_OUT_HP) ||
-			((mode & 0x0f) == MM_AUDIO_PLAYBACK_RING_SPK_HP) ||
-			((mode & 0x0f) == MM_AUDIO_PLAYBACK_SPK_HP) ) 
-		{
-			mic_enable(0);
-		} 
-	}
-	else
-	{
-		if(!get_headset_status())
-			mic_enable(0);
-	}
+	/* Disable Mics for all BT operations */
+	if ((mode & 0x0f) == MM_AUDIO_OUT_BT)
+	{	
+		P("Mic En : 0");
+		mic_enable(0);
+	}	
 
 	/* Set AMP BIAS */
 	/* SPK, EARJACK, VOICEMEMO */
@@ -528,9 +519,9 @@ static void set_codec_gain(struct snd_soc_codec *codec, int mode)
 
 		case MM_AUDIO_VOICECALL_RCV :
 			codec->write(codec, 0x08, 0xB5); 	// Output Volume Control : OUT2[7:4]/OUT1[2:0]
-			codec->write(codec, 0x1A, 0x20); 	// Lch Output Digital Vol
-			codec->write(codec, 0x1B, 0x20); 	// Rch Output Digital Vol
-			codec->write(codec, 0x05, 0x55); 	// MIC-AMP Gain=0dB
+			codec->write(codec, 0x1A, 0x17); 	// Lch Output Digital Vol
+			codec->write(codec, 0x1B, 0x17); 	// Rch Output Digital Vol
+			codec->write(codec, 0x05, 0x45); 	// MIC-AMP Gain=0dB
 			codec->write(codec, 0x12, 0x91); 	// Lch Input Volume : 0dB
 			codec->write(codec, 0x13, 0x91); 	// Rch Input Volume : 0dB 
 			break;
@@ -734,6 +725,9 @@ int path_change(struct snd_soc_codec *codec, int to_mode, int from_mode)
 {
 	int ret = 1;
 
+	/* Set Bias */
+	set_bias(codec, to_mode);
+
 	switch (to_mode) {
 		case MM_AUDIO_PLAYBACK_SPK :
 		case MM_AUDIO_PLAYBACK_HP :
@@ -749,8 +743,6 @@ int path_change(struct snd_soc_codec *codec, int to_mode, int from_mode)
 						amp_set_path(AK4671_AMP_PATH_HP);
 				
 					codec->write(codec, 0x00, 0xC1);        // DAC Enable, ADC Disable, MicAMP Disable
-					if (to_mode != MM_AUDIO_PLAYBACK_HP)
-						mic_ear_enable(0);
 					break;
 				default :
 					ret = -1;
@@ -778,16 +770,11 @@ int path_change(struct snd_soc_codec *codec, int to_mode, int from_mode)
 					codec->write(codec, 0x00, 0xD5); 		// D/A power-up
 					break;
 				case MM_AUDIO_VOICEMEMO_EAR :
-//                    if((system_rev >= 0x80 && gpio_get_value(GPIO_DET_35) ^ 1 && gpio_get_value(GPIO_MONOHEAD_DET_ISR) ^ 0)!=1)
-					if (1) //bss
-						{							
 					P("VOICEMEMO_EAR->VOICEMEMO_MAIN");
 					mic_set_path(AK4671_MIC_PATH_MAIN);
 					set_codec_gain(codec, to_mode);
 					codec->write(codec, 0x04, 0x14); 		// => MIC-AMP Lch=IN1+/-
-					mic_ear_enable(0);
 					amp_set_path(AK4671_AMP_PATH_SPK);
-				    	}
 					break;
 
 				default :
@@ -804,24 +791,13 @@ int path_change(struct snd_soc_codec *codec, int to_mode, int from_mode)
 					set_codec_gain(codec, to_mode);
 					codec->write(codec, 0x04, 0x14); 		// => MIC-AMP Lch=IN1+/-
 					codec->write(codec, 0x00, 0xD5); 		// D/A power-up
-					mic_enable(1);
 					break;
 				case MM_AUDIO_VOICEMEMO_EAR :
-					
-					//if((system_rev >= 0x80 && gpio_get_value(GPIO_DET_35) ^ 1 && gpio_get_value(GPIO_MONOHEAD_DET_ISR) ^ 0)!=1)
-					if (1) //bss
-						{							
 				     	P("VOICEMEMO_EAR->VOICEMEMO_MAIN");
 					mic_set_path(AK4671_MIC_PATH_MAIN);
 					set_codec_gain(codec, to_mode);
 					codec->write(codec, 0x04, 0x14); 		// => MIC-AMP Lch=IN1+/-
-					mic_ear_enable(0);
 					amp_set_path(AK4671_AMP_PATH_SPK);
-				    	}
-					else
-					{
-						mic_enable(1);
-					}
 					break;
 
 				default :
@@ -833,38 +809,27 @@ int path_change(struct snd_soc_codec *codec, int to_mode, int from_mode)
 		case MM_AUDIO_VOICEMEMO_EAR :
 			switch (from_mode) {
 				case MM_AUDIO_PLAYBACK_HP :
-					//if(system_rev >= 0x80 && gpio_get_value(GPIO_DET_35) ^ 1 && gpio_get_value(GPIO_MONOHEAD_DET_ISR) ^ 0)
-					if (1) //bss
+				case MM_AUDIO_VOICEMEMO_MAIN :
+				case MM_AUDIO_VOICEMEMO_SUB :
+					P("VOICEMEMO_MAIN&SUB&PLAYBACK_HP->VOICEMEMO_EAR");
+					if (from_mode != MM_AUDIO_PLAYBACK_HP)
+						amp_set_path(AK4671_AMP_PATH_HP);
+					if (get_headset_status()) 
 					{
-						P("PLAYBACK_HP->VOICEMEMO_3POLE_EAR");
-						mic_set_path(AK4671_MIC_PATH_MAIN);
-						to_mode = 0x22;
-				    		set_codec_gain(codec, to_mode);
-				    		codec->write(codec, 0x04, 0x14); 		// => MIC-AMP Lch=IN1+/-
-				    		codec->write(codec, 0x00, 0xD5); 		// D/A power-up	
-				    		mic_ear_enable(0);
-						mic_enable(1);
-					}
-			        	else
-			        	{
-				     		P("PLAYBACK_HP->VOICEMEMO_4POLE_EAR");
-						mic_ear_enable(1);
+				     		P("VOICEMEMO_4POLE_EAR");
 						set_codec_gain(codec, to_mode);
 						codec->write(codec, 0x04, 0x42); 		// => MIC-AMP Lch=IN3+/-
 						codec->write(codec, 0x00, 0xD5); 		// D/A power-up
+					}
+			        	else
+			        	{
+						P("VOICEMEMO_3POLE_EAR");
+						mic_set_path(AK4671_MIC_PATH_MAIN);
+						to_mode = MM_AUDIO_VOICEMEMO_MAIN;
+				    		set_codec_gain(codec, to_mode);
+				    		codec->write(codec, 0x04, 0x14); 		// => MIC-AMP Lch=IN1+/-
+				    		codec->write(codec, 0x00, 0xD5); 		// D/A power-up	
 			        	}
-					break;
-				case MM_AUDIO_VOICEMEMO_MAIN :
-				case MM_AUDIO_VOICEMEMO_SUB :
-					//if((system_rev >= 0x80 && gpio_get_value(GPIO_DET_35) ^ 1 && gpio_get_value(GPIO_MONOHEAD_DET_ISR) ^ 0)!=1)
-					if (1) //bss
-						{												
-					    P("VOICEMEMO_MAIN&SUB->VOICEMEMO_4POLE_EAR");
-					mic_ear_enable(1);
-					set_codec_gain(codec, to_mode);
-					codec->write(codec, 0x04, 0x42); 		// => MIC-AMP Lch=IN3+/-
-					amp_set_path(AK4671_AMP_PATH_HP);
-			     		}
 					break;
 
 				default :
@@ -1491,8 +1456,7 @@ int idle_mode_disable(struct snd_soc_codec *codec, int mode)
 	if ( (mode & 0x0f) != MM_AUDIO_PLAYBACK_HP &&  /* for earjack send/end key interrupt */
 		(mode & 0x0f) == MM_AUDIO_PLAYBACK_SPK_HP)
 	{
-		if(!get_headset_status())
-			mic_ear_enable(0);
+		mic_enable(0);
 	}
 
 	amp_enable(0);

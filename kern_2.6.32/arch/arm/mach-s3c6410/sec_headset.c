@@ -38,10 +38,13 @@
 
 extern int call_state;
 
-// #define CONFIG_DEBUG_SEC_HEADSET
+#define CONFIG_DEBUG_SEC_HEADSET
 
 #ifdef CONFIG_DEBUG_SEC_HEADSET
-#define SEC_HEADSET_DBG(fmt, arg...) printk(KERN_INFO "[HEADSET] " fmt "\r\n", ## arg)
+#define SUBJECT "sec_headset.c"
+#define SEC_HEADSET_DBG(format,...)\
+	        printk ("[ "SUBJECT " (%s,%d) ] " format "\n", __func__, __LINE__, ## __VA_ARGS__);
+//#define SEC_HEADSET_DBG(fmt, arg...) printk(KERN_INFO "[HEADSET] " fmt "\r\n", ## arg)
 #else
 #define SEC_HEADSET_DBG(fmt, arg...) 
 #endif
@@ -101,7 +104,7 @@ static void release_headset_event(struct work_struct *work)
 }
 static DECLARE_WORK(release_headset_event_work, release_headset_event);
 
-static void ear_adc_caculrator(struct work_struct *work)
+static void ear_adc_calculrator(struct work_struct *work)
 {
 	int adc = 0;
 	struct sec_gpio_info   *det_headset = &hi->port.det_headset;
@@ -114,10 +117,10 @@ static void ear_adc_caculrator(struct work_struct *work)
 		SEC_HEADSET_DBG("MICBIAS enable before adc check  \n");
 		msleep(200); 
 		adc = s3c_adc_get_adc_data(3);
-		SEC_HEADSET_DBG("MICBIAS disable after adc check  \n");
+		SEC_HEADSET_DBG("MICBIAS set back to previous value  after adc check  \n");
 		gpio_set_value(GPIO_MICBIAS_EN, 0); 
              
-		if((adc > 1700 && adc < 3400) /*|| (adc > 2400 && adc < 2700) || (adc > 2800 && adc < 3400) */ || (adc > 200 && adc < 700))
+		if((adc > 1700 && adc < 3400) || (adc > 200 && adc < 700))
 		{
 			printk("4pole ear-mic adc is %d\n", adc);
 			enable_irq (send_end->eint);
@@ -136,16 +139,11 @@ static void ear_adc_caculrator(struct work_struct *work)
 			headset_status = 0;
 		}
 	}
-	else
-	{
-		printk(KERN_ALERT "Error : mic bias enable complete but headset detached!!\n");
-		gpio_set_value(GPIO_MICBIAS_EN, 0);
-	}
 
 	wake_unlock(&headset_sendend_wake_lock);
 }
 
-static DECLARE_WORK(ear_adc_cal_work, ear_adc_caculrator);
+static DECLARE_WORK(ear_adc_cal_work, ear_adc_calculrator);
 
 static void headset_detect_timer_handler(unsigned long arg)
 {
@@ -226,7 +224,7 @@ static void ear_switch_change(struct work_struct *ignored)
 			 if( !call_state )
 			 {
 			 	SEC_HEADSET_DBG("MICBIAS disable when earphone disconnected \n"); 
-			    gpio_set_value(GPIO_MICBIAS_EN, 0); 
+			    	gpio_set_value(GPIO_MICBIAS_EN, 0); 
 			 }
 			disable_irq (send_end->eint);
 			send_end_irq_token--;
@@ -252,7 +250,7 @@ static void send_end_key_event_timer_handler(unsigned long arg)
 		if(send_end_key_timer_token < SEND_END_CHECK_COUNT)
 		{	
 			send_end_key_timer_token++;
-			send_end_key_event_timer.expires = call_state?SEND_END_CHECK_TIME_INCALL:SEND_END_CHECK_TIME; 
+			send_end_key_event_timer.expires = call_state ? SEND_END_CHECK_TIME_INCALL : SEND_END_CHECK_TIME; 
 			add_timer(&send_end_key_event_timer);
 			SEC_HEADSET_DBG("SendEnd Timer Restart %d (call_state = %d)", send_end_key_timer_token,call_state);
 		}

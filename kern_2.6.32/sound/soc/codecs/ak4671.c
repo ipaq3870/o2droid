@@ -567,7 +567,7 @@ static const struct snd_kcontrol_new ak4671_snd_controls[] = {
 		ak4671_get_mic_path, ak4671_set_mic_path),
 
 	/* MIC Gain */
-	SOC_DOUBLE("MIC Gain", 							AK4671_MIC_GAIN, 0, 4, 0xf, 0),
+	SOC_DOUBLE("MIC Gain", AK4671_MIC_GAIN, 0, 4, 0xf, 0),
 
 	SOC_ENUM_EXT("FM Radio Path", path_control_enum[3],
 		ak4671_get_path, ak4671_set_path),
