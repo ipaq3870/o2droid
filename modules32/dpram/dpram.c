@@ -22,6 +22,8 @@
 #undef CONFIG_ONEDRAM_CHECKBIT
 #define CONFIG_ONEDRAM_TX_RETRY 10
 
+//#define LOAD_PHONE_IMAGE
+#undef define LOAD_PHONE_IMAGE
 #define BSS 0
 #define _ENABLE_ERROR_DEVICE
 //#define _DEBUG
@@ -1044,7 +1046,7 @@ static void dpram_phone_image_load(void)
 
 	gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_LOW);
 	gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_LOW);
-
+#ifdef LOAD_PHONE_IMAGE
 	printk(" +---------------------------------------------+\n");
 	printk(" |   CHECK PSI DOWNLOAD  &  LOAD PHONE IMAGE   |\n");
 	printk(" +---------------------------------------------+\n");
@@ -1074,6 +1076,7 @@ static void dpram_phone_image_load(void)
 	{
 	    dprintk("CP DUMP MODE !!! \n");
 	}
+#endif	
 	return;
 
 }
@@ -1144,7 +1147,9 @@ static void dpram_phone_power_on(void)
 	if( phone_power_state ) {
 		printk("[OneDram] phone off (before phone power on).\n");
 		gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_LOW);
+#ifdef LOAD_PHONE_IMAGE
 		gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+#endif		
 		interruptible_sleep_on_timeout(&dpram_wait, 100);	//	mdelay(500);
 		printk("[OneDram] phone rst low 500ms).\n");
 	}
@@ -1154,13 +1159,17 @@ static void dpram_phone_power_on(void)
 	gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_HIGH);
 	gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_HIGH);
 
+#ifdef LOAD_PHONE_IMAGE
 	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+#endif		
 	interruptible_sleep_on_timeout(&dpram_wait, 40);	//	mdelay(200);
 
 	gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_HIGH);
 	interruptible_sleep_on_timeout(&dpram_wait, 6);		//	mdelay(30);
 	
+#ifdef LOAD_PHONE_IMAGE
 	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
+#endif		
 	interruptible_sleep_on_timeout(&dpram_wait, 100);	//	mdelay(500);
 
 	gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_LOW);
@@ -1183,6 +1192,9 @@ static int dpram_phone_boot_start(void)
 
 	*onedram_sem = 0x0;
 	*onedram_mailboxBA = send_mail;
+#ifndef LOAD_PHONE_IMAGE
+	return 0;
+#endif	
 
     if(!dump_on)
     {
@@ -1233,9 +1245,11 @@ static void dpram_phone_reset(void)
 	}
 
 	dpram_print_gpios();
+#ifdef LOAD_PHONE_IMAGE
 	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
 	mdelay(100);
 	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
+#endif	
 	dpram_print_gpios();
 
 	// Wait until phone is stable
@@ -1627,7 +1641,9 @@ static int dpram_tty_ioctl(struct tty_struct *tty, struct file *file,
 			phone_sync = 0;
 			dump_on = 0;
 			gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_LOW);
-//boot_complete = 1;  //bss
+#ifndef LOAD_PHONE_IMAGE			
+			boot_complete = 1;  
+#endif			
 			if(boot_complete) {
 				if(dpram_init_and_report() < 0) {
 					printk("  - Failed.. unexpected error when ipc transfer start.\n");
@@ -2348,7 +2364,9 @@ static void init_hw_setting(void)
 	if (gpio_is_valid(GPIO_PHONE_RST_N)) {
 		if (gpio_request(GPIO_PHONE_RST_N, S3C_GPIO_LAVEL(GPIO_PHONE_RST_N)))
 			printk(KERN_ERR "Filed to request GPIO_PHONE_RST_N!\n");
+#ifdef LOAD_PHONE_IMAGE
 		gpio_direction_output(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
+#endif
 	}
 	s3c_gpio_setpull(GPIO_PHONE_RST_N, S3C_GPIO_PULL_NONE); 
 
