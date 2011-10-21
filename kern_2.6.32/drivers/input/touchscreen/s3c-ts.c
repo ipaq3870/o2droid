@@ -133,7 +133,7 @@ unsigned int get_s3c_adc_value(unsigned int s3c_adc_port)
         unsigned long data1;
 
 	if (WAIT4INT(0) != readl(ts_base + S3C_ADCTSC))
-	    return 0;
+	    return -1;
 
 	del_timer(&touch_timer);
 
@@ -165,7 +165,7 @@ int s3c_adc_get_adc_data(int channel)
 {	
 	int adc_val;
 
-	if ((adc_val = get_s3c_adc_value(channel)) == 0) 
+	if ((adc_val = get_s3c_adc_value(channel)) == -1) 
 		return prev_val[channel];
 	else {
 		prev_val[channel] = adc_val;

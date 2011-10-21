@@ -134,7 +134,7 @@ const unsigned int gpio_chg_en_af	= GPIO_TA_EN_AF;
 #define TOTAL_CHARGING_TIME	(5*60*60*1000)	/* 5 hours */
 #define TOTAL_RECHARGING_TIME	(2*60*60*1000)	/* 2 hours */
 
-#define RECHARGE_COND_VOLTAGE 4000	/* 4.13V */	
+#define RECHARGE_COND_VOLTAGE 4050	/* 4.13V */	
 #define FULL_CHARGE_COND_VOLTAGE 4190	/* 4.19V */
 
 #ifdef __CHECK_BATTERY_V_F__

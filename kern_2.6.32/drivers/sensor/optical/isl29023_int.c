@@ -1,10 +1,12 @@
 /* 
  *  Title : Optical Sensor driver for ISL29023 light sensor 
- *  Date  : 14.10.2011
+ *  Date  : 2011.02.14
  *  Name  : Sandor Bognar
  *
  */
 
+#include <linux/interrupt.h>
+#include <linux/irq.h>
 #include <linux/i2c.h>
 #include <linux/fs.h>
 #include <linux/errno.h>
@@ -12,6 +14,7 @@
 #include <linux/delay.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
+#include <linux/leds.h>
 #include <linux/gpio.h>
 #include <mach/hardware.h>
 #include <plat/gpio-cfg.h>
@@ -35,11 +38,18 @@
 static struct i2c_client *isl_i2c_client = NULL;
 struct light_data *light;
 
+struct class *lightsensor_class;
+struct device *switch_cmd_dev;
+
+static int lightsensor_adc = 0;
 static int lux_value = 0;
 static int screen_correction = 10; 
 static int print_log = 0;
-static u16 op_mode = 0x2000;
+static int int_op_mode = 1; // set to 1 to diable irq in probe (light_off) at init time
+static u16 op_mode;
 static bool light_enable = ON;
+static int  cur_state = 0;
+
 
 static unsigned short isl_normal_i2c[] = {(LIGHT_ADDR>>1),I2C_CLIENT_END};
 static unsigned short isl_ignore[] = {1,(LIGHT_ADDR>>1),I2C_CLIENT_END};
@@ -95,6 +105,42 @@ int adc_to_lux(int value) {
 			adc_resolution[(op_mode >> 2) & 3];
 }
 
+int lux_to_adc(int value) {
+	int ret;
+	ret = adc_resolution[(op_mode >> 2) & 3] * value /
+				FSR_LUX_range[op_mode & 3];
+	if (ret > 0xffff) 
+		return 0xffff;
+	return ret;
+}
+
+void set_irq_threshold(int low, int high) {
+	/* convert back LUX to ADC */
+	isl_i2c_write((u8)(REGS_INT_LSB_TH_LO), lux_to_adc(low) & 0xff);
+	isl_i2c_write((u8)(REGS_INT_MSB_TH_LO), (lux_to_adc(low) >> 8) & 0xff);
+	isl_i2c_write((u8)(REGS_INT_LSB_TH_HI), lux_to_adc(high) & 0xff);
+	isl_i2c_write((u8)(REGS_INT_MSB_TH_HI), (lux_to_adc(high) >> 8) & 0xff);
+}
+
+void set_new_state(void) {
+	int no_change = 0;
+
+	while (!no_change) {
+		if(lux_value < light_state[cur_state].lux_bottom_limit) {
+			if (cur_state > 0)  cur_state--;
+		} else if(lux_value > light_state[cur_state].lux_top_limit) {
+			if (cur_state < (ARRAY_SIZE(light_state) -1))  cur_state++;
+		} else no_change = 1;	
+	}
+	
+	if (lcd_late_resume) 
+		backlight_level_ctrl(light_state[cur_state].brightness);
+
+	if (int_op_mode)
+		set_irq_threshold(light_state[cur_state].lux_bottom_limit, 
+				light_state[cur_state].lux_top_limit);
+}
+
 /*****************************************************************************************
  *  
  *  function    : work_func_light 
@@ -105,62 +151,64 @@ void work_func_light(struct work_struct *work) {
 	unsigned char v_msb;
 	unsigned char v_lsb;
 	unsigned int vout = 0;
-	int range;
 
-re_messure:	
 	isl_i2c_write((u8)(REGS_COMMAND_I), (op_mode >> 8) & 0xff); 
 	isl_i2c_write((u8)(REGS_COMMAND_II), op_mode & 0xff);
 
+	if (!int_op_mode) {
+		set_irq_threshold(0x0, 0xffff);
+		msleep(150);
+	}	
 	//print_sensor_regs();
 
 	v_msb = isl_i2c_read((u8)(REGS_MBS_SENSOR));
 	v_lsb = isl_i2c_read((u8)(REGS_LBS_SENSOR));
 	vout =  (v_msb << 8) | v_lsb;
 
-	/* see isl29023.h for detailes */
-	range = op_mode & 3;
-	lux_value = FSR_LUX_range[range] * vout/ 
-			adc_resolution[(op_mode >> 2) & 3];
-
-	if (lux_value >= FSR_LUX_range[range]) { 
-		if ((range) < 3) {
-			if (print_log) 	
-				printk("OP_MODE: %x ADC= %d LUX= %d\n", 
-					op_mode, vout, lux_value);
-		       	op_mode++; 
-			goto re_messure; 
-		}
-	} 
-	if ((range) > 0) { 
-		if (lux_value < FSR_LUX_range[range - 1]){	
-			if (print_log) 	
-				printk("OP_MODE: %x ADC= %d LUX= %d\n", 
-					op_mode, vout, lux_value);
-			op_mode--; 
-			goto re_messure; 
-		}	
-	}	
-
-	/* screen_correction is to compensate the light loss caused by sensor's window) */
-	input_report_abs(light->input_dev,ABS_MISC, lux_value * screen_correction);
-	input_sync(light->input_dev);
-	mdelay(1);
-
+	lightsensor_adc = vout;
+	lux_value = adc_to_lux(vout);	
+	set_new_state();
+#if USE_INPUT_DEVICE 
+    		input_report_abs(light->input_dev,ABS_MISC, lux_value * screen_correction);
+		input_sync(light->input_dev);
+		mdelay(1);
+#endif
 	if (print_log) 	
-		printk("Ligh Sensor OP_MODE: %x ADC= %d LUX= %d\n", op_mode, vout, lux_value * screen_correction);
+		printk("Ligh Sensor LCD = %d ADC= %d LUX= %d\n", 
+					cur_state, vout, lux_value);
+	if (int_op_mode) {
+		gprintk("enable irq for light sensor\n");
+		enable_irq(light->irq);
+		// clear interrupt enable bit
+		isl_i2c_read((u8)(REGS_COMMAND_I)); 
+	}	
 }
 
+irqreturn_t light_irq_handler(int irq, void *dev_id) {
+	struct light_data *light = dev_id;
+
+	gprintk("light->irq = %d\n",light->irq);
+
+	if(light->irq !=-1) {
+		disable_irq_nosync(light->irq);
+		queue_work(light_wq, &light->work_light);
+	}
+
+	return IRQ_HANDLED;
+}
 
 static enum hrtimer_restart light_timer_func(struct hrtimer *timer) {
 	
 	queue_work(light_wq, &light->work_light);
-	hrtimer_start(&light->timer,ktime_set(LIGHT_PERIOD, 0),HRTIMER_MODE_REL);
+	hrtimer_start(&light->timer,ktime_set(LIGHT_PERIOD,0),HRTIMER_MODE_REL);
 	return HRTIMER_NORESTART;
 }
+
 
 static int isl_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int ret,err=0;
+
 	
 	gprintk("\n");
 	if ( !i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA) ) {
@@ -224,30 +272,47 @@ int isl_i2c_write( u8 reg, int val ) {
 void light_chip_init(void) {
 	gprintk("\n");
 	
-	// to disable chip irq pin
-	if (gpio_is_valid(GPIO_AMBIENT_INT_N)) {
-		if (gpio_request(GPIO_AMBIENT_INT_N, S3C_GPIO_LAVEL(GPIO_AMBIENT_INT_N)))
-			printk(KERN_ERR "Failed to request GPIO_AMBIENT_INT_N!\n");
-		gpio_direction_output(GPIO_AMBIENT_INT_N, GPIO_LEVEL_LOW);
-		s3c_gpio_setpull(GPIO_AMBIENT_INT_N, S3C_GPIO_PULL_NONE);
-	
-	}	
+	/* set INT 	*/
+	s3c_gpio_cfgpin(GPIO_AMBIENT_INT_N, S3C_GPIO_SFN(GPIO_AMBIENT_INT_N_AF));
+	s3c_gpio_setpull(GPIO_AMBIENT_INT_N, S3C_GPIO_PULL_UP);
+	set_irq_type(IRQ_LIGHT_INT, IRQ_TYPE_EDGE_FALLING);
 }
 
+/*****************************************************************************************
+ *  
+ *  function    : light_on 
+ *  description : This function is power-on function for optical sensor.
+ */
 void light_on(void) {
 	if( light_enable == OFF) {
 		gprintk("light power on \n");
-		gprintk("timer start for light sensor\n");
-		hrtimer_start(&light->timer,ktime_set(LIGHT_PERIOD,0),HRTIMER_MODE_REL);
+		if (int_op_mode) {
+			queue_work(light_wq, &light->work_light);
+		} 
+		else {		
+			gprintk("timer start for light sensor\n");
+			hrtimer_start(&light->timer,ktime_set(LIGHT_PERIOD,0),HRTIMER_MODE_REL);
+		}		
 	}
 }
 
+/*****************************************************************************************
+ *  
+ *  function    : light_off 
+ *  description : This function is power-off function for optical sensor.
+ */
 void light_off(void) {
 	if(light_enable == ON) {
 		gprintk("Light sensor power off \n");
 
-		gprintk("timer cancel for light sensor\n");
-		hrtimer_cancel(&light->timer);
+		if (int_op_mode) {
+			gprintk("disable irq for light sensor\n");
+			disable_irq_nosync(light->irq);
+		}	
+		else {		
+			gprintk("timer cancel for light sensor\n");
+			hrtimer_cancel(&light->timer);
+		}
 		
 		isl_i2c_write((u8)(REGS_COMMAND_I), 0x0);
 		isl_i2c_write((u8)(REGS_COMMAND_II), 0x0);
@@ -256,7 +321,78 @@ void light_off(void) {
 	}
 }
 
-/* MISC device operations */
+static ssize_t lightsensor_file_adc_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"%u\n",lightsensor_adc);
+}
+
+static ssize_t lightsensor_file_adc_store(struct device *dev,
+        struct device_attribute *attr, const char *buf, size_t size)
+{
+	return 0;
+}
+
+static DEVICE_ATTR(lightsensor_file_adc,0644, lightsensor_file_adc_show, lightsensor_file_adc_store);
+
+static ssize_t get_lux_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+	printk("light sensor screen_correction value show: %d\n", screen_correction);
+	return sprintf(buf,"%u\n", lux_value);
+}
+
+static ssize_t get_lux_store(struct device *dev,
+        struct device_attribute *attr, const char *buf, size_t size)
+{
+	int value;
+	sscanf(buf, "%d", &value);
+	screen_correction = value;
+	printk("light sensor screen_correction value set: %d\n", screen_correction);
+	return size;
+}
+
+static DEVICE_ATTR(get_lux,0666, get_lux_show, get_lux_store);
+
+static ssize_t lightsensor_file_cmd_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"%x\n", (int_op_mode << 16) | op_mode);
+}
+
+static ssize_t lightsensor_file_cmd_store(struct device *dev,
+        struct device_attribute *attr, const char *buf, size_t size)
+{
+	int value;
+	sscanf(buf, "%x", &value);
+
+	printk("in lightsensor_file_cmd_store, input value = %x \n",value);
+
+
+	if(value && light_enable == OFF) {
+		if (value == 1) {
+			op_mode = 0x2001; // default int operation mode
+			int_op_mode = 0;
+		} 
+		else {
+			int_op_mode = ((value >> 16 ) & 0x1);
+			op_mode = (value & 0xffff);
+		}
+		light_on();
+		light_enable = ON;
+	}
+	else if(!value && light_enable ==ON) {
+		light_off();
+		light_enable = OFF;
+	}
+	else if(value && light_enable ==ON) {
+		
+	}
+	return size;
+}
+
+static DEVICE_ATTR(lightsensor_file_cmd,0644, lightsensor_file_cmd_show, lightsensor_file_cmd_store);
+
 static int isl_light_open(struct inode *ip, struct file *fp) {
 	return 0;
 }
@@ -325,6 +461,7 @@ static struct miscdevice isl_light_device = {
 };
 
 static int isl_light_probe( struct platform_device* pdev ) {
+	int irq;
 	int ret;
 
 	/* allocate driver_data */
@@ -354,6 +491,36 @@ static int isl_light_probe( struct platform_device* pdev ) {
         INIT_WORK(&light->work_light, work_func_light);
 	gprintk("Workqueue Settings complete\n");
 
+	/* INT Settings */	
+	irq = IRQ_LIGHT_INT;
+	light->irq = -1;
+	ret = request_irq(irq, light_irq_handler, 0, "light_int", light);
+	if (ret) {
+		pr_err("unable to request irq %d\n", irq);
+		return ret;
+	}       
+	light->irq = irq;
+	gprintk("INT Settings complete\n");
+
+	/* set sysfs for light sensor */
+	lightsensor_class = class_create(THIS_MODULE, "lightsensor");
+	if (IS_ERR(lightsensor_class))
+		pr_err("Failed to create class(lightsensor)!\n");
+
+	switch_cmd_dev = device_create(lightsensor_class, NULL, 0, NULL, "switch_cmd");
+	if (IS_ERR(switch_cmd_dev))
+		pr_err("Failed to create device(switch_cmd_dev)!\n");
+
+	if (device_create_file(switch_cmd_dev, &dev_attr_lightsensor_file_cmd) < 0)
+		pr_err("Failed to create device file(%s)!\n", dev_attr_lightsensor_file_cmd.attr.name);
+
+	if (device_create_file(switch_cmd_dev, &dev_attr_get_lux) < 0)
+		pr_err("Failed to create device file(%s)!\n", dev_attr_get_lux.attr.name);
+
+        if (device_create_file(switch_cmd_dev, &dev_attr_lightsensor_file_adc) < 0)
+                pr_err("Failed to create device file(%s)!\n", dev_attr_lightsensor_file_adc.attr.name);
+
+#if USE_INPUT_DEVICE	
 	/* Input device Settings */
 	light->input_dev = input_allocate_device();
 	if (light->input_dev == NULL) {
@@ -374,6 +541,7 @@ static int isl_light_probe( struct platform_device* pdev ) {
 		kfree(light);
 		return -1;
 	}
+#endif
 
 	/* misc device Settings */
 	ret = misc_register(&isl_light_device);
@@ -384,6 +552,9 @@ static int isl_light_probe( struct platform_device* pdev ) {
 	light_off();
 	light_enable = OFF;
 
+	op_mode = 0x2001; //default operation mode 
+	int_op_mode = 0;
+
 	printk("ISL29023 Light Sensor initialized\n");
 	
 	return 0;
@@ -392,6 +563,8 @@ static int isl_light_probe( struct platform_device* pdev ) {
 static int isl_light_suspend( struct platform_device* pdev, pm_message_t state ) {
 
 	if(light_enable) {
+		if (int_op_mode)
+			disable_irq_nosync(light ->irq);
 		isl_i2c_write((u8)(REGS_COMMAND_I), 0x0);
 		isl_i2c_write((u8)(REGS_COMMAND_II), 0x0);
 	}	
@@ -404,7 +577,10 @@ static int isl_light_resume( struct platform_device* pdev ) {
 	mdelay(5);
 	
 	if(light_enable) {
-		hrtimer_start(&light->timer,ktime_set(LIGHT_PERIOD,0),HRTIMER_MODE_REL);
+		if (int_op_mode)
+			queue_work(light_wq, &light->work_light);
+		else
+			hrtimer_start(&light->timer,ktime_set(LIGHT_PERIOD,0),HRTIMER_MODE_REL);
 	}
 	return 0;
 }
@@ -431,7 +607,12 @@ static void __exit isl_light_exit(void) {
 	if (light_wq)
 		destroy_workqueue(light_wq);
 
+	free_irq(IRQ_LIGHT_INT, light);
+	gpio_direction_output(GPIO_AMBIENT_INT_N, GPIO_LEVEL_LOW);
+	s3c_gpio_setpull(GPIO_AMBIENT_INT_N, S3C_GPIO_PULL_NONE);
+#if USE_INPUT_DEVICE
 	input_unregister_device(light->input_dev);
+#endif
 	kfree(light);
 
 	gpio_free(GPIO_AMBIENT_INT_N);

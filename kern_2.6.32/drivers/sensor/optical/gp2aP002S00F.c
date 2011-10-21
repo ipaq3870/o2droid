@@ -20,6 +20,7 @@
 #include <plat/gpio-cfg.h>
 #include <plat/regs-gpio.h>
 #include <asm/uaccess.h>
+#include <linux/wakelock.h>
 
 #include <linux/input.h>
 #include <linux/workqueue.h>
@@ -40,6 +41,7 @@ static struct gp2a_data *gp2a;
 
 static bool proximity_enable = OFF;
 static short proximity_value = 0;
+static struct wake_lock prx_wake_lock;
 
 static struct file_operations proximity_fops = {
 	.owner  = THIS_MODULE,
@@ -248,22 +250,18 @@ void gp2a_chip_init(void) {
 }
 
 void gp2a_on(void) {
-	int i;
 	if(proximity_enable == OFF) {
 		gprintk("gp2a power on\n");
-		opt_i2c_write((u8)(REGS_CON),  0x18);
+
+		opt_i2c_write((u8)(REGS_CON), 0x18);
+		opt_i2c_write((u8)(REGS_HYS), 0x40);
+		opt_i2c_write((u8)(REGS_OPMOD), 0x03);
 
 		gprintk("enable irq for proximity\n");
-		enable_irq(gp2a ->irq);
-		msleep(2);		
-		/* GP2A Regs INIT SETTINGS */
-		for(i = 1;i <= 4;i++) 
-			opt_i2c_write((u8)(i), gp2a_original_image[i]);
+		enable_irq(gp2a->irq);
 
-		opt_i2c_write((u8)(REGS_CON),  0x0);
-
-		opt_i2c_write((u8)(REGS_OPMOD),  0x3);
-
+		opt_i2c_write((u8)(REGS_CON), 0x00);
+	
 		proximity_enable = ON;
 	}
 }
@@ -337,6 +335,14 @@ static int gp2a_opt_probe( struct platform_device* pdev ) {
 		pr_err(KERN_ERR "misc_register failed \n");
 	}
 
+	wake_lock_init(&prx_wake_lock, WAKE_LOCK_SUSPEND, "prx_wake_lock");
+
+	/* GP2A Regs INIT SETTINGS */
+	for(i = 1;i < 5;i++) {
+		opt_i2c_write((u8)(i), gp2a_original_image[i]);
+	}
+	mdelay(2);
+
 	/* INT Settings */	
 	irq = IRQ_GP2A_INT;
 	gp2a->irq = -1;
@@ -348,17 +354,10 @@ static int gp2a_opt_probe( struct platform_device* pdev ) {
 	gp2a->irq = irq;
 
 	gprintk("INT Settings complete\n");
-
-	/* GP2A Regs INIT SETTINGS */
-	for(i = 1;i < 5;i++) {
-		opt_i2c_write((u8)(i), gp2a_original_image[i]);
-	}
-
-	mdelay(2);
-
+	
 	/* maintain power-down mode before using sensor */
 	proximity_enable = ON;
-//	gp2a_off();
+	gp2a_off();
 		
 	return 0;
 }
@@ -388,6 +387,8 @@ static int gp2a_opt_resume( struct platform_device* pdev ) {
 		opt_i2c_write((u8)(REGS_CON),  0x0);
 
 		opt_i2c_write((u8)(REGS_OPMOD),  0x3);
+
+		wake_lock_timeout(&prx_wake_lock,3 * HZ);
 	}
 	return 0;
 }
@@ -414,10 +415,13 @@ static long proximity_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 			printk(KERN_INFO "[PROXIMITY] %s : case ENABLE: %d\n", __FUNCTION__, value);
 			if (value == ON && proximity_enable == OFF) {	
 				gp2a_on();
+				wake_lock(&prx_wake_lock);
 				proximity_enable = ON;
 			} 
 			else if (value == OFF && proximity_enable == ON) {	
 				gp2a_off();
+				wake_unlock(&prx_wake_lock);
+				wake_lock_timeout(&prx_wake_lock, 3 * HZ);
 				proximity_enable = OFF;
 			}	
 			break;

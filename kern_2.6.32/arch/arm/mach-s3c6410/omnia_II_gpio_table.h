@@ -86,6 +86,10 @@ static int omnia_II_init_gpio_table[][6] = {
 	/* GPM */
 	{ GPIO_FM_SCL, 0, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 }, 
 	{ GPIO_FM_SDA, 0, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 }, 
+	{ GPIO_AMBIENT_INT_N, 1, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 }, 
+
+	/* GPN */
+	{ GPIO_BT_EN, GPIO_BT_EN_AF, GPIO_LEVEL_LOW, S3C_GPIO_PULL_NONE, 0, 0 }, 
 
 };
 

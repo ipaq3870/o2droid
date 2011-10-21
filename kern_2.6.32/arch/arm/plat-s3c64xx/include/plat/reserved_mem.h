@@ -5,7 +5,8 @@
 #include <linux/list.h>
 #include <asm/setup.h>
 
-#define DRAM_END_ADDR 				(UL(0x65000000))//?65
+//#define DRAM_END_ADDR 				(UL(0x65000000))//?65
+#define DRAM_END_ADDR 				(UL(0x58000000))//?65
 
 #define RESERVED_PMEM_END_ADDR 		(DRAM_END_ADDR)
 
@@ -18,9 +19,9 @@
 #define RESERVED_PMEM_PREVIEW		(2 * 1024 * 1024) //2 
 #define RESERVED_PMEM_RENDER	  	(4 * 1024 * 1024) //4 
 #define RESERVED_PMEM_STREAM	  	(6 * 1024 * 1024) //4
-#define RESERVED_G3D			(32 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
+#define RESERVED_G3D			(64 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
 #define RESERVED_PMEM_GPU1		(0) //0
-#define RESERVED_PMEM			(14 * 1024 * 1024)//12 working well, i9000 16mb --> if we move to 16M then 16mb *FIX*
+#define RESERVED_PMEM			(16 * 1024 * 1024)//12 working well, i9000 16mb --> if we move to 16M then 16mb *FIX*
 #define RESERVED_PMEM_SKIA		(0)//0
 
 #define RESERVED_G3D_UI			(8 * 1024 * 1024) //(6mb -->unable 4th block
@@ -39,7 +40,8 @@
 #define G3D_RESERVED_START		(RESERVED_PMEM_END_ADDR - RESERVED_G3D)			//32m	-32m G3D shared!!!
 #define GPU1_RESERVED_PMEM_START	(G3D_RESERVED_START - RESERVED_PMEM_GPU1)		//0m
 #define RESERVED_PMEM_START		(GPU1_RESERVED_PMEM_START - RESERVED_PMEM)		//12m	-44m
-#define PHYS_UNRESERVED_SIZE		(RESERVED_PMEM_START - UL(0x60000000))
+//#define PHYS_UNRESERVED_SIZE		(RESERVED_PMEM_START - UL(0x60000000))
+#define PHYS_UNRESERVED_SIZE		(RESERVED_PMEM_START - UL(0x50000000))
 
 #define SKIA_RESERVED_PMEM_START	(0)
 

@@ -229,12 +229,12 @@ static void AKECS_Report_Value(short *rbuf)
 		input_report_abs(data->input_dev, ABS_BRAKE, rbuf[11]);
 	}
 	/* Report proximity information */
-/*	if (atomic_read(&p_flag)) {
+	if (atomic_read(&p_flag)) {
 		rbuf[12]=gp2a_get_proximity_value();
 		gprintk("Proximity = %d\n", rbuf[12]);
 		input_report_abs(data->input_dev, ABS_DISTANCE, rbuf[12]);
 	}
-*/	
+	
 	input_sync(data->input_dev);
 }
 
@@ -455,8 +455,7 @@ static void AKECS_DATA_Measure(void)
 	value[9]=mag_sensor[1];		/* mag_x */
 	value[10]=mag_sensor[2];	/* mag_y */
 	value[11]=mag_sensor[3];	/* mag_z */
-	//value[12]=gp2a_get_proximity_value();
-	value[12]=0;
+	value[12]=gp2a_get_proximity_value();
 
 	AKECS_Report_Value(value);
 }
@@ -986,7 +985,7 @@ static int __devinit i2c_ak8973b_probe(struct i2c_client *client, const struct i
 	/* z-axis of raw magnetic vector */
 	input_set_abs_params(akm->input_dev, ABS_BRAKE, -2048, 2032, 0, 0);
 	/* proximity sensor */	
-//	input_set_abs_params(akm->input_dev, ABS_DISTANCE, -3, 3, 0, 0);
+	input_set_abs_params(akm->input_dev, ABS_DISTANCE, -3, 3, 0, 0);
 	
 	akm->input_dev->name = "compass";
 

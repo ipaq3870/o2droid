@@ -38,8 +38,19 @@
 #include "s3c6410_battery_omnia_II.h"
 
 #define DEBUG
+#define WIN_MO_LIKE_PROFILE 1
 static struct wake_lock vbus_wake_lock;
+static struct wake_lock call_wake_lock;
 
+#ifdef WIN_MO_LIKE_PROFILE
+static unsigned char fg_tab[] = { 0, 0, 0, 1, 3, 5, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 
+	24, 26, 27, 29, 30, 32, 33, 35, 36, 38, 39, 40, 42, 43, 44, 46, 47, 48, 49, 51, 52, 
+	53, 54, 55, 56, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 73, 
+	74, 75, 76, 77, 78, 79, 79, 80, 81, 82, 83, 83, 84, 85, 85, 86, 87, 88, 88, 89, 90, 
+	90, 91, 91, 92, 93, 93, 94, 95, 95, 96, 96, 97, 97, 98, 98, 99, 99, 100, 100, 100, 
+	100, 100  
+};
+#endif
 
 #if (defined __TEST_DEVICE_DRIVER__  || defined __ALWAYS_AWAKE_DEVICE__)
 static struct wake_lock wake_lock_for_dev;
@@ -439,7 +450,10 @@ static int s3c_get_bat_level_fuel(struct power_supply *bat_ps)
 	}
 
 /* soc value compensation algorithm	*/
-#if defined(CONFIG_MACH_VINSQ) || defined(CONFIG_MACH_VITAL)		// added by kimjh
+#ifdef WIN_MO_LIKE_PROFILE
+	//      fg_soc = 140 * (1 - exp(-fg_soc / 70)) - 4;  /* implemented in fg_tab */
+	fg_soc = fg_tab[fg_soc];
+#else 	
 	fg_soc = ((fg_soc*10-fg_soc_min)*100)/(fg_soc_max-fg_soc_min);
 
 	if(fg_soc > 100)
@@ -1174,6 +1188,12 @@ static ssize_t s3c_bat_store(struct device *dev,
                 ret = -EINVAL;
         }
 
+	if (call_state) {
+               	wake_lock(&call_wake_lock);
+	} else {
+               	wake_unlock(&call_wake_lock);
+	}	
+		
 	return ret;
 }
 
@@ -1959,6 +1979,7 @@ static int __init s3c_bat_init(void)
 	s3c_bat_init_hw();
 
 	wake_lock_init(&vbus_wake_lock, WAKE_LOCK_SUSPEND, "vbus_present");
+	wake_lock_init(&call_wake_lock, WAKE_LOCK_SUSPEND, "voice_call_present");
 #if (defined __TEST_DEVICE_DRIVER__  || defined __ALWAYS_AWAKE_DEVICE__)
 	wake_lock_init(&wake_lock_for_dev, WAKE_LOCK_SUSPEND, "wake_lock_dev");
 #endif /* __TEST_DEVICE_DRIVER__ || __ALWAYS_AWAKE_DEVICE__ */

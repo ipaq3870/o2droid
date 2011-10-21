@@ -32,6 +32,7 @@
 #include <linux/pwm_backlight.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/libertas_spi.h>
+#include <linux/wakelock.h>
 #include <plat/spi-clocks.h>
 #include <plat/s3c64xx-spi.h>
 
@@ -88,6 +89,7 @@
 #define SI4709_I2C_ADDRESS		0x20
 #define KXSD9_I2C_ADDRESS		0x30
 
+static struct wake_lock wlan_wakelock;
 struct class *sec_class;
 EXPORT_SYMBOL(sec_class);
 
@@ -192,10 +194,12 @@ static void __init saturn_fixup(struct machine_desc *desc,
 {
 	mi->nr_banks = 2;
 	mi->bank[0].start = UL(0x50000000);//PHYS_OFFSET;
-	mi->bank[0].size = (128 * 1024 * 1024); //PHYS_UNRESERVED_SIZE;
+	mi->bank[0].size = PHYS_UNRESERVED_SIZE;
+//	mi->bank[0].size = (128 * 1024 * 1024); 
 	mi->bank[0].node = PHYS_TO_NID(0x50000000);// 0;
 	mi->bank[1].start = UL(0x60000000);//PHYS_OFFSET;
-	mi->bank[1].size = PHYS_UNRESERVED_SIZE;//80 * 1024 * 1024;//PHYS_UNRESERVED_SIZE;
+//	mi->bank[1].size = PHYS_UNRESERVED_SIZE;
+	mi->bank[1].size = (80 * 1024 * 1024);
 	mi->bank[1].node = PHYS_TO_NID(0x60000000);///0;
 }
 
@@ -285,18 +289,21 @@ static int libertas_setup(struct spi_device *spi)
 	mdelay(20);
 	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_HIGH);
 	mdelay(100);
-printk("Sanya: Power on wlan\n");
+printk("Sanya: Power On wlan\n");
 	spi->bits_per_word = 16;
 	spi_setup(spi);
+	wake_lock(&wlan_wakelock);
 	return 0;
 }
 
 static int libertas_teardown(struct spi_device *spi)
 {
+printk("Sanya: Power Off  wlan\n");
 	if (gpio_get_value(GPIO_BT_nRST) == 0) {
 		gpio_set_value(GPIO_BT_EN, GPIO_LEVEL_LOW);
 	}
 	gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_LOW);
+	wake_unlock(&wlan_wakelock);
 	return 0;
 }
 
@@ -620,6 +627,19 @@ static void __init omnia_II_map_io(void)
         s3c_init_uarts(saturn_uartcfgs, ARRAY_SIZE(saturn_uartcfgs));
 }
 
+static void omnia_II_set_qos(void) 
+{     
+	u32 reg;     							 /* AXI sfr */     
+
+	reg = (u32) ioremap((unsigned long) S3C6410_PA_AXI_SYS, SZ_4K); /* QoS override: FIMD min. latency */
+	writel(0x2, S3C_VA_SYS + 0x128);  	    			/* AXI QoS */
+	writel(0x7, reg + 0x460);   					/* (8 - MFC ch.) */
+	writel(0x7ff7, reg + 0x464);      				/* Bus cacheable */
+	writel(0x8ff, S3C_VA_SYS + 0x838);
+
+	__raw_writel(0x0, S3C_AHB_CON0);
+} 
+
 void __iomem *s3c6410_wdt_addr;
 
 static void s3c6410_wdt_io_map(void)
@@ -650,8 +670,10 @@ static void __init omnia_II_machine_init(void)
 
 	platform_add_devices(smdk6410_devices, ARRAY_SIZE(smdk6410_devices));
 	s3c6410_pm_init();
+	omnia_II_set_qos();
 	s3c6410_wdt_io_map();
 	saturn_switch_init();
+	wake_lock_init(&wlan_wakelock, WAKE_LOCK_SUSPEND, "wlan");
 }
 
 MACHINE_START(OMNIA_II, "OMNIA II")
