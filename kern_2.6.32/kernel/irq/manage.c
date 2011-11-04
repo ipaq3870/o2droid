@@ -1016,9 +1016,9 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
 	 */
 	if ((irqflags & (IRQF_SHARED|IRQF_DISABLED)) ==
 					(IRQF_SHARED|IRQF_DISABLED)) {
-//		pr_warning(
-//		  "IRQ %d/%s: IRQF_DISABLED is not guaranteed on shared IRQs\n",
-//			irq, devname);
+		pr_warning(
+		  "IRQ %d/%s: IRQF_DISABLED is not guaranteed on shared IRQs\n",
+			irq, devname);
 	}
 
 #ifdef CONFIG_LOCKDEP
