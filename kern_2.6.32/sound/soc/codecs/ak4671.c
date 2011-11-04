@@ -38,6 +38,8 @@
 #define AUDIO_NAME "ak4671"
 #define AK4671_VERSION "0.2"
 
+#define AUDIO_SPECIFIC_DEBUG    0
+#if AUDIO_SPECIFIC_DEBUG
 #define SUBJECT "ak4671.c"
 #define P(format,...)\
 	printk ("[ "SUBJECT " (%s,%d) ] " format "\n", __func__, __LINE__, ## __VA_ARGS__);
@@ -45,6 +47,11 @@
 	printk ("[ "SUBJECT " (%s,%d) ] " "%s - IN" "\n", __func__, __LINE__, __func__);
 #define FO \
 	printk ("[ "SUBJECT " (%s,%d) ] " "%s - OUT" "\n", __func__, __LINE__, __func__);
+#else
+#define P(format,...)
+#define FI 
+#define FO 
+#endif
 
 #define DIGITAL_FILTER_CONTROL		0
 
@@ -832,7 +839,6 @@ static int ak4671_suspend(struct platform_device *pdev, pm_message_t state)
 		/* AUDIO_EN & MAX8906_AMP_EN Disable */
 		amp_enable(0); /* Board Specific function */
 		audio_power(0); /* Board Specific function */
-		//mic_enable(0); /* MICBIAS Disable (SPH-M900 Only) */
 		ak4671_power = 0;
 		ak4671_idle_mode = IDLE_POWER_DOWN_MODE_ON;
 	}
@@ -852,8 +858,6 @@ static int ak4671_resume(struct platform_device *pdev)
 		ak4671_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 		ak4671_set_bias_level(codec, codec->suspend_bias_level);
 	}
-
-	mic_enable(1); /* MICBIAS Enable (SPH-M900 Only) */
 
 	return 0;
 }

@@ -32,6 +32,7 @@
 
 #include "ak4671.h"
 
+#define AUDIO_SPECIFIC_DEBUG_PRINT_MAX_REGS	0
 #define AUDIO_SPECIFIC_DEBUG	0
 
 #if AUDIO_SPECIFIC_DEBUG
@@ -131,7 +132,7 @@ static int max9877_i2c_probe(struct i2c_client *client,
 		(0 << 4) |  /* Class D : 1176, CHARGE-PUMP : 588  */
 		(0x9) );  	/* SPK:INA1+INA2+INB1+INB2, LHP:INA1+INB2, RHP:INA2+INB2 */
 
-#if AUDIO_SPECIFIC_DEBUG_bss 
+#if AUDIO_SPECIFIC_DEBUG_PRINT_MAX_REGS 
 	/* real all */
     for(i = 0; i <= 0x4; i++) {
 		max9877_read(max9877_i2c_client, i, &pData);
@@ -248,7 +249,7 @@ int amp_enable(int en)
 
 int amp_set_path(int path)
 {
-#if AUDIO_SPECIFIC_DEBUG_bss
+#if AUDIO_SPECIFIC_DEBUG_PRINT_MAX_REGS
 	int i; 
 	u8 pData;
 
@@ -283,7 +284,7 @@ int amp_set_path(int path)
 			// (0x3) );  	/* SPK:INA1+INA2   LHP:INA1, RHP:INA2 */
 	}
 
-#if AUDIO_SPECIFIC_DEBUG_bss
+#if AUDIO_SPECIFIC_DEBUG_PRINT_MAX_REGS
 	/* real all */
     for(i = 0; i <= 0x4; i++) {
 		max9877_read(max9877_i2c_client, i, &pData);
