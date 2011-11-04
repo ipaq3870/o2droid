@@ -31,8 +31,34 @@
 #define I2C_DF_NOTIFY       0x01
 #define IRQ_COMPASS_INT IRQ_EINT(2) /* EINT(2) */
 
-static int swap = 0; 
-static int change_sign = 3; //bss for m910 froyo on omnia_II
+#define O_MakmX 2
+#define O_MakmY 3
+#define O_MakmZ 4
+
+static int MakmX = O_MakmX;
+static int MakmY = O_MakmY;
+static int MakmZ = O_MakmZ;
+
+#define O_AX 6
+#define O_AY 7
+#define O_AZ 8
+#define O_MX 9
+#define O_MY 10
+#define O_MZ 11
+
+static int AX = O_AY;
+static int AY = O_AX;
+static int AZ = O_AZ;
+static int MX = O_MX;
+static int MY = O_MY;
+static int MZ = O_MZ;
+
+static int Makm_sign = 0; 
+static int accel_inp_dev_sign = 5; 
+static int mag_inpf_sign = 1; 
+
+static int print_flag = 0; 
+
 static struct i2c_client *this_client;
 
 struct ak8973b_data {
@@ -190,7 +216,10 @@ static int akm_aot_release(struct inode *inode, struct file *file)
 
 static void AKECS_Report_Value(short *rbuf)
 {
+short ax, ay, az, mx, my, mz;	
+
 	struct ak8973b_data *data = i2c_get_clientdata(this_client);
+	
 	#if 0
 	printk("Orientaion: yaw = %d, pitch = %d, roll = %d\n", rbuf[0],
 			rbuf[1], rbuf[2]);
@@ -202,19 +231,30 @@ static void AKECS_Report_Value(short *rbuf)
 			rbuf[9], rbuf[10], rbuf[11]);
 	#endif
 	/*if flag is set, execute report */
-	/* Report magnetic sensor information */
+	/* Report Orientation information */
 	if (atomic_read(&m_flag)) {
-		input_report_abs(data->input_dev, ABS_RX, rbuf[0]);
-		input_report_abs(data->input_dev, ABS_RY, rbuf[1]);
-		input_report_abs(data->input_dev, ABS_RZ, rbuf[2]);
+		short AzConst = 180 * 64;
+		short azimut = rbuf[0];
+		short azimut_conv = ((azimut < AzConst) ? azimut + AzConst : azimut - AzConst);
+		input_report_abs(data->input_dev, ABS_RX, azimut_conv);
+//		input_report_abs(data->input_dev, ABS_RX, rbuf[0]);
+		input_report_abs(data->input_dev, ABS_RY, -rbuf[1]);
+		input_report_abs(data->input_dev, ABS_RZ, -rbuf[2]);
 		input_report_abs(data->input_dev, ABS_RUDDER, rbuf[4]);
 	}
 
 	/* Report acceleration sensor information */
+	ax = rbuf[AX];
+	ay = rbuf[AY];
+	az = rbuf[AZ];
+	if ( accel_inp_dev_sign & 4)  ax *= -1;
+	if ( accel_inp_dev_sign & 2)  ay *= -1;
+	if ( accel_inp_dev_sign & 1)  az *= -1;
+
 	if (atomic_read(&a_flag)) {
-		input_report_abs(data->input_dev, ABS_X, rbuf[6]);
-		input_report_abs(data->input_dev, ABS_Y, rbuf[7]);
-		input_report_abs(data->input_dev, ABS_Z, rbuf[8]);
+		input_report_abs(data->input_dev, ABS_X, ax);
+		input_report_abs(data->input_dev, ABS_Y, ay);
+		input_report_abs(data->input_dev, ABS_Z, az);
 		input_report_abs(data->input_dev, ABS_WHEEL, rbuf[5]);
 	}
 
@@ -223,10 +263,18 @@ static void AKECS_Report_Value(short *rbuf)
 		input_report_abs(data->input_dev, ABS_THROTTLE, rbuf[3]);
 	}
 
+	/* Report magnetic sensor information */
+	mx = rbuf[MX];
+	my = rbuf[MY];
+	mz = rbuf[MZ];
+	if ( mag_inpf_sign & 4)  mx *= -1;
+	if ( mag_inpf_sign & 2)  my *= -1;
+	if ( mag_inpf_sign & 1)  mz *= -1;
+
 	if (atomic_read(&mv_flag)) {
-		input_report_abs(data->input_dev, ABS_HAT0X, rbuf[9]);
-		input_report_abs(data->input_dev, ABS_HAT0Y, rbuf[10]);
-		input_report_abs(data->input_dev, ABS_BRAKE, rbuf[11]);
+		input_report_abs(data->input_dev, ABS_HAT0X, mx);
+		input_report_abs(data->input_dev, ABS_HAT0Y, my);
+		input_report_abs(data->input_dev, ABS_BRAKE, mz);
 	}
 	/* Report proximity information */
 	if (atomic_read(&p_flag)) {
@@ -597,52 +645,215 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 	switch (cmd) {
 #if 1 //bss to find the correct settings		
 		case 10:
-			change_sign = 0;
+			Makm_sign = 0;
 			break;
 
 		case 11:
-			change_sign = 1;
+			Makm_sign = 1;
 			break;
 
 		case 12:
-			change_sign = 2;
+			Makm_sign = 2;
 			break;
 
 		case 13:
-			change_sign = 3;
+			Makm_sign = 3;
 			break;
 
 		case 14:
-			change_sign = 4;
+			Makm_sign = 4;
 			break;
 
 		case 15:
-			change_sign = 5;
+			Makm_sign = 5;
 			break;
 
 		case 16:
-			change_sign = 6;
+			Makm_sign = 6;
 			break;
 
 		case 17:
-			change_sign = 7;
+			Makm_sign = 7;
 			break;
 
 		case 20:
-			swap = 0;
+			MakmX = O_MakmX;
+			MakmY = O_MakmY;
+			MakmZ = O_MakmZ;
 			break;
 
 		case 21:
-			swap = 1;
+			MakmX = O_MakmX;
+			MakmY = O_MakmZ;
+			MakmZ = O_MakmY;
 			break;
 
 		case 22:
-			swap = 2;
+			MakmX = O_MakmY;
+			MakmY = O_MakmX;
+			MakmZ = O_MakmZ;
 			break;
 
 		case 23:
-			swap = 3;
+			MakmX = O_MakmY;
+			MakmY = O_MakmZ;
+			MakmZ = O_MakmX;
 			break;
+
+		case 24:
+			MakmX = O_MakmZ;
+			MakmY = O_MakmX;
+			MakmZ = O_MakmY;
+			break;
+
+		case 25:
+			MakmX = O_MakmZ;
+			MakmY = O_MakmY;
+			MakmZ = O_MakmX;
+			break;
+
+		case 110:
+			accel_inp_dev_sign = 0;
+			break;
+
+		case 111:
+			accel_inp_dev_sign = 1;
+			break;
+
+		case 112:
+			accel_inp_dev_sign = 2;
+			break;
+
+		case 113:
+			accel_inp_dev_sign = 3;
+			break;
+
+		case 114:
+			accel_inp_dev_sign = 4;
+			break;
+
+		case 115:
+			accel_inp_dev_sign = 5;
+			break;
+
+		case 116:
+			accel_inp_dev_sign = 6;
+			break;
+
+		case 117:
+			accel_inp_dev_sign = 7;
+			break;
+
+		case 120:
+			AX = O_AX;
+			AY = O_AY;
+			AZ = O_AZ;
+			break;
+
+		case 121:
+			AX = O_AX;
+			AY = O_AZ;
+			AZ = O_AY;
+			break;
+
+		case 122:
+			AX = O_AY;
+			AY = O_AX;
+			AZ = O_AZ;
+			break;
+
+		case 123:
+			AX = O_AY;
+			AY = O_AZ;
+			AZ = O_AX;
+			break;
+
+		case 124:
+			AX = O_AZ;
+			AY = O_AX;
+			AZ = O_AY;
+			break;
+
+		case 125:
+			AX = O_AZ;
+			AY = O_AY;
+			AZ = O_AX;
+			break;
+
+		case 210:
+			mag_inpf_sign = 1;
+			break;
+
+		case 211:
+			mag_inpf_sign = 1;
+			break;
+
+		case 212:
+			mag_inpf_sign = 2;
+			break;
+
+		case 213:
+			mag_inpf_sign = 3;
+			break;
+
+		case 214:
+			mag_inpf_sign = 4;
+			break;
+
+		case 215:
+			mag_inpf_sign = 5;
+			break;
+
+		case 216:
+			mag_inpf_sign = 6;
+			break;
+
+		case 217:
+			mag_inpf_sign = 7;
+			break;
+
+		case 220:
+			MX = O_MX;
+			MY = O_MY;
+			MZ = O_MZ;
+			break;
+
+		case 221:
+			MX = O_MX;
+			MY = O_MZ;
+			MZ = O_MY;
+			break;
+
+		case 222:
+			MX = O_MY;
+			MY = O_MX;
+			MZ = O_MZ;
+			break;
+
+		case 223:
+			MX = O_MY;
+			MY = O_MZ;
+			MZ = O_MX;
+			break;
+
+		case 224:
+			MX = O_MZ;
+			MY = O_MX;
+			MZ = O_MY;
+			break;
+
+		case 225:
+			MX = O_MZ;
+			MY = O_MY;
+			MZ = O_MX;
+			break;
+		case 300:
+			print_flag = 0;
+			break;
+		case 301:
+			print_flag = 1;
+			break;
+
 #endif			
 		case ECS_IOCTL_READ:
 		case ECS_IOCTL_WRITE:
@@ -684,31 +895,20 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			if (rwbuf[0] < 1)
 				return -EINVAL;
 			ret = AKI2C_RxData(&rwbuf[1], rwbuf[0]);
-#if 1  //bss for m910 froyo on omnia_II
-#define X (2)			
-#define Y (3)			
-#define Z (4)			
-
-			if ( change_sign & 1) rwbuf[X] *= -1;
-			if ( change_sign & 2) rwbuf[Y] *= -1;
-			if ( change_sign & 4) rwbuf[Z] *= -1;
-
-			if (swap == 1) { // X <-> Y
-				char ch = rwbuf[X];
-				rwbuf[X] = rwbuf[Y];
-				rwbuf[Y] = ch;
-			}
-
-			if (swap == 2) { // X <-> Z
-				char ch = rwbuf[X];
-				rwbuf[X] = rwbuf[Z];
-				rwbuf[Z] = ch;
-			}
-
-			if (swap == 3) { // Y <-> Z
-				char ch = rwbuf[Y];
-				rwbuf[Y] = rwbuf[Z];
-				rwbuf[Z] = ch;
+			if (print_flag)  
+				printk("Ak orig sensor X: %d, Y: %d, Z: %d\n", 
+						rwbuf[O_MakmX], rwbuf[O_MakmY], rwbuf[O_MakmZ]);
+#if 1  //bss 
+			{ char akmX, akmY, akmZ;
+				akmX = rwbuf[MakmX];
+				akmY = rwbuf[MakmY];
+				akmZ = rwbuf[MakmZ];
+				if ( Makm_sign & 4) akmX *= -1;
+				if ( Makm_sign & 2) akmY *= -1;
+				if ( Makm_sign & 1) akmZ *= -1;
+				rwbuf[O_MakmX] = akmX;
+				rwbuf[O_MakmY] = akmY;
+				rwbuf[O_MakmZ] = akmZ;
 			}
 #endif 
 
@@ -737,29 +937,20 @@ akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 			if (rwbuf[0] < 2)
 				return -EINVAL;
 
-#if 1  //bss for m910 froyo on omnia_II
-			if ( change_sign & 1) rwbuf[2] *= -1;
-			if ( change_sign & 2) rwbuf[3] *= -1;
-			if ( change_sign & 4) rwbuf[4] *= -1;
-
-			if (swap == 1) { // X <-> Y
-				char ch = rwbuf[X];
-				rwbuf[X] = rwbuf[Y];
-				rwbuf[Y] = ch;
-			}
-
-			if (swap == 2) { // X <-> Z
-				char ch = rwbuf[X];
-				rwbuf[X] = rwbuf[Z];
-				rwbuf[Z] = ch;
-			}
-
-			if (swap == 3) { // Y <-> Z
-				char ch = rwbuf[Y];
-				rwbuf[Y] = rwbuf[Z];
-				rwbuf[Z] = ch;
+#if 0  //bss 
+			{ char akmX, akmY, akmZ;
+				akmX = rwbuf[MakmX];
+				akmY = rwbuf[MakmY];
+				akmZ = rwbuf[MakmZ];
+				if ( Makm_sign & 4) akmX *= -1;
+				if ( Makm_sign & 2) akmY *= -1;
+				if ( Makm_sign & 1) akmZ *= -1;
+				rwbuf[O_MakmX] = akmX;
+				rwbuf[O_MakmY] = akmY;
+				rwbuf[O_MakmZ] = akmZ;
 			}
 #endif 
+
 
 #if 0 //bss for i6500 eclair akmd2 on onmia_II
 			if (rwbuf[0] == 4) {
