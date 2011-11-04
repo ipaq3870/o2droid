@@ -194,12 +194,12 @@ static void __init saturn_fixup(struct machine_desc *desc,
 {
 	mi->nr_banks = 2;
 	mi->bank[0].start = UL(0x50000000);//PHYS_OFFSET;
-	mi->bank[0].size = PHYS_UNRESERVED_SIZE;
-//	mi->bank[0].size = (128 * 1024 * 1024); 
+//	mi->bank[0].size = PHYS_UNRESERVED_SIZE;
+	mi->bank[0].size = (128 * 1024 * 1024); 
 	mi->bank[0].node = PHYS_TO_NID(0x50000000);// 0;
 	mi->bank[1].start = UL(0x60000000);//PHYS_OFFSET;
-//	mi->bank[1].size = PHYS_UNRESERVED_SIZE;
-	mi->bank[1].size = (80 * 1024 * 1024);
+	mi->bank[1].size = PHYS_UNRESERVED_SIZE;
+//	mi->bank[1].size = (80 * 1024 * 1024);
 	mi->bank[1].node = PHYS_TO_NID(0x60000000);///0;
 }
 
@@ -363,8 +363,6 @@ static void __init init_spi(void)
 static struct s3c6410_pmem_setting pmem_setting = {
         .pmem_start = RESERVED_PMEM_START,
         .pmem_size = RESERVED_PMEM,
-//        .pmem_gpu1_start = GPU1_RESERVED_PMEM_START,
-//        .pmem_gpu1_size = RESERVED_PMEM_GPU1,
         .pmem_render_start = RENDER_RESERVED_PMEM_START,
         .pmem_render_size = RESERVED_PMEM_RENDER,
         .pmem_stream_start = STREAM_RESERVED_PMEM_START,
@@ -375,8 +373,6 @@ static struct s3c6410_pmem_setting pmem_setting = {
         .pmem_picture_size = RESERVED_PMEM_PICTURE,
         .pmem_jpeg_start = JPEG_RESERVED_PMEM_START,
         .pmem_jpeg_size = RESERVED_PMEM_JPEG,
-//        .pmem_skia_start = SKIA_RESERVED_PMEM_START,
-//        .pmem_skia_size = RESERVED_PMEM_SKIA,
 };
 
 

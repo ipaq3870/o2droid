@@ -5,22 +5,22 @@
 #include <linux/list.h>
 #include <asm/setup.h>
 
-//#define DRAM_END_ADDR 				(UL(0x65000000))//?65
-#define DRAM_END_ADDR 				(UL(0x58000000))//?65
+#define DRAM_END_ADDR 				(UL(0x65000000))
+//#define DRAM_END_ADDR 				(UL(0x58000000))
+//#define DRAM_END_ADDR 					(UL(0x60000000))
 
 #define RESERVED_PMEM_END_ADDR 		(DRAM_END_ADDR)
 
 
 
-#define RESERVED_MEM_CMM		(3 * 1024 * 1024)
-#define RESERVED_MEM_MFC		(4 * 1024 * 1024)
-#define RESERVED_PMEM_PICTURE		(4 * 1024 * 1024)	/* PMEM_PIC and MFC use share area */
-#define RESERVED_PMEM_JPEG		(3 * 1024 * 1024) //
-#define RESERVED_PMEM_PREVIEW		(2 * 1024 * 1024) //2 
+#define RESERVED_MEM_CMM		(16 * 1024 * 1024)
+#define RESERVED_MEM_MFC		(12 * 1024 * 1024)
+#define RESERVED_PMEM_PICTURE		(12 * 1024 * 1024)	/* PMEM_PIC and MFC use share area */
+#define RESERVED_PMEM_JPEG		(6 * 1024 * 1024) //
+#define RESERVED_PMEM_PREVIEW		(4 * 1024 * 1024) //2 
 #define RESERVED_PMEM_RENDER	  	(4 * 1024 * 1024) //4 
-#define RESERVED_PMEM_STREAM	  	(6 * 1024 * 1024) //4
-#define RESERVED_G3D			(64 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
-#define RESERVED_PMEM_GPU1		(0) //0
+#define RESERVED_PMEM_STREAM	  	(8 * 1024 * 1024) //4
+#define RESERVED_G3D			(63 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
 #define RESERVED_PMEM			(16 * 1024 * 1024)//12 working well, i9000 16mb --> if we move to 16M then 16mb *FIX*
 #define RESERVED_PMEM_SKIA		(0)//0
 
@@ -38,10 +38,9 @@
 #define RENDER_RESERVED_PMEM_START	(PREVIEW_RESERVED_PMEM_START - RESERVED_PMEM_RENDER)	//6m	-20m
 #define STREAM_RESERVED_PMEM_START	(RENDER_RESERVED_PMEM_START - RESERVED_PMEM_STREAM)	//6m	-26m
 #define G3D_RESERVED_START		(RESERVED_PMEM_END_ADDR - RESERVED_G3D)			//32m	-32m G3D shared!!!
-#define GPU1_RESERVED_PMEM_START	(G3D_RESERVED_START - RESERVED_PMEM_GPU1)		//0m
-#define RESERVED_PMEM_START		(GPU1_RESERVED_PMEM_START - RESERVED_PMEM)		//12m	-44m
-//#define PHYS_UNRESERVED_SIZE		(RESERVED_PMEM_START - UL(0x60000000))
-#define PHYS_UNRESERVED_SIZE		(RESERVED_PMEM_START - UL(0x50000000))
+#define RESERVED_PMEM_START		(G3D_RESERVED_START - RESERVED_PMEM)		//12m	-44m
+#define PHYS_UNRESERVED_SIZE		(RESERVED_PMEM_START - UL(0x60000000))
+//#define PHYS_UNRESERVED_SIZE		(RESERVED_PMEM_START - UL(0x50000000))
 
 #define SKIA_RESERVED_PMEM_START	(0)
 
@@ -49,8 +48,6 @@
 struct s3c6410_pmem_setting{
         resource_size_t pmem_start;
         resource_size_t pmem_size;
-        resource_size_t pmem_gpu1_start;
-        resource_size_t pmem_gpu1_size;
         resource_size_t pmem_render_start;
         resource_size_t pmem_render_size;
         resource_size_t pmem_render_pic_start;
@@ -63,8 +60,6 @@ struct s3c6410_pmem_setting{
         resource_size_t pmem_picture_size;
         resource_size_t pmem_jpeg_start;
         resource_size_t pmem_jpeg_size;
-        resource_size_t pmem_skia_start;
-        resource_size_t pmem_skia_size;
 };
  
 void s3c6410_add_mem_devices (struct s3c6410_pmem_setting *setting);
