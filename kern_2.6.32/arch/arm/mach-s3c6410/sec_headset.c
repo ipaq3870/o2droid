@@ -38,9 +38,9 @@
 
 extern int call_state;
 
-#define CONFIG_DEBUG_SEC_HEADSET
+#define CONFIG_DEBUG_SEC_HEADSET 0
 
-#ifdef CONFIG_DEBUG_SEC_HEADSET
+#if CONFIG_DEBUG_SEC_HEADSET
 #define SUBJECT "sec_headset.c"
 #define SEC_HEADSET_DBG(format,...)\
 	        printk ("[ "SUBJECT " (%s,%d) ] " format "\n", __func__, __LINE__, ## __VA_ARGS__);
