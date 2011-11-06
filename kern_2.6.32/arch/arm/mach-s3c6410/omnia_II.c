@@ -115,7 +115,7 @@ extern struct sys_timer s3c64xx_timer;
 extern struct sys_timer sec_timer;
 #endif /* CONFIG_HIGH_RES_TIMERS */
 
-static struct s3c_uartcfg saturn_uartcfgs[] __initdata = {
+static struct s3c_uartcfg omnia_II_uartcfgs[] __initdata = {
 	[0] = {	/* Phone */
 		.hwport	     = 0,
 		.flags	     = 0,
@@ -189,18 +189,17 @@ static struct i2c_board_info i2c_devs3[] __initdata = {
 };
 
 
-static void __init saturn_fixup(struct machine_desc *desc,
+static void __init omnia_II_fixup(struct machine_desc *desc,
 		struct tag *tags, char **cmdline, struct meminfo *mi)
 {
 	mi->nr_banks = 2;
 	mi->bank[0].start = UL(0x50000000);//PHYS_OFFSET;
-//	mi->bank[0].size = PHYS_UNRESERVED_SIZE;
 	mi->bank[0].size = (128 * 1024 * 1024); 
-	mi->bank[0].node = PHYS_TO_NID(0x50000000);// 0;
-	mi->bank[1].start = UL(0x60000000);//PHYS_OFFSET;
+	mi->bank[0].node = PHYS_TO_NID(0x50000000);
+	mi->bank[1].start = UL(0x60000000);
 	mi->bank[1].size = PHYS_UNRESERVED_SIZE;
 //	mi->bank[1].size = (80 * 1024 * 1024);
-	mi->bank[1].node = PHYS_TO_NID(0x60000000);///0;
+	mi->bank[1].node = PHYS_TO_NID(0x60000000);
 }
 
 struct platform_device sec_device_opt_prox = {
@@ -396,7 +395,7 @@ extern int get_usb_cable_state(void);
 
 extern void arch_reset(char mode);
 
-static void saturn_pm_power_off(void)
+static void omnia_II_pm_power_off(void)
 {
 	int	mode = REBOOT_MODE_NONE;
 	char reset_mode = 'r';
@@ -512,7 +511,7 @@ static ssize_t uart_switch_store(struct device *dev, struct device_attribute *at
 
 static DEVICE_ATTR(uart_sel, S_IRUGO |S_IWUGO | S_IRUSR | S_IWUSR, uart_switch_show, uart_switch_store);
 
-static void saturn_switch_init(void)
+static void omnia_II_switch_init(void)
 {
 	sec_class = class_create(THIS_MODULE, "sec");
 	if (IS_ERR(sec_class))
@@ -617,10 +616,10 @@ static struct s3c_ts_mach_info s3c_ts_platform __initdata = {
 static void __init omnia_II_map_io(void)
 {
 	s3c64xx_gpiolib_init();
-	pm_power_off = saturn_pm_power_off;
+	pm_power_off = omnia_II_pm_power_off;
 	s3c64xx_init_io(smdk6410_iodesc, ARRAY_SIZE(smdk6410_iodesc));
 	s3c_init_clocks(12000000);
-        s3c_init_uarts(saturn_uartcfgs, ARRAY_SIZE(saturn_uartcfgs));
+        s3c_init_uarts(omnia_II_uartcfgs, ARRAY_SIZE(omnia_II_uartcfgs));
 }
 
 static void omnia_II_set_qos(void) 
@@ -668,7 +667,7 @@ static void __init omnia_II_machine_init(void)
 	s3c6410_pm_init();
 	omnia_II_set_qos();
 	s3c6410_wdt_io_map();
-	saturn_switch_init();
+	omnia_II_switch_init();
 	wake_lock_init(&wlan_wakelock, WAKE_LOCK_SUSPEND, "wlan");
 }
 
@@ -678,7 +677,7 @@ MACHINE_START(OMNIA_II, "OMNIA II")
 	.io_pg_offst	= (((u32)S3C_VA_UART) >> 18) & 0xfffc,
 	.boot_params	= S3C64XX_PA_SDRAM + 0x100,
 	.init_irq	= s3c6410_init_irq,
-	.fixup		= saturn_fixup,
+	.fixup		= omnia_II_fixup,
 	.map_io		= omnia_II_map_io,
 	.init_machine	= omnia_II_machine_init,
 #ifndef CONFIG_HIGH_RES_TIMERS

@@ -50,7 +50,7 @@ static struct struct_mark_ver_mark marks_ver_mark = {
 	.log_mark_version = 1,
 	.framebuffer_mark_version = 1,
 	.this=&marks_ver_mark,
-	.first_size=208*1024*1024,
+	.first_size=128*1024*1024,
 	.first_start_addr=0x50000000,
 	.second_size=0,
 	.second_start_addr=0
@@ -660,11 +660,11 @@ static int __init logger_init(void)
 
 	/* 최적화에 의한 삭제 방지 */
 	marks_ver_mark.log_mark_version = 1; 
-
+#ifdef CONFIG_KERNEL_DEBUG_SEC 
 	extern void kernel_sec_set_log_ptrs_for_getlog(void*);
 	kernel_sec_set_log_ptrs_for_getlog(&plat_log_mark);
 	kernel_sec_set_log_ptrs_for_getlog(&marks_ver_mark);
-
+#endif
 out:
 	return ret;
 }
