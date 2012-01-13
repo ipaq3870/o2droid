@@ -54,6 +54,7 @@ static size_t lowmem_minfree[6] = {
 };
 static int lowmem_minfree_size = 4;
 
+static unsigned long lowmem_deathpending_timeout;
 static int fudgeswap = 512;
 
 #define lowmem_print(level, x...)			\
@@ -141,6 +142,12 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 			task_unlock(p);
 			continue;
 		}
+		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
+		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
+			task_unlock(p);
+			read_unlock(&tasklist_lock);
+			return 0;
+		}
 		oom_adj = sig->oom_adj;
 		if (oom_adj < min_adj) {
 			task_unlock(p);
@@ -173,6 +180,7 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 		lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
 			     selected->pid, selected->comm,
 			     selected_oom_adj, selected_tasksize);
+		lowmem_deathpending_timeout = jiffies + HZ;
 		force_sig(SIGKILL, selected);
 		set_tsk_thread_flag(selected, TIF_MEMDIE);
 		rem -= selected_tasksize;
