@@ -66,7 +66,7 @@ static int fudgeswap = 512;
 
 static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 {
-	struct task_struct *p;
+	struct task_struct *tsk;
 	struct task_struct *selected = NULL;
 	int rem = 0;
 	int tasksize;
@@ -131,15 +131,17 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 	selected_oom_adj = min_adj;
 
 	rcu_read_lock();
-	for_each_process(p) {
-		struct mm_struct *mm;
+	for_each_process(tsk) {
+		struct task_struct *p;
 		struct signal_struct *sig;
 		int oom_adj;
 
-		task_lock(p);
-		mm = p->mm;
+		p = find_lock_task_mm(tsk);
+		if (!p)
+			continue;
+
 		sig = p->signal;
-		if (!mm || !sig) {
+		if (!sig) {
 			task_unlock(p);
 			continue;
 		}
@@ -154,7 +156,7 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 			task_unlock(p);
 			continue;
 		}
-		tasksize = get_mm_rss(mm);
+		tasksize = get_mm_rss(p->mm);
 		task_unlock(p);
 		if (tasksize <= 0)
 			continue;
