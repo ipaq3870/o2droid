@@ -133,25 +133,19 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 	rcu_read_lock();
 	for_each_process(tsk) {
 		struct task_struct *p;
-		struct signal_struct *sig;
 		int oom_adj;
 
 		p = find_lock_task_mm(tsk);
 		if (!p)
 			continue;
 
-		sig = p->signal;
-		if (!sig) {
-			task_unlock(p);
-			continue;
-		}
 		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
 		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
 			task_unlock(p);
 			rcu_read_unlock();
 			return 0;
 		}
-		oom_adj = sig->oom_adj;
+		oom_adj = p->signal->oom_adj;
 		if (oom_adj < min_adj) {
 			task_unlock(p);
 			continue;
