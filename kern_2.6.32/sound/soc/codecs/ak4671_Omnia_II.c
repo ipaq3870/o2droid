@@ -451,7 +451,7 @@ static void set_bias (struct snd_soc_codec *codec, int mode)
 
 static void set_amp_gain(struct snd_soc_codec *codec, int mode)
 {
-	P("SET AMP gain : %d\n", mode);
+	P("SET AMP gain : %x\n", mode);
 
 	/* VOICEMEMO Path : only SPK */
 	if ((mode & 0xf0) == MM_AUDIO_VOICEMEMO)
@@ -488,7 +488,7 @@ static void set_amp_gain(struct snd_soc_codec *codec, int mode)
 static void set_codec_gain(struct snd_soc_codec *codec, int mode)
 {
 	struct ak4671_priv *ak4671 = codec->private_data;
-	P("SET Path gain : %d\n", mode);
+	P("SET Path gain : %x\n", mode);
 
 	/* Set output tunning value */
 	switch (mode) 
@@ -1188,7 +1188,7 @@ int path_enable(struct snd_soc_codec *codec, int mode)
 			break;
 
 		default :
-			printk("[SOUND MODE] invalid mode!!! \n");
+			printk("[SOUND MODE] invalid mode: %x !!!!! \n", mode);
 	}
 
 	/* disable soft mute */
@@ -1204,7 +1204,7 @@ int path_enable(struct snd_soc_codec *codec, int mode)
 
 int path_disable(struct snd_soc_codec *codec, int mode)
 {
-	P("Diasble PATH : %d\n", mode);
+	P("Diasble PATH : %x\n", mode);
 
 	/* for Noise */
 	amp_enable(0);
@@ -1387,7 +1387,7 @@ int path_disable(struct snd_soc_codec *codec, int mode)
 			break;
 
 		default:
-			printk("[SOUND MODE] invalid mode!!! \n");
+			printk("[SOUND MODE] invalid mode: %x !!! \n", mode);
 	}
 
 	return 0;
