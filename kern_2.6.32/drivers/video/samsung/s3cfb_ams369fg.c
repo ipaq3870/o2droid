@@ -485,7 +485,7 @@ void lcd_power_ctrl(s32 value)
 	u8 data;
 	u32 timeout = 100;
 	if (value) {
-		while (timeout-- > 0) {
+	/*	while (timeout-- > 0) {
 			if (lcd_late_resume == 1)
 				break;
 			msleep(50);
@@ -495,6 +495,9 @@ void lcd_power_ctrl(s32 value)
 			printk(KERN_ERR "lcd power control time out\n");
 			//return -1;
 		}
+*/
+		if (lcd_late_resume == 0)
+			return;
 
 		//printk("Lcd power on sequence start\n");
 
