@@ -608,6 +608,12 @@ static struct clk init_clocks[] = {
                 .parent         = &clk_h,
                 .enable         = s3c64xx_hclk_ctrl,
                 .ctrlbit        = S3C_CLKCON_HCLK_DMA1,
+        }, {
+                .name           = "onenand",
+                .id             = -1,
+                .parent         = &clk_dout_mpll,
+                .enable         = s3c64xx_sclk_ctrl,
+                .ctrlbit        = S3C_CLKCON_SCLK_ONENAND,
 	},
 };
 

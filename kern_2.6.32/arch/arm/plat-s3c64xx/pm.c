@@ -60,10 +60,10 @@
 unsigned long s3c_pm_flags;
 
 int (*bml_suspend_fp)(struct device *dev, u32 state, u32 level);
-EXPORT_SYMBOL(bml_suspend_fp);
+//EXPORT_SYMBOL(bml_suspend_fp);
 
 int (*bml_resume_fp)(struct device *dev, u32 level);
-EXPORT_SYMBOL(bml_resume_fp);
+//EXPORT_SYMBOL(bml_resume_fp);
 
 /* for external use */
 #define PFX "s3c64xx-pm: "
@@ -331,7 +331,7 @@ static struct sleep_save sromc_save[] = {
 	SAVE_ITEM(S3C64XX_SROM_BC4),
 	SAVE_ITEM(S3C64XX_SROM_BC5),
 };
-
+#if 0
 static struct sleep_save onenand_save[] = {
 	SAVE_ITEM(S3C_MEM_CFG0),
 	SAVE_ITEM(S3C_BURST_LEN0),
@@ -401,6 +401,7 @@ static struct sleep_save onenand_save[] = {
 	SAVE_ITEM(S3C_FLASH_AUX_CNTRL1),
 	SAVE_ITEM(S3C_FLASH_AFIFO_CNT1),
 };
+#endif
 
 #ifdef CONFIG_S3C_PM_DEBUG
 
@@ -803,7 +804,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_pm_do_save(irq_save, ARRAY_SIZE(irq_save));
 	s3c6410_pm_do_save(core_save, ARRAY_SIZE(core_save));
 	s3c6410_pm_do_save(sromc_save, ARRAY_SIZE(sromc_save));
-	s3c6410_pm_do_save(onenand_save, ARRAY_SIZE(onenand_save));
+//bss	s3c6410_pm_do_save(onenand_save, ARRAY_SIZE(onenand_save));
 	s3c6410_pm_do_save(uart_save, ARRAY_SIZE(uart_save));
 
 	/* ensure INF_REG0  has the resume address */
@@ -887,7 +888,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_pm_do_restore(sromc_save, ARRAY_SIZE(sromc_save));
 	s3c6410_pm_do_restore(gpio_save, ARRAY_SIZE(gpio_save));
 	s3c6410_pm_do_restore(irq_save, ARRAY_SIZE(irq_save));
-	s3c6410_pm_do_restore(onenand_save, ARRAY_SIZE(onenand_save));
+//bss	s3c6410_pm_do_restore(onenand_save, ARRAY_SIZE(onenand_save));
 	s3c6410_pm_do_restore(uart_save, ARRAY_SIZE(uart_save));
 	
 	__raw_writel(0x0, S3C64XX_SLPEN);

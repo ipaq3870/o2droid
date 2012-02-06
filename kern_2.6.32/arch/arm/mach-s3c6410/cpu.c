@@ -41,6 +41,7 @@
 #include <plat/clock.h>
 #include <plat/sdhci.h>
 #include <plat/iic-core.h>
+#include <plat/onenand-core.h>
 #include <plat/s3c6400.h>
 #include <plat/s3c6410.h>
 #include <mach/map.h>
@@ -90,6 +91,7 @@ void __init s3c6410_map_io(void)
 	s3c_i2c0_setname("s3c-i2c");
 	s3c_i2c1_setname("s3c-i2c");
 
+	s3c_onenand_setname("s3c6410-onenand");
 	/* set our idle function */
 	s3c64xx_idle = s3c6410_idle;
 }

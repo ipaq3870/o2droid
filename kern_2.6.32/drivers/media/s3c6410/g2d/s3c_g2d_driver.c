@@ -1,5 +1,5 @@
 /*
-/* g2d/s3c_g2d_driver.c
+ * g2d/s3c_g2d_driver.c
  *
  * Copyright (c) 2008 Samsung Electronics
  *

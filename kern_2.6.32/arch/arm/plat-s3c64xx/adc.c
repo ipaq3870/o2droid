@@ -191,6 +191,7 @@ int s3c_adc_get(struct s3c_adc_request *req)
 EXPORT_SYMBOL(s3c_adc_get);
 
 //bss
+extern unsigned int get_s3c_adc_value(unsigned int s3c_adc_port);
 int s3c_adc_get_adc_data(int channel)
 {	
 	int adc_value = 0;
@@ -206,7 +207,10 @@ int s3c_adc_get_adc_data(int channel)
 	cur_adc_port = adc_port;
 	adc_port = channel;
 
-	adc_value = s3c_adc_convert();
+	//bss adc_value = s3c_adc_convert();
+	//adc_value = s3c_adc_conv(adc_port);
+
+	adc_value = get_s3c_adc_value(adc_port);
 
 	adc_port = cur_adc_port;
 
