@@ -34,6 +34,7 @@
 #include <linux/mm.h>
 #include <linux/oom.h>
 #include <linux/sched.h>
+#include <linux/rcupdate.h>
 #include <linux/notifier.h>
 #include <linux/fs.h>
 #include <linux/swap.h>
@@ -129,7 +130,7 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 
 	selected_oom_adj = min_adj;
 
-	read_lock(&tasklist_lock);
+	rcu_read_lock();
 	for_each_process(p) {
 		struct mm_struct *mm;
 		struct signal_struct *sig;
@@ -145,7 +146,7 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
 		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
 			task_unlock(p);
-			read_unlock(&tasklist_lock);
+			rcu_read_unlock();
 			return 0;
 		}
 		oom_adj = sig->oom_adj;
@@ -175,14 +176,14 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 			     selected->pid, selected->comm,
 			     selected_oom_adj, selected_tasksize);
 		lowmem_deathpending_timeout = jiffies + HZ;
-		force_sig(SIGKILL, selected);
+		send_sig(SIGKILL, selected, 0);
 		set_tsk_thread_flag(selected, TIF_MEMDIE);
 		rem -= selected_tasksize;
 	} else
 		rem = -1;
 	lowmem_print(4, "lowmem_shrink %d, %x, return %d\n",
 		     nr_to_scan, gfp_mask, rem);
-	read_unlock(&tasklist_lock);
+	rcu_read_unlock();
 	return rem;
 }
 
