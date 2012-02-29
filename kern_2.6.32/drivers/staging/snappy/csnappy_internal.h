@@ -80,4 +80,18 @@ enum {
 	COPY_4_BYTE_OFFSET = 3
 };
 
+/* This can be more efficient than UNALIGNED_LOAD64 + UNALIGNED_STORE64
+   on some platforms, in particular ARM. */
+static inline void UnalignedCopy64(const void *src, void *dst) {
+  if (sizeof(void *) == 8) {
+    UNALIGNED_STORE64(dst, UNALIGNED_LOAD64(src));
+  } else {
+    const char *src_char = (const char *)src;
+    char *dst_char = (char *)dst;
+
+    UNALIGNED_STORE32(dst_char, UNALIGNED_LOAD32(src_char));
+    UNALIGNED_STORE32(dst_char + 4, UNALIGNED_LOAD32(src_char + 4));
+  }
+}
+
 #endif  /* CSNAPPY_INTERNAL_H_ */
