@@ -39,6 +39,7 @@ Zeev Tarantov <zeev.tarantov at gmail.com <http://driverdev.linuxdriverproject.o
 #endif
 #include "csnappy.h"
 
+# define UINT32_C(c)    c ## U
 
 static inline char*
 encode_varint32(char *sptr, uint32_t v)
