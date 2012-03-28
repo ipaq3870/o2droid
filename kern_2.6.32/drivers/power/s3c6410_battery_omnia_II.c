@@ -1560,7 +1560,7 @@ static void s3c_bat_status_update(struct power_supply *bat_ps)
 #endif
 
 	s3c_bat_info.bat_info.level = s3c_get_bat_level_fuel(bat_ps);		
-
+#if 0
 	if(!is_batt_test)
 	{
 		if (!s3c_bat_info.bat_info.charging_enabled &&
@@ -1571,7 +1571,10 @@ static void s3c_bat_status_update(struct power_supply *bat_ps)
 
 	}
 	else is_batt_test=0;
-
+#else
+	if (s3c_bat_info.bat_info.level >= 100)
+		s3c_bat_info.bat_info.level = old_level;
+#endif
 	s3c_bat_info.bat_info.batt_vol = s3c_get_bat_vol_fuel(bat_ps);
 
 	s3c_bat_info.bat_info.batt_temp_chg_cut_off_on = s3c_get_bat_health(); //bss s3c_bat_show_property-hez kell
@@ -1603,7 +1606,7 @@ charger_type_t status = 0;
 	mutex_lock(&work_lock);
 
 	if (!gpio_get_value(gpio_ta_connected)) {
-		if (get_usb_power_state())
+		if (1 /*get_usb_power_state()*/)
 			status = CHARGER_USB;		    
 		else
 			status = CHARGER_AC;
