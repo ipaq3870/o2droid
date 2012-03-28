@@ -291,6 +291,16 @@ int s3c64xx_irq_resume(struct sys_device *dev)
 #define s3c64xx_irq_resume	NULL
 #endif
 
+/* setup the sources the vic should advertise resume for, even though it
+* is not doing the wake (set_irq_wake needs to be valid) */
+#define IRQ_VIC0_RESUME (1 << (IRQ_RTC_TIC - S3C_VIC0_BASE) | \
+	1 << (IRQ_KEYPAD - S3C_VIC0_BASE))
+#define IRQ_VIC1_RESUME (1 << (IRQ_RTC_ALARM - S3C_VIC1_BASE) | \
+	1 << (IRQ_PENDN - S3C_VIC1_BASE) | \
+	1 << (IRQ_HSMMC0 - S3C_VIC1_BASE) | \
+	1 << (IRQ_HSMMC1 - S3C_VIC1_BASE) | \
+	1 << (IRQ_HSMMC2 - S3C_VIC1_BASE))
+
 void __init s3c64xx_init_irq(u32 vic0_valid, u32 vic1_valid)
 {
 	int uart, irq;
@@ -298,8 +308,8 @@ void __init s3c64xx_init_irq(u32 vic0_valid, u32 vic1_valid)
 	printk(KERN_DEBUG "%s: initialising interrupts\n", __func__);
 
 	/* initialise the pair of VICs */
-	vic_init(S3C_VA_VIC0, S3C_VIC0_BASE, vic0_valid, 0);
-	vic_init(S3C_VA_VIC1, S3C_VIC1_BASE, vic1_valid, 0);
+	vic_init(S3C_VA_VIC0, S3C_VIC0_BASE, vic0_valid, IRQ_VIC0_RESUME);
+	vic_init(S3C_VA_VIC1, S3C_VIC1_BASE, vic1_valid, IRQ_VIC1_RESUME);
 
 	/* add the timer sub-irqs */
 
