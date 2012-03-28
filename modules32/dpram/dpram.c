@@ -22,8 +22,8 @@
 #undef CONFIG_ONEDRAM_CHECKBIT
 #define CONFIG_ONEDRAM_TX_RETRY 10
 
-//#define LOAD_PHONE_IMAGE
-#undef define LOAD_PHONE_IMAGE
+#define LOAD_PHONE_IMAGE
+//#undef define LOAD_PHONE_IMAGE
 #define BSS 0
 #define _ENABLE_ERROR_DEVICE
 //#define _DEBUG
