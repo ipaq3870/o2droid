@@ -63,13 +63,13 @@ static const char longname[] = "Gadget Android";
 #define ADB_PRODUCT_ID 	0x681C	/* S3C6410 Swallowtail*/
 #define PRODUCT_ID		0x681D
 
-/*
- * Originally, adbd will enable adb function at booting
+/* 
+ * Originally, adbd will enable adb function at booting 
  * if the value of persist.service.adb.enable is 1
- * ADB_ENABLE_AT_BOOT intends to enable adb function
+ * ADB_ENABLE_AT_BOOT intends to enable adb function 
  * in case of no enabling by adbd or improper RFS
  */
-#define ADB_ENABLE_AT_BOOT	0
+#define ADB_ENABLE_AT_BOOT	1
 
 extern void get_usb_serial(char *usb_serial_number);
 
@@ -118,12 +118,12 @@ static struct usb_device_descriptor device_desc = {
 	.bLength              = sizeof(device_desc),
 	.bDescriptorType      = USB_DT_DEVICE,
 	.bcdUSB               = __constant_cpu_to_le16(0x0200),
-	.bDeviceClass		  = 0x00,//USB_CLASS_MASS_STORAGE,
-	.bDeviceSubClass	  = 0x00,//0x06,//US_SC_SCSI,
-	.bDeviceProtocol	  = 0x00,//0x50,//US_PR_BULK,
+	.bDeviceClass		  = USB_CLASS_MASS_STORAGE,
+	.bDeviceSubClass	  = 0x06,//US_SC_SCSI,
+	.bDeviceProtocol	  = 0x50,//US_PR_BULK,
 	.idVendor             = __constant_cpu_to_le16(VENDOR_ID),
 	.idProduct            = __constant_cpu_to_le16(PRODUCT_ID),
-	.bcdDevice            = __constant_cpu_to_le16(0xffff),
+	.bcdDevice            = __constant_cpu_to_le16(0x0400),
 	.bNumConfigurations   = 1,
 };
 
@@ -152,7 +152,9 @@ void android_usb_set_connected(int connected)
 	}
 }
 
+#if ADB_ENABLE_AT_BOOT
 static void enable_adb(struct android_dev *dev, int enable);
+#endif
 
 static int __init android_bind_config(struct usb_configuration *c)
 {
@@ -179,8 +181,6 @@ static int __init android_bind_config(struct usb_configuration *c)
 #if ADB_ENABLE_AT_BOOT
 	printk("[%s] Enabling adb function at booting\n", __func__);
 	enable_adb(dev, 1);
-#else
-	enable_adb(dev, -1);
 #endif
 
 	return ret;
@@ -230,8 +230,8 @@ static int __init android_bind(struct usb_composite_dev *cdev)
 	get_usb_serial(usb_serial_number);
 	strings_dev[STRING_SERIAL_IDX].id = id;
 
-	if( (usb_serial_number[0] +
-		 usb_serial_number[1] +
+	if( (usb_serial_number[0] + 
+		 usb_serial_number[1] + 
 		 usb_serial_number[2]) != 0 )
 	strcpy((char *)(strings_dev[STRING_SERIAL_IDX].s), usb_serial_number);
 	printk("[ADB_UMS_ACM] string_dev = %s \n",strings_dev[STRING_SERIAL_IDX].s);
@@ -253,11 +253,11 @@ static int __init android_bind(struct usb_composite_dev *cdev)
 			longname, gadget->name);
 		device_desc.bcdDevice = __constant_cpu_to_le16(0x9999);
 	}
-
-	if (gadget_is_otg(cdev->gadget))
+	
+	if (gadget_is_otg(cdev->gadget)) 
 		android_config.descriptors = otg_desc;
-
-#if USBCV_CH9_REMOTE_WAKE_UP_TEST
+	
+#if USBCV_CH9_REMOTE_WAKE_UP_TEST 
 	if (gadget->ops->wakeup)
 		android_config.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
 #endif
@@ -271,7 +271,7 @@ static int __init android_bind(struct usb_composite_dev *cdev)
 
 	usb_gadget_set_selfpowered(gadget);
 	dev->cdev = cdev;
-
+	
 	INFO(cdev, "%s, version: " DRIVER_VERSION "\n", DRIVER_DESC);
 
 	return 0;
@@ -295,22 +295,10 @@ static struct usb_composite_driver android_usb_driver = {
 //	.unbind 	= __exit_p(android_unbind),
 };
 
-#ifdef CONFIG_MACH_MAX
-int UmsCDEnable=0;
-#endif /*eunsuk5*/
-
-#if 1 //usb.num_interface_error temporary fix!!!!!! must be fixed!!!!!!!!!!
-int adb_enabled=-1;
-#endif
-
 static void enable_adb(struct android_dev *dev, int enable)
 {
 	if (enable != dev->adb_enabled) {
-		if(enable<0) enable = 0;
 		dev->adb_enabled = enable;
-#if 1 //usb.num_interface_error temporary fix!!!!!! must be fixed!!!!!!!!!!
-		adb_enabled = enable;
-#endif
 		adb_function_enable(enable);
 		acm_function_enable(enable);
 
@@ -328,9 +316,9 @@ static void enable_adb(struct android_dev *dev, int enable)
 		{
 			device_desc.idProduct =
 				__constant_cpu_to_le16(dev->product_id);
-			device_desc.bDeviceClass	  = 0x00;//USB_CLASS_MASS_STORAGE;
-			device_desc.bDeviceSubClass	  = 0x00;//0x06;//US_SC_SCSI;
-			device_desc.bDeviceProtocol	  = 0x00;//0x50;//US_PR_BULK;
+			device_desc.bDeviceClass	  = USB_CLASS_MASS_STORAGE;
+			device_desc.bDeviceSubClass	  = 0x06;//US_SC_SCSI;
+			device_desc.bDeviceProtocol	  = 0x50;//US_PR_BULK;
 			android_config.label = ANDROID_NO_DEBUG_CONFIG_STRING;
 		}
 
@@ -351,10 +339,10 @@ static void enable_adb(struct android_dev *dev, int enable)
 #else
 /*
 	for reenumeration in case of booting-up connected with host
-	because if connected, host don't enumerate
+	because if connected, host don't enumerate 
 */
 		if (dev->cdev && dev->cdev->gadget ) {
-#endif
+#endif			
 			usb_gadget_disconnect(dev->cdev->gadget);
 			msleep(5);
 			usb_gadget_connect(dev->cdev->gadget);
@@ -391,7 +379,6 @@ static struct miscdevice adb_enable_device = {
 	.name = "android_adb_enable",
 	.fops = &adb_enable_fops,
 };
-
 
 static int __init android_probe(struct platform_device *pdev)
 {
@@ -442,11 +429,6 @@ static int __init init(void)
 	/* set default values, which should be overridden by platform data */
 	dev->product_id = PRODUCT_ID;
 	dev->adb_product_id = ADB_PRODUCT_ID;
-
-#ifdef CONFIG_MACH_MAX
-dev->nluns=0x02; //first one for sd-card, second for ISO-image d.moskvitin
-#endif /*eunsuk5*/
-
 	_android_dev = dev;
 
 	ret = platform_driver_register(&android_platform_driver);

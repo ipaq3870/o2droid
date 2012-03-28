@@ -127,7 +127,7 @@ static unsigned	n_ports;
 
 #define GS_CLOSE_TIMEOUT		15		/* seconds */
 
-#define ACM_ZLP		1
+#define ACM_ZLP		0
 
 #if ACM_ZLP
 static int s3c_multiple = 0;
@@ -1152,7 +1152,7 @@ int __init gserial_setup(struct usb_gadget *g, unsigned count)
 	gs_tty_driver->init_termios.c_ispeed = 9600;
 	gs_tty_driver->init_termios.c_ospeed = 9600;
 
-	coding.dwDTERate = cpu_to_le32(9600);
+	coding.dwDTERate = __constant_cpu_to_le32(9600);
 	coding.bCharFormat = 8;
 	coding.bParityType = USB_CDC_NO_PARITY;
 	coding.bDataBits = USB_CDC_1_STOP_BITS;

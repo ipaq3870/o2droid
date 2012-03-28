@@ -2,7 +2,6 @@
  * drivers/usb/gadget/s3c-udc-otg-hs.c
  * Samsung S3C on-chip full/high speed USB OTG 2.0 device controllers
  *
- * Copyright (C) 2010 Samsung Electronics, Seung-Soo Yang
  * Copyright (C) 2009 Samsung Electronics, Seung-Soo Yang
  * Copyright (C) 2008 Samsung Electronics, Kyu-Hyeok Jang, Seung-Soo Yang
  * Copyright (C) 2004 Mikko Lahteenmaki, Nordic ID
@@ -40,12 +39,6 @@
 #include "s3c-udc.h"
 
 //---------------------------------------------------------------------------------------
-
-#define NO_USING_USB_SWITCH 0
-
-#if NO_USING_USB_SWITCH
-#include <linux/i2c/pmic.h> //pmic max8998
-#endif
 
 /* enalbing many debug message could make the USB enumeration process failed */
 #define OTG_DBG_ENABLE	0
@@ -196,16 +189,6 @@ static const char ep0name[] = "ep0-control";
 #define GAHBCFG_INIT	(PTXFE_HALF|NPTXFE_HALF|MODE_SLAVE|BURST_INCR16|GBL_INT_UNMASK)
 
 #endif
-
-#if !NO_USING_USB_SWITCH
-#include "fsa9480_i2c.h"
-extern void fsa9480_s3c_udc_on(void);
-extern void fsa9480_s3c_udc_off(void);
-extern void fsa9480_check_usb_connection(void);
-#endif
-
-
-
 //---------------------------------------------------------------------------------------
 
 /*
@@ -267,12 +250,7 @@ static int  s3c_ep0_write_fifo(struct s3c_ep *ep, struct s3c_request *req);
  * global usb_ctrlrequest struct to store 
  * Setup data of Control Request Host sent
  */
-#define __TEMP_FIX_FOR_DMA_ADDR_ERROR__
-#ifdef __TEMP_FIX_FOR_DMA_ADDR_ERROR__
-struct usb_ctrlrequest g_ctrl_array[9] __attribute__((aligned(8)));
-#else
 struct usb_ctrlrequest g_ctrl __attribute__((aligned(8)));
-#endif
 //---------------------------------------------------------------------------------------
 
 /**
@@ -643,43 +621,13 @@ EXPORT_SYMBOL(usb_gadget_unregister_driver);
 
 #if defined(CONFIG_USB_GADGET_S3C_OTGD_HS_DMA_MODE) 
 	/* DMA Mode */
-#ifdef __TEMP_FIX_FOR_DMA_ADDR_ERROR__
-#define g_ctrl g_ctrl_array[4]
-#endif
 	#include "s3c-udc-otg-hs_dma.c"
-#ifdef __TEMP_FIX_FOR_DMA_ADDR_ERROR__
-#undef g_ctrl
-#endif
 #else 
 	/* Slave Mode */
-	#include "s3c-udc-otg-hs_slave.c"
+	#error Unsupporting slave mode
 #endif
 
-#if NO_USING_USB_SWITCH
-void fsa9480_s3c_udc_on(void)
-{	
-    printk("[Psedo FSA9480]%s\n ", __func__);
-
-    /*LDO control*/
-	if(!Set_MAX8698_PM_REG(ELDO3, 1) || !Set_MAX8698_PM_REG(ELDO8, 1))
-		printk("[Psedo FSA9480] %s : Fail to LDO ON\n ", __func__);
-}
-
-void fsa9480_s3c_udc_off(void)
-{
-    printk("[Psedo FSA9480]%s\n ", __func__);
-
-    /*LDO control*/
-	if(!Set_MAX8698_PM_REG(ELDO3, 0) || !Set_MAX8698_PM_REG(ELDO8, 0))
-		printk("[Psedo FSA9480] %s : Fail to LDO OFF\n ", __func__);
-}
-#endif
-void s3c_udc_power_up(void);
-void s3c_udc_power_down(void);
-
-EXPORT_SYMBOL(s3c_udc_power_up);
-EXPORT_SYMBOL(s3c_udc_power_down);
-
+#include "fsa9480_i2c.c"
 //---------------------------------------------------------------------------------------
 
 /*
@@ -933,20 +881,24 @@ static int s3c_udc_pullup(struct usb_gadget *gadget, int is_on)
 	//UDC power on/off
 	if (is_on)
 	{
-		DEBUG_PM("[%s] is_on[%d]\n", __func__, is_on);
 	/*
 	 * if early s3c_udc_power_up make 
 	 * fsa9480_check_usb_connection failed to detect USB connection
 	 */ 
-#if NO_USING_USB_SWITCH 
-		s3c_udc_power_up();
-#else
+	//	s3c_udc_power_up();
+
 		fsa9480_check_usb_connection();
-#endif
 	}
 	else
 	{
-		DEBUG_PM("[%s] is_on[%d]\n", __func__, is_on);
+		/*
+		 * Any transactions on the AHB Master are terminated. 
+		 * And all the transmit FIFOs are flushed.
+		 */
+		writel(CORE_SOFT_RESET, S3C_UDC_OTG_GRSTCTL);
+		udelay(10);
+		if (!(readl(S3C_UDC_OTG_GRSTCTL) & AHB_MASTER_IDLE))
+			printk("OTG Core Reset is not done.\n");
 	
 		spin_lock_irqsave(&dev->lock, flags);
 		s3c_udc_stop_activity(dev, dev->driver);
@@ -990,7 +942,7 @@ static const struct usb_gadget_ops s3c_udc_ops = {
  */ 
 static void nop_release(struct device *dev)
 {
-	DEBUG("%s %s\n", __func__, dev->init_name);
+	DEBUG("%s %s\n", __func__, dev->bus_id);
 }
 //---------------------------------------------------------------------------------------
 
@@ -1254,11 +1206,9 @@ static int s3c_udc_probe(struct platform_device *pdev)
 
 	DEBUG("%s: %p\n", __func__, pdev);
 
-#if 0// !NO_USING_USB_SWITCH 
 	retval = i2c_add_driver(&fsa9480_i2c_driver);
 	if (retval != 0)
 		DEBUG_ERROR("[USB Switch] can't add i2c driver");
-#endif
 
 	spin_lock_init(&dev->lock);
 	dev->dev = pdev;
@@ -1409,14 +1359,9 @@ static int s3c_udc_suspend(struct platform_device *pdev, pm_message_t state)
 	struct s3c_udc *dev = platform_get_drvdata(pdev);
 	unsigned long flags;
 
-
-	DEBUG_PM("[%s]: System Suspend \n", __func__);
-#if NO_USING_USB_SWITCH 
-	DEBUG_PM("[%s]: NO_USING_USB_SWITCH just return\n", __func__);
-	return 0;
-#endif
 	spin_lock_irqsave(&dev->lock, flags);
 
+	DEBUG_PM("[%s]: System Suspend \n", __func__);
 
 	//save the state of connection to udc_resume_state
 	dev->udc_resume_state = dev->udc_state;
@@ -1434,7 +1379,7 @@ static int s3c_udc_suspend(struct platform_device *pdev, pm_message_t state)
 			DEBUG_PM("[%s] skip~~ s3c_udc_power_down() at suspend\n", __func__);
 			spin_unlock_irqrestore(&dev->lock, flags);
 		return 0;
-		}
+	}
 	}
 
 	switch(pm_policy)
@@ -1463,13 +1408,7 @@ static int s3c_udc_resume(struct platform_device *pdev)
 #if 1
 	//first check status of connection
 	DEBUG_PM("[%s]: fsa9480_check_usb_connection\n", __func__);
-#if NO_USING_USB_SWITCH 
-			DEBUG_PM("[%s]: NO_USING_USB_SWITCH just return\n", __func__);
-			return 0;
-#else
 	fsa9480_check_usb_connection();
-#endif
-
 	return 0;
 
 #else
@@ -1478,11 +1417,6 @@ static int s3c_udc_resume(struct platform_device *pdev)
 	u32 tmp;
 	
 	DEBUG_PM("[%s]: System Resume \n", __func__);
-	
-#if NO_USING_USB_SWITCH 
-		DEBUG_PM("[%s]: NO_USING_USB_SWITCH just return\n", __func__);
-		return 0;
-#endif
 	//if not suspended as connected
 	if (dev->udc_resume_state == USB_STATE_CONFIGURED)
 	{

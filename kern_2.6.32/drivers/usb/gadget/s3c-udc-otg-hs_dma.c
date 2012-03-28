@@ -2,8 +2,10 @@
  * drivers/usb/gadget/s3c-udc-otg-hs_dma.c
  * Samsung S3C on-chip full/high speed USB OTG 2.0 device controller dma mode
  *
- * Copyright (C) 2008 Samsung Electronics, Kyu-Hyeok Jang, Seung-Soo Yang
  * Copyright (C) 2009 Samsung Electronics, Seung-Soo Yang
+ * Copyright (C) 2008 Samsung Electronics, Kyu-Hyeok Jang, Seung-Soo Yang
+ * Copyright (C) 2004 Mikko Lahteenmaki, Nordic ID
+ * Copyright (C) 2004 Bo Henriksen, Nordic ID
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -717,12 +719,6 @@ static void s3c_udc_initialize(struct s3c_udc *dev)
 	
 	/* 	 6. Unmask the core interrupts */
 	writel(GINTMSK_INIT, S3C_UDC_OTG_GINTMSK);
-
-	if(readl(S3C_UDC_OTG_GINTMSK) == 0x0) {
-		udelay(50);
-		writel(GINTMSK_INIT, S3C_UDC_OTG_GINTMSK);
-	}
-
 }
 //---------------------------------------------------------------------------------------
 
@@ -911,15 +907,6 @@ static void handle_reset_intr(struct s3c_udc *dev)
 	/* confirm A & B Session Valid  */
 	if((usb_status & 0xc0000) == (0x3 << 18)) 
 	{
-		if (dev->config_gadget_driver == ANDROID_ADB ||
-			dev->config_gadget_driver == ANDROID_ADB_UMS ||
-			dev->config_gadget_driver == ANDROID_ADB_UMS_ACM) {
-			if(dev->udc_state == USB_STATE_CONFIGURED) {
-				DEBUG_PM("[%s]: config_gadget_driver (%d)\n", __func__, dev->config_gadget_driver);
-				return;
-			}
-		}
-
 		DEBUG_PM("	   ===> OTG core got reset & execute s3c_udc_reset()\n");
 		dev->udc_state = USB_STATE_DEFAULT;
 		s3c_udc_reset(dev);//s3c_udc_initialize(dev);
@@ -987,15 +974,6 @@ static void handle_suspend_intr(struct s3c_udc *dev)
 
 	if (dev->gadget.speed != USB_SPEED_UNKNOWN)
 	{
-		if (dev->config_gadget_driver == ANDROID_ADB ||
-			dev->config_gadget_driver == ANDROID_ADB_UMS ||
-			dev->config_gadget_driver == ANDROID_ADB_UMS_ACM) {
-			if(dev->udc_state == USB_STATE_CONFIGURED) {
-				DEBUG_PM("[%s]: config_gadget_driver (%d)\n", __func__, dev->config_gadget_driver);
-				return;
-			}
-		}
-
 		DEBUG_PM("[%s]: USB Bus Suspend (DSTS):0x%x\n", __func__, usb_status);
 			
 		dev->udc_resume_state = dev->udc_state;

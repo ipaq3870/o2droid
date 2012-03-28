@@ -265,7 +265,7 @@ static int config_buf(struct usb_configuration *config,
 			descriptors = f->hs_descriptors;
 		else
 			descriptors = f->descriptors;
-		if (!descriptors || descriptors[0] == NULL) {
+		if (f->hidden || !descriptors || descriptors[0] == NULL) {
 			for (; f != config->interface[interfaceCount];) {
 				interfaceCount++;
 				c->bNumInterfaces--;
@@ -282,13 +282,6 @@ static int config_buf(struct usb_configuration *config,
 		len -= status;
 		next += status;
 	}
-	
-#if 1 //usb.num_interface_error temporary fix!!!!!! must be fixed!!!!!!!!!!
-	extern int adb_enabled;
-	if(adb_enabled==0) {
-		c->bNumInterfaces = 1;
-	}
-#endif
 
 	len = next - buf;
 	c->wTotalLength = cpu_to_le16(len);
@@ -851,6 +844,25 @@ unknown:
 			c = cdev->config;
 			if (c && c->setup)
 				value = c->setup(c, ctrl);
+		}
+
+		/* If the vendor request is not processed (value < 0),
+		 * call all device registered configure setup callbacks
+		 * to process it.
+		 * This is used to handle the following cases:
+		 * - vendor request is for the device and arrives before
+		 * setconfiguration.
+		 * - Some devices are required to handle vendor request before
+		 * setconfiguration such as MTP, USBNET.
+		 */
+
+		if (value < 0) {
+			struct usb_configuration        *cfg;
+
+			list_for_each_entry(cfg, &cdev->configs, list) {
+			if (cfg && cfg->setup)
+				value = cfg->setup(cfg, ctrl);
+			}
 		}
 		goto done;
 	}
