@@ -1,0 +1,238 @@
+#!/bin/bash
+
+#path to the kernel-source
+KDIR=${PWD}/kern_2.6.32
+#KDIR=${PWD}/kern_oII
+
+#path to the extra-modules-source
+EXTRAMODDIR=${PWD}/modules32
+#EXTRAMODDIR=${PWD}/modules
+
+#path to the crossbuild-toolchain
+EABI=~/cross/bin/arm-none-eabi-
+
+#path where all should get together
+EXPORTDIR=${PWD}/out
+
+#multicore compiling?
+#J=-j2
+J=""
+
+if [ -z ${PHONEMODEL} ]
+then
+  echo "PHONEMODEL variable not set, set to default: I8000."
+  export PHONEMODEL="I8000"
+fi
+
+
+#//////////////////////////  FUNCTIONS /////////////////////////////
+
+function kernel() {
+	cd ${KDIR}
+	echo -n "building kernel ... "
+	make $J ARCH=arm CROSS_COMPILE=${EABI} zImage
+	if [ $? -eq 0 ]
+	then
+	   echo "done."
+	   echo -n "Kernel created ... copy to ${EXPORTDIR}/zImage ... "
+	   cp  arch/arm/boot/zImage ${EXPORTDIR}/
+	   if [ $? -eq 0 ]
+	   then
+	   	echo "done."
+	   else
+	   	echo "failed!"
+	   	exit 1;
+	   fi
+	else
+	   echo
+	   echo "Error ... kernel not compiled!";
+	   exit 1;
+	fi
+	cd ${OLDPWD}
+}
+
+function uncompressed_kernel() {
+	cd ${KDIR}
+	echo -n "building uncompressed kernel ... "
+	make $J ARCH=arm CROSS_COMPILE=${EABI} Image
+	if [ $? -eq 0 ]
+	then
+	   echo "done."
+	   echo -n "Kernel created ... copy to ${EXPORTDIR}/Image ... "
+	   cp  arch/arm/boot/Image ${EXPORTDIR}/
+	   if [ $? -eq 0 ]
+	   then
+	   	echo "done."
+	   else
+	   	echo "failed!"
+	   	exit 1;
+	   fi
+	else
+	   echo
+	   echo "Error ... kernel not compiled!";
+	   exit 1;
+	fi
+	cd ${OLDPWD}
+}
+
+function modules() {
+	cd ${KDIR}
+	echo -n "building modules ... "
+	make $J ARCH=arm CROSS_COMPILE=${EABI} modules
+	if [ $? -eq 0 ]
+	then
+	   echo "done."
+	   echo -n "Kernel-Modules created ... copy to ${EXPORTDIR}/ ... "
+	   find ./ -name "*.ko" -exec cp {} ${EXPORTDIR}/ \;
+	   if [ $? -eq 0 ]
+	   then
+	   	echo "done."
+	   else
+	   	echo "failed!"
+	   	exit 1;
+	   fi
+	else
+	   echo
+	   echo "Error ... kernel-modules not compiled!";
+	   exit 1;
+	fi
+	cd ${OLDPWD}
+}
+
+function extramodules () {
+	cd ${EXTRAMODDIR}
+	echo -n "building extra-modules ... "
+	make $J ARCH=arm CROSS_COMPILE=${EABI} KDIR=${KDIR} all
+	if [ $? -eq 0 ]
+	then
+	   echo "done"
+	   echo -n "Extra-Modules created ... copy to ${EXPORTDIR}/ ... "
+	   find ./ -name "*.ko" -exec cp {} ${EXPORTDIR}/ \;
+	   if [ $? -eq 0 ]
+	   then
+	   	echo "done."
+	   else
+	   	echo "failed!"
+	   fi
+	else
+	   echo
+	   echo "Error ... extra-modules not compiled!";
+	   exit 1;
+	fi
+	cd ${OLDPWD}
+}
+
+function copy2android () {
+	if [ ! -d "$droidmoduledir" ]
+              	then
+              		echo "$droidmoduledir : path not found!"
+#              		exit 1;
+        else      	
+		cd ${EXPORTDIR}
+		find ./ -name "*.ko" -exec cp {} ${droidmoduledir} \;
+		if [ $? -eq 0 ]
+		then
+			echo "modules copied to ${droidmoduledir}"
+		else
+			echo "copy of modules to ${droidmoduledir} failed!"
+			exit 1;
+		fi
+	fi
+}
+function copy2sdcard() {
+	if [ ! -d "$sdcarddir" ]
+              	then
+              		 echo "$sdcarddir : path not found!"
+              		 exit 1;
+        else      	
+        	cd ${EXPORTDIR}
+		cp zImage ${sdcarddir}
+		if [ $? -eq 0 ]
+		then
+			echo "kernel copied to ${sdcarddir}"
+		else
+			echo "copy of kernel to ${sdcarddir} failed!"
+			exit 1;
+		fi
+	fi
+	cd ${OLDPWD}
+}
+
+function cleankernel() {
+	cd ${KDIR}
+	make ARCH=arm CROSS_COMPILE=${EABI} clean
+	if [ $? -eq 0 ]
+	then
+		echo "cleaning up done"
+	else
+		echo "failed to clean source!";
+		exit 1;
+	fi
+	cd ${OLDPWD}
+}
+
+function usage() {
+cat << EOF
+	This Script builds kernel, modules & extramodules
+	
+	USAGE:   $0 -[k|u|m|e|c|n|m|h]
+	OPTIONS:
+		-k  				builds the kernel (compressed zImage) 
+		-u  				builds the kernel (uncompressed Image)
+		-m  				builds the kernel-modules
+		-e  				builds the extra-modules
+		-c  				cleans the kernelsource
+		-n <moduledir>			copies the modules (& extra-modules) to <moduledir>
+		-m <sdcarddir> 			copies the kernel to <sdcarddir>
+		-h				shows this help
+
+EOF
+}
+
+
+#//////////////////////// OPTIONS ////////////////////////
+
+while getopts “kumecnmh” OPTION
+do
+     case $OPTION in
+              k)
+		kernel              	
+              ;;
+		
+              u)
+		uncompressed_kernel              	
+              ;;
+              
+              m)
+              	modules
+              ;;
+              
+              e)
+              	extramodules
+              ;;
+              
+              c)
+              	cleankernel
+              ;;
+              
+              n)
+                droidmoduledir=$OPTARG
+              	copy2android
+              ;;
+              
+              m)
+              	sdcarddir=$OPTARG
+              	copy2sdcard
+              ;;
+              
+              h)
+                usage
+                exit 0;
+              ;;	
+              
+              *)
+              	usage
+              	exit 1;
+              ;;
+     esac
+done
