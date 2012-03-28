@@ -1155,25 +1155,35 @@ static void dpram_phone_power_on(void)
 	}
 	
 	printk("[OneDram] phone power on.\n");
+
+	gpio_set_value(GPIO_PDA_ACTIVE, 0);
+
 	//Change power on sequence because of power on error 
 	gpio_set_value(GPIO_CP_BOOT_SEL, GPIO_LEVEL_HIGH);
 	gpio_set_value(GPIO_USIM_BOOT, GPIO_LEVEL_HIGH);
+	gpio_set_value(GPIO_PHONE_ON, 0);
 
 #ifdef LOAD_PHONE_IMAGE
 	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_LOW);
 #endif		
-	interruptible_sleep_on_timeout(&dpram_wait, 40);	//	mdelay(200);
+//	interruptible_sleep_on_timeout(&dpram_wait, 40);	//	mdelay(200);
+	msleep(400);
 
 	gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_HIGH);
-	interruptible_sleep_on_timeout(&dpram_wait, 6);		//	mdelay(30);
+//	interruptible_sleep_on_timeout(&dpram_wait, 6);		//	mdelay(30);
+	msleep(60);
 	
 #ifdef LOAD_PHONE_IMAGE
 	gpio_set_value(GPIO_PHONE_RST_N, GPIO_LEVEL_HIGH);
 #endif		
-	interruptible_sleep_on_timeout(&dpram_wait, 100);	//	mdelay(500);
+//	interruptible_sleep_on_timeout(&dpram_wait, 100);	//	mdelay(500);
+	msleep(1000);
 
 	gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_LOW);
-	interruptible_sleep_on_timeout(&dpram_wait, 20);	//	mdelay(100);
+//	interruptible_sleep_on_timeout(&dpram_wait, 20);	//	mdelay(100);
+	msleep(200);
+
+        gpio_set_value(GPIO_PDA_ACTIVE, 1);
 
 	printk(" |      GPIO CONTROL FOR PHONE POWER ON        |\n");
 	phone_power_state = 1;
