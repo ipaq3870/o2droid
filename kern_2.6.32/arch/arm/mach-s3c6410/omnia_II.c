@@ -587,6 +587,7 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 	&s3c_device_g3d,
 	&sec_device_dpram,
 	&sec_device_backlight,
+	&s3c_device_wdt,
 	&s3c_device_rtc,
 #ifdef CONFIG_SND_S3C64XX_SOC_I2S
 	&s3c64xx_device_iis0,

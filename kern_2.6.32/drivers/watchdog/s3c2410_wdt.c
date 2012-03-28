@@ -94,7 +94,7 @@ static DEFINE_SPINLOCK(wdt_lock);
 static void s3c2410wdt_keepalive(void)
 {
 	spin_lock(&wdt_lock);
-	writel(wdt_count, wdt_base + S3C2410_WTCNT);
+	writel(wdt_count, wdt_base + S3C_WTCNT_OFFSET);
 	spin_unlock(&wdt_lock);
 }
 
@@ -102,9 +102,9 @@ static void __s3c2410wdt_stop(void)
 {
 	unsigned long wtcon;
 
-	wtcon = readl(wdt_base + S3C2410_WTCON);
-	wtcon &= ~(S3C2410_WTCON_ENABLE | S3C2410_WTCON_RSTEN);
-	writel(wtcon, wdt_base + S3C2410_WTCON);
+	wtcon = readl(wdt_base + S3C_WTCON_OFFSET);
+	wtcon &= ~(S3C_WTCON_ENABLE | S3C_WTCON_RSTEN);
+	writel(wtcon, wdt_base + S3C_WTCON_OFFSET);
 }
 
 static void s3c2410wdt_stop(void)
@@ -122,23 +122,23 @@ static void s3c2410wdt_start(void)
 
 	__s3c2410wdt_stop();
 
-	wtcon = readl(wdt_base + S3C2410_WTCON);
-	wtcon |= S3C2410_WTCON_ENABLE | S3C2410_WTCON_DIV128;
+	wtcon = readl(wdt_base + S3C_WTCON_OFFSET);
+	wtcon |= S3C_WTCON_ENABLE | S3C_WTCON_DIV128;
 
 	if (soft_noboot) {
-		wtcon |= S3C2410_WTCON_INTEN;
-		wtcon &= ~S3C2410_WTCON_RSTEN;
+		wtcon |= S3C_WTCON_INTEN;
+		wtcon &= ~S3C_WTCON_RSTEN;
 	} else {
-		wtcon &= ~S3C2410_WTCON_INTEN;
-		wtcon |= S3C2410_WTCON_RSTEN;
+		wtcon &= ~S3C_WTCON_INTEN;
+		wtcon |= S3C_WTCON_RSTEN;
 	}
 
 	DBG("%s: wdt_count=0x%08x, wtcon=%08lx\n",
 	    __func__, wdt_count, wtcon);
 
-	writel(wdt_count, wdt_base + S3C2410_WTDAT);
-	writel(wdt_count, wdt_base + S3C2410_WTCNT);
-	writel(wtcon, wdt_base + S3C2410_WTCON);
+	writel(wdt_count, wdt_base + S3C_WTDAT_OFFSET);
+	writel(wdt_count, wdt_base + S3C_WTCNT_OFFSET);
+	writel(wtcon, wdt_base + S3C_WTCON_OFFSET);
 	spin_unlock(&wdt_lock);
 }
 
@@ -184,12 +184,12 @@ static int s3c2410wdt_set_heartbeat(int timeout)
 	wdt_count = count;
 
 	/* update the pre-scaler */
-	wtcon = readl(wdt_base + S3C2410_WTCON);
-	wtcon &= ~S3C2410_WTCON_PRESCALE_MASK;
-	wtcon |= S3C2410_WTCON_PRESCALE(divisor-1);
+	wtcon = readl(wdt_base + S3C_WTCON_OFFSET);
+	wtcon &= ~S3C_WTCON_PRESCALE_MASK;
+	wtcon |= S3C_WTCON_PRESCALE(divisor-1);
 
-	writel(count, wdt_base + S3C2410_WTDAT);
-	writel(wtcon, wdt_base + S3C2410_WTCON);
+	writel(count, wdt_base + S3C_WTDAT_OFFSET);
+	writel(wtcon, wdt_base + S3C_WTCON_OFFSET);
 
 	return 0;
 }
@@ -423,12 +423,12 @@ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
 
 	/* print out a statement of readiness */
 
-	wtcon = readl(wdt_base + S3C2410_WTCON);
+	wtcon = readl(wdt_base + S3C_WTCON_OFFSET);
 
 	dev_info(dev, "watchdog %sactive, reset %sabled, irq %sabled\n",
-		 (wtcon & S3C2410_WTCON_ENABLE) ?  "" : "in",
-		 (wtcon & S3C2410_WTCON_RSTEN) ? "" : "dis",
-		 (wtcon & S3C2410_WTCON_INTEN) ? "" : "en");
+		 (wtcon & S3C_WTCON_ENABLE) ?  "" : "in",
+		 (wtcon & S3C_WTCON_RSTEN) ? "" : "dis",
+		 (wtcon & S3C_WTCON_INTEN) ? "" : "en");
 
 	return 0;
 
@@ -480,8 +480,8 @@ static unsigned long wtdat_save;
 static int s3c2410wdt_suspend(struct platform_device *dev, pm_message_t state)
 {
 	/* Save watchdog state, and turn it off. */
-	wtcon_save = readl(wdt_base + S3C2410_WTCON);
-	wtdat_save = readl(wdt_base + S3C2410_WTDAT);
+	wtcon_save = readl(wdt_base + S3C_WTCON_OFFSET);
+	wtdat_save = readl(wdt_base + S3C_WTDAT_OFFSET);
 
 	/* Note that WTCNT doesn't need to be saved. */
 	s3c2410wdt_stop();
@@ -493,12 +493,12 @@ static int s3c2410wdt_resume(struct platform_device *dev)
 {
 	/* Restore watchdog state. */
 
-	writel(wtdat_save, wdt_base + S3C2410_WTDAT);
-	writel(wtdat_save, wdt_base + S3C2410_WTCNT); /* Reset count */
-	writel(wtcon_save, wdt_base + S3C2410_WTCON);
+	writel(wtdat_save, wdt_base + S3C_WTDAT_OFFSET);
+	writel(wtdat_save, wdt_base + S3C_WTCNT_OFFSET); /* Reset count */
+	writel(wtcon_save, wdt_base + S3C_WTCON_OFFSET);
 
 	printk(KERN_INFO PFX "watchdog %sabled\n",
-	       (wtcon_save & S3C2410_WTCON_ENABLE) ? "en" : "dis");
+	       (wtcon_save & S3C_WTCON_ENABLE) ? "en" : "dis");
 
 	return 0;
 }

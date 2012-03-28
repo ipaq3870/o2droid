@@ -696,6 +696,28 @@ struct platform_device ram_console_device = {
 
 EXPORT_SYMBOL(ram_console_device);
 
+static struct resource s3c_wdt_resource[] = {
+        [0] = {
+                .start  = S3C64XX_PA_WATCHDOG,
+                .end    = S3C64XX_PA_WATCHDOG + S3C64XX_SZ_WATCHDOG - 1,
+                .flags  = IORESOURCE_MEM,
+        },
+	[1] = {
+		.start	= IRQ_WDT,
+		.end	= IRQ_WDT,
+		.flags	= IORESOURCE_IRQ,
+	}
+};
+
+struct platform_device s3c_device_wdt = {
+        .name           = "s3c2410-wdt",     
+        .id             = -1,
+        .num_resources  = ARRAY_SIZE(s3c_wdt_resource),
+        .resource       = s3c_wdt_resource,
+};
+
+EXPORT_SYMBOL(s3c_device_wdt);
+
 void __init s3c6410_add_mem_devices(struct s3c6410_pmem_setting *setting)
 {
 	if (setting->pmem_size) {
