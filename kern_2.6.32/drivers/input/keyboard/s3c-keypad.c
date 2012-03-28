@@ -163,8 +163,9 @@ static void keypad_timer_handler(unsigned long data)
 	if (restart_timer) {
 		mod_timer(&keypad_timer, jiffies + HZ / 10);
 	} else {
-		writel(KEYIFCON_INIT, key_base + S3C_KEYIFCON);
 		is_timer_on = FALSE;
+		del_timer(&keypad_timer);
+		writel(KEYIFCON_INIT, key_base + S3C_KEYIFCON);
 	}
 
 }
@@ -177,7 +178,9 @@ static irqreturn_t s3c_keypad_isr(int irq, void *dev_id)
 	/* disable keypad interrupt and schedule for keypad timer handler */
 	writel(readl(key_base + S3C_KEYIFCON) & ~(INT_F_EN | INT_R_EN), key_base + S3C_KEYIFCON);
 
-	keypad_timer.expires = jiffies;
+	//keypad_timer.expires = jiffies;
+	keypad_timer.expires = jiffies + (3 * HZ/100);
+
 	if (is_timer_on == FALSE) {
 		add_timer(&keypad_timer);
 		is_timer_on = TRUE;
