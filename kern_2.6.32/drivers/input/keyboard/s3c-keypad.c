@@ -39,8 +39,12 @@
 
 #include <plat/pm.h>	
 
+#ifdef CONFIG_KERNEL_DEBUG_SEC
+#include <linux/kernel_sec_common.h>
+#endif
+
 #undef S3C_KEYPAD_DEBUG 
-//#define S3C_KEYPAD_DEBUG 
+#define S3C_KEYPAD_DEBUG 
 
 #ifdef S3C_KEYPAD_DEBUG
 #define DPRINTK(x...) printk(KERN_INFO "S3C-Keypad " x)
@@ -88,7 +92,7 @@ void earjack_report_key(unsigned int keycode, int value)
 }
 EXPORT_SYMBOL(earjack_report_key);
 
-static int keypad_scan(void)
+static int keypad_scan(u32 *keymask_low, u32 *keymask_high)
 {
 
 	u32 col, cval, rval;
@@ -102,6 +106,15 @@ static int keypad_scan(void)
 
 		rval =~(readl(key_base + S3C_KEYIFROW)) & ((1 << KEYPAD_ROWS) -1);
 		keymask[col] = rval;
+
+#if (KEYPAD_COLUMNS>4)
+                if (col < 4)
+                        *keymask_low |= (rval << (col * 8));
+                else
+                        *keymask_high |= (rval << ((col-4) * 8));
+#else
+                *keymask_low |= (rval << (col * 8));
+#endif
 	}
 
 	writel(KEYIFCOL_CLEAR, key_base + S3C_KEYIFCOL);
@@ -117,8 +130,23 @@ static void keypad_timer_handler(unsigned long data)
 	int i, col;
 	struct s3c_keypad *pdata = (struct s3c_keypad *)data;
 	struct input_dev *dev = pdata->dev;
+        u32 keymask_low = 0, keymask_high = 0;
 
-	keypad_scan();
+	keypad_scan(&keymask_low, &keymask_high);
+#ifdef S3C_KEYPAD_DEBUG
+	printk("%s L(0x%x) H(0x%x)\n", "keypad_timer_handler", keymask_low, keymask_high);
+#endif
+#ifdef CONFIG_KERNEL_DEBUG_SEC
+	if((keymask_low == 0x40001) && (keymask_high == 0x0)) // power+up+camera
+	{
+		if (kernel_sec_viraddr_wdt_reset_reg)
+		{
+			kernel_sec_save_final_context(); // Save the final context.
+			kernel_sec_set_upload_cause(UPLOAD_CAUSE_FORCED_UPLOAD);
+			kernel_sec_hw_reset(FALSE); // Reboot.
+		}
+	}
+#endif
 
 	for (col = 0; col < KEYPAD_COLUMNS; col++) {
 		press_mask = ((keymask[col] ^ prevmask[col]) & keymask[col]);
