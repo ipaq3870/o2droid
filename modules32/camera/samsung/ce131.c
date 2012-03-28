@@ -1739,6 +1739,92 @@ static int ce131_set_metering(struct i2c_client *client, struct v4l2_control *ct
 	return 0;
 }
 
+static int ce131_get_focus_mode(struct i2c_client *client, unsigned char cmd, unsigned char *value)
+{
+        int err;
+        int count;
+
+        unsigned char ce131_buf_get_af_status[1] = { 0x00 };
+
+        // set focus mode: AF or MACRO
+        err = ce131_i2c_write_multi(client, cmd, value, 1);
+        if(err < 0){
+                dev_err(&client->dev, "%s: failed: i2c_write for get_focus_mode\n", __func__);
+                return -EIO;
+        }       
+        //check whether af data is valid or not
+        for(count = 0; count < 600; count++)
+        {
+                msleep(10);
+                ce131_buf_get_af_status[0] = 0xFF;
+                err = ce131_i2c_read_multi(client, CMD_CHECK_AUTO_FOCUS_SEARCH, NULL, 0, ce131_buf_get_af_status, 1);
+                if(err < 0){
+                        dev_err(&client->dev, "%s: failed: i2c_read for get_focus_mode\n", __func__);
+                        return -EIO;
+                }
+                if((ce131_buf_get_af_status[0]&0x01) == 0x00) break;
+        }
+
+        if((ce131_buf_get_af_status[0]&0x01) != 0x00)
+                return -EBUSY;
+        else
+                return ce131_buf_get_af_status[0]&0x01;
+}
+
+static int ce131_set_continous_af(struct i2c_client *client, int type)
+{
+printk("XXXXX\n");
+#define CMD_SET_AUTO_FOCUS_MODE 0x20
+#define CMD_STOP_LENS_MOVEMENT 0x35
+        int err;
+
+        unsigned char ce131_buf_set_caf[1] = { 0x02 };
+        unsigned char ce131_buf_start_af_search[1] = { 0x00 };
+        unsigned int ce131_len_start_af_search = 1;
+#if 0
+        unsigned char ce131_buf_set_af[1] = { 0x00 };
+#endif
+        unsigned char ce131_buf_stop_lens_movement[1] = { 0x00 };
+
+        /* need to set face_detection with noline */
+        //
+
+        if(type)
+        {
+                err = ce131_get_focus_mode(client, CMD_SET_AUTO_FOCUS_MODE, ce131_buf_set_caf);
+                if(err < 0){
+                        dev_err(&client->dev, "%s: failed: start_continous_af\n", __func__);
+                        return -EIO;
+                }
+
+                //start af search
+                err = ce131_i2c_write_multi(client, CMD_START_AUTO_FOCUS_SEARCH, ce131_buf_start_af_search, ce131_len_start_af_search);
+                if(err < 0){
+                        dev_err(&client->dev, "%s: failed: i2c_write for start_continous_af\n", __func__);
+                        return -EIO;
+                }
+        }
+        else
+        {
+                err = ce131_get_focus_mode(client, CMD_STOP_LENS_MOVEMENT, ce131_buf_stop_lens_movement);
+                if(err < 0){
+                        dev_err(&client->dev, "%s: failed: stop_continous_af\n", __func__);
+                        return -EIO;
+                }
+#if 0
+                err = ce131_get_focus_mode(client, CMD_SET_AUTO_FOCUS_MODE, ce131_buf_set_af);
+                if(err < 0){
+                        dev_err(&client->dev, "%s: failed: stop_continous_af\n", __func__);
+                        return -EIO;
+                }
+#endif
+        }
+
+        ce131_msg(&client->dev, "%s: done\n", __func__);
+
+        return 0;
+}
+
 static int ce131_set_auto_focus(struct i2c_client *client, int type)
 {
 	int err;
@@ -1747,10 +1833,12 @@ static int ce131_set_auto_focus(struct i2c_client *client, int type)
 /* FIXME: THIS IS NOT A PROPER IMPLEMENTATION */
 	unsigned char ce131_buf_set_af[1] = { 0x00 };
 	unsigned int ce131_len_set_af = 1;
+#if 1
 	unsigned char ce131_buf_get_af_status[1] = { 0x00 };
 	int count;
+#endif
    	int ret = 0;
-
+return ce131_set_continous_af(client,type);
     switch (type)
 	{
 		case 0: //RELEASE
@@ -1767,11 +1855,13 @@ static int ce131_set_auto_focus(struct i2c_client *client, int type)
 			err = ce131_i2c_write_multi(client, CMD_START_AUTO_FOCUS_SEARCH, ce131_buf_set_af, ce131_len_set_af);
 			if(err < 0){
 				dev_err(&client->dev, "%s: failed: i2c_write for auto_focus\n", __func__);
-			return -EIO;
-
+				return -EIO;
+			}
+#if 1
 			for(count = 0; count < 600; count++)
 			{
 				msleep(10);
+				printk("setaf count %d",count);
 				ce131_buf_get_af_status[0] = 0xFF;
 				err = ce131_i2c_read_multi(client, CMD_CHECK_AUTO_FOCUS_SEARCH, NULL, 0, ce131_buf_get_af_status, 1);
 				if(err < 0){
@@ -1801,7 +1891,7 @@ static int ce131_set_auto_focus(struct i2c_client *client, int type)
 
 			ce131_msg(&client->dev, "%s: done\n", __func__);
 
-			}
+#endif
 			break;
 		case 3: //INFINITY
 			printk("INFINITY choosen ? \n");
@@ -1814,8 +1904,9 @@ static int ce131_set_auto_focus(struct i2c_client *client, int type)
 			err = ce131_i2c_write_multi(client, CMD_START_AUTO_FOCUS_SEARCH, ce131_buf_set_af, ce131_len_set_af);
 			if(err < 0){
 				dev_err(&client->dev, "%s: failed: i2c_write for auto_focus\n", __func__);
-			return -EIO;
-
+				return -EIO;
+			}
+#if 1
 			for(count = 0; count < 600; count++)
 			{
 				msleep(10);
@@ -1848,10 +1939,8 @@ static int ce131_set_auto_focus(struct i2c_client *client, int type)
 
 			ce131_msg(&client->dev, "%s: done\n", __func__);
 
-			}
+#endif
 			break;
-		break;
-
 
 		default:
 			dev_err(&client->dev, "%s: failed: to set autofocus, enum: %d\n", __func__, type);
@@ -2273,9 +2362,9 @@ static int ce131_sensor_mode_set(struct i2c_client *client, int type)
 
 static int ce131_sensor_command(struct i2c_client *client, unsigned int cmd, void *arg)
 {
-#ifdef CE131_DEBUG
+//#ifdef CE131_DEBUG
 	printk("functie! ce131_sensor_command cmd=0x%x  arg=0x%x\n",cmd, arg);
-#endif
+//#endif
 	struct ce131_state *state = to_state(client);
 
 	__TRACE_CAM_SENSOR(printk("[CAM-SENSOR] +%s cmd=0x%x\n",__func__,cmd));

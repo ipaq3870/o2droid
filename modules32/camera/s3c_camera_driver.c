@@ -2207,6 +2207,7 @@ long s3c_camif_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 
 	case VIDIOC_S_DIG_ZOOM:
+		printk("VIDIOC_S_DIG_ZOOM");
 		ret = s3c_camif_dig_zoom(cfg, arg);
 		break;
 
