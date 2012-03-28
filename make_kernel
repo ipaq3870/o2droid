@@ -1,22 +1,28 @@
 #!/bin/bash
 
+VERBOSE=0
+
 #path to the kernel-source
-KDIR=${PWD}/kern_2.6.32
 #KDIR=${PWD}/kern_oII
+KDIR=${PWD}/kern_2.6.32
 
 #path to the extra-modules-source
 EXTRAMODDIR=${PWD}/modules32
 #EXTRAMODDIR=${PWD}/modules
 
 #path to the crossbuild-toolchain
-EABI=~/cross/bin/arm-none-eabi-
+#EABI=arm-none-eabi- #orig
+#EABI=arm-none-linux-gnueabi- #sourcery arm gnu/linux
+#EABI=arm-none-eabi- #linaro bare metal
+#EABI=arm-linux-androideabi- #android ndk
+EABI=arm-linux-gnueabi- #emdebian.org OR linaro
 
 #path where all should get together
 EXPORTDIR=${PWD}/out
 
 #multicore compiling?
 #J=-j2
-J=""
+J="-j4"
 
 if [ -z ${PHONEMODEL} ]
 then
@@ -30,7 +36,7 @@ fi
 function kernel() {
 	cd ${KDIR}
 	echo -n "building kernel ... "
-	make $J ARCH=arm CROSS_COMPILE=${EABI} zImage
+	make $J ARCH=arm CROSS_COMPILE=${EABI} V=${VERBOSE} zImage
 	if [ $? -eq 0 ]
 	then
 	   echo "done."
@@ -54,7 +60,7 @@ function kernel() {
 function uncompressed_kernel() {
 	cd ${KDIR}
 	echo -n "building uncompressed kernel ... "
-	make $J ARCH=arm CROSS_COMPILE=${EABI} Image
+	make $J ARCH=arm CROSS_COMPILE=${EABI} V=${VERBOSE} Image
 	if [ $? -eq 0 ]
 	then
 	   echo "done."
@@ -78,7 +84,7 @@ function uncompressed_kernel() {
 function modules() {
 	cd ${KDIR}
 	echo -n "building modules ... "
-	make $J ARCH=arm CROSS_COMPILE=${EABI} modules
+	make $J ARCH=arm CROSS_COMPILE=${EABI} V=${VERBOSE} modules
 	if [ $? -eq 0 ]
 	then
 	   echo "done."
@@ -102,7 +108,7 @@ function modules() {
 function extramodules () {
 	cd ${EXTRAMODDIR}
 	echo -n "building extra-modules ... "
-	make $J ARCH=arm CROSS_COMPILE=${EABI} KDIR=${KDIR} all
+	make $J ARCH=arm CROSS_COMPILE=${EABI} KDIR=${KDIR} V=${VERBOSE} all
 	if [ $? -eq 0 ]
 	then
 	   echo "done"
@@ -127,7 +133,7 @@ function copy2android () {
               	then
               		echo "$droidmoduledir : path not found!"
 #              		exit 1;
-        else      	
+        else
 		cd ${EXPORTDIR}
 		find ./ -name "*.ko" -exec cp {} ${droidmoduledir} \;
 		if [ $? -eq 0 ]
@@ -144,7 +150,7 @@ function copy2sdcard() {
               	then
               		 echo "$sdcarddir : path not found!"
               		 exit 1;
-        else      	
+        else
         	cd ${EXPORTDIR}
 		cp zImage ${sdcarddir}
 		if [ $? -eq 0 ]
@@ -174,10 +180,10 @@ function cleankernel() {
 function usage() {
 cat << EOF
 	This Script builds kernel, modules & extramodules
-	
+
 	USAGE:   $0 -[k|u|m|e|c|n|m|h]
 	OPTIONS:
-		-k  				builds the kernel (compressed zImage) 
+		-k  				builds the kernel (compressed zImage)
 		-u  				builds the kernel (uncompressed Image)
 		-m  				builds the kernel-modules
 		-e  				builds the extra-modules
@@ -196,40 +202,40 @@ while getopts “kumecnmh” OPTION
 do
      case $OPTION in
               k)
-		kernel              	
+		kernel
               ;;
-		
+
               u)
-		uncompressed_kernel              	
+		uncompressed_kernel
               ;;
-              
+
               m)
               	modules
               ;;
-              
+
               e)
               	extramodules
               ;;
-              
+
               c)
               	cleankernel
               ;;
-              
+
               n)
                 droidmoduledir=$OPTARG
               	copy2android
               ;;
-              
+
               m)
               	sdcarddir=$OPTARG
               	copy2sdcard
               ;;
-              
+
               h)
                 usage
                 exit 0;
-              ;;	
-              
+              ;;
+
               *)
               	usage
               	exit 1;
