@@ -675,6 +675,27 @@ static struct platform_device pmem_jpeg_device = {
 	.dev		= { .platform_data = &pmem_jpeg_pdata },
 };
 
+#define RAM_CONSOLE_SIZE	(SZ_2M)
+#define RAM_CONSOLE_START	(RESERVED_PMEM_END_ADDR \
+				- RAM_CONSOLE_SIZE)
+
+static struct resource ram_console_resource[] = {
+	{
+		.start	= RAM_CONSOLE_START,
+		.end	= RAM_CONSOLE_START + SZ_1M - 1,
+		.flags	= IORESOURCE_MEM,
+	}
+};
+
+struct platform_device ram_console_device = {
+	.name		= "ram_console",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(ram_console_resource),
+	.resource	= ram_console_resource,
+};
+
+EXPORT_SYMBOL(ram_console_device);
+
 void __init s3c6410_add_mem_devices(struct s3c6410_pmem_setting *setting)
 {
 	if (setting->pmem_size) {

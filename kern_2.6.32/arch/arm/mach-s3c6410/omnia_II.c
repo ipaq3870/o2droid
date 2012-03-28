@@ -604,6 +604,7 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 	&sec_device_fuelgauge,
 	&s3c64xx_device_spi1,
 	&s3c_device_onenand,
+	&ram_console_device,
 };
 
 static struct s3c_ts_mach_info s3c_ts_platform __initdata = {

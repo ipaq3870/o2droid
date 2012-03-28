@@ -70,3 +70,4 @@ extern struct platform_device s3c_device_tvenc;
 extern struct platform_device s3c_device_tvscaler;
 #endif
 
+extern struct platform_device ram_console_device;
