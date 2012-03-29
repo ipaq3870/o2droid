@@ -140,6 +140,11 @@ static DEFINE_MUTEX(ams320fs01_backlight_lock);
 
 static void s3cfb_set_fimd_info(void)
 {
+	s3c_fimd.dithmode	= S3C_DITHMODE_RDITHPOS_6BIT |
+				  S3C_DITHMODE_GDITHPOS_6BIT |
+				  S3C_DITHMODE_BDITHPOS_6BIT |
+				  S3C_DITHMODE_DITHERING_ENABLE;
+
 	s3c_fimd.vidcon1	= S3C_VIDCON1_IHSYNC_INVERT |
 							S3C_VIDCON1_IVSYNC_INVERT |
 							S3C_VIDCON1_IVDEN_INVERT|S3C_VIDCON1_IVCLK_RISE_EDGE;
@@ -172,6 +177,9 @@ static void s3cfb_set_fimd_info(void)
 #if defined(CONFIG_FB_S3C_VIRTUAL_SCREEN)
 	s3c_fimd.xres_virtual = S3C_FB_HRES_VIRTUAL;
 	s3c_fimd.yres_virtual = S3C_FB_VRES_VIRTUAL;
+#elif defined(CONFIG_FB_S3C_DOUBLE_BUFFERING)
+	s3c_fimd.xres_virtual = S3C_FB_HRES;
+	s3c_fimd.yres_virtual = S3C_FB_VRES * 2;
 #else
 	s3c_fimd.xres_virtual = S3C_FB_HRES;
 	s3c_fimd.yres_virtual = S3C_FB_VRES;
@@ -185,6 +193,9 @@ static void s3cfb_set_fimd_info(void)
 #if defined(CONFIG_FB_S3C_VIRTUAL_SCREEN)
 	s3c_fimd.osd_xres_virtual = S3C_FB_HRES_OSD_VIRTUAL;
 	s3c_fimd.osd_yres_virtual = S3C_FB_VRES_OSD_VIRTUAL;
+#elif defined(CONFIG_FB_S3C_DOUBLE_BUFFERING)
+	s3c_fimd.osd_xres_virtual = S3C_FB_HRES_OSD;
+	s3c_fimd.osd_yres_virtual = S3C_FB_VRES_OSD * 2;
 #else
 	s3c_fimd.osd_xres_virtual = S3C_FB_HRES_OSD;
 	s3c_fimd.osd_yres_virtual = S3C_FB_VRES_OSD;
@@ -857,8 +868,34 @@ void s3cfb_init_hw(void)
 void s3cfb_display_logo(int win_num)
 {
 	s3c_fb_info_t *fbi = &s3c_fb_info[0];
+#if 1
 	memset(fbi->map_cpu_f1, 0x00, 800*480*2);
-	memcpy(fbi->map_cpu_f1, pixel_data, 480*160*2);		
+	memcpy(fbi->map_cpu_f1, pixel_data, 480*160*2);         
+#else
+	u16 *logo_virt_buf;
+#ifdef CONFIG_FB_S3C_BPP_24
+	u32 count;
+	u32 *scr_virt_buf = (u32 *)fbi->map_cpu_f1;
+#endif
+
+	if(win_num != 0)
+		return;
+ 	
+ 	logo_virt_buf = ioremap_nocache(LOGO_MEM_BASE, LOGO_MEM_SIZE);
+ 
+#ifdef CONFIG_FB_S3C_BPP_24
+	count = LOGO_MEM_SIZE / 2;
+	do {
+		u16 srcpix = *(logo_virt_buf++);
+		u32 dstpix =	((srcpix & 0xF800) << 8) |
+				((srcpix & 0x07E0) << 5) |
+				((srcpix & 0x001F) << 3);
+		*(scr_virt_buf++) = dstpix;
+	} while (--count);
+#else
+ 	memcpy(fbi->map_cpu_f1, logo_virt_buf, LOGO_MEM_SIZE);	
+#endif
+ 
+ 	iounmap(logo_virt_buf);
+#endif
 }
-
-
