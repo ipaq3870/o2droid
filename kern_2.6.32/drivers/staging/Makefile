@@ -26,6 +26,7 @@ obj-$(CONFIG_RTL8192E)		+= rtl8192e/
 obj-$(CONFIG_INPUT_MIMIO)	+= mimio/
 obj-$(CONFIG_TRANZPORT)		+= frontier/
 obj-$(CONFIG_ANDROID)		+= android/
+obj-$(CONFIG_RAMZSWAP)		+= ramzswap/
 obj-$(CONFIG_STAGING_DREAM)	+= dream/
 obj-$(CONFIG_DST)		+= dst/
 obj-$(CONFIG_POHMELFS)		+= pohmelfs/
