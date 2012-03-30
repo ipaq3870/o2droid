@@ -1098,8 +1098,9 @@ int s3cfb_init_registers(s3c_fb_info_t *fbi)
 	}	
 	#endif
 
+#if defined(S3C_FB_DISPLAY_LOGO)
 		s3cfb_display_logo(win_num);
-
+#endif
 
 	writel(video_phy_temp_f1, S3C_VIDW00ADD0B0 + (0x08 * win_num));
 	writel(S3C_VIDWxxADD1_VBASEL_F((unsigned long) video_phy_temp_f1 + (page_width + offset) * (var->yres)), S3C_VIDW00ADD1B0 + (0x08 * win_num));

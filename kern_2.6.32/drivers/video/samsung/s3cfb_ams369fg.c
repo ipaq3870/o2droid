@@ -864,6 +864,7 @@ void s3cfb_init_hw(void)
 	lcd_gpio_init();
 }
 
+//#define LOGO_MEM_BASE		(0x50000000 + 0x08000000 - 0x100000)	/* SDRAM_BASE + SRAM_SIZE(128MB) - 1MB */
 
 void s3cfb_display_logo(int win_num)
 {
