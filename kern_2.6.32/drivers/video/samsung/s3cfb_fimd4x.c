@@ -2071,7 +2071,9 @@ extern void lcd_power_ctrl(s32 value);
 int s3cfb_shutdown(struct platform_device *dev)
 {
 	printk("s3cfb_shutdown \n");
+#if 0
 	lcd_power_ctrl(0);
+#endif
 	return 0;
 }
 #else
@@ -2108,7 +2110,9 @@ int s3cfb_resume(struct platform_device *dev)
  */
 int s3cfb_shutdown(struct platform_device *dev)
 {
+#if 0
 	lcd_power_ctrl(0);
+#endif
 }
 #endif	/* CONFIG_HAS_EARLYSUSPEND */
 
