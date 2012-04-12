@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2008 Jinsung Yang <jsgood.yang@samsung.com>
  *
- * This file is subject to the terms and conditions of the GNU eneral Public
+ * This file is subject to the terms and conditions of the GNU General Public
  * License.  See the file COPYING in the main directory of this archive for
  * more details.
  *
@@ -496,7 +496,6 @@ void s3cfb_start_lcd(void)
 	local_irq_save(flags);
 
 	tmp = readl(S3C_VIDCON0);
-	writel(tmp | S3C_VIDCON0_ENVID_ENABLE | S3C_VIDCON0_ENVID_F_ENABLE, S3C_VIDCON0);
 	tmp |= S3C_VIDCON0_ENVID_ENABLE | S3C_VIDCON0_ENVID_F_ENABLE;
 	writel(tmp, S3C_VIDCON0);
 
