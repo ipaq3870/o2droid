@@ -156,7 +156,8 @@ struct platform_device s3c64xx_device_spi1 = {
 };
 EXPORT_SYMBOL(s3c64xx_device_spi1);
 
-void __init s3c64xx_spi_set_info(int cntrlr, int src_clk_nr, int num_cs)
+//void __init s3c64xx_spi_set_info(int cntrlr, int src_clk_nr, int num_cs)
+void s3c64xx_spi_set_info(int cntrlr, int src_clk_nr, int num_cs)
 {
 	struct s3c64xx_spi_info *pd;
 

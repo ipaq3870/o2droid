@@ -169,7 +169,8 @@ static const struct rfkill_ops bt_rfkill_ops = {
 };
 
 
-static int __init saturn_rfkill_probe(struct platform_device *pdev)
+//static int __init saturn_rfkill_probe(struct platform_device *pdev)
+static int saturn_rfkill_probe(struct platform_device *pdev)
 {
 	int rc = 0;
 	int irq,ret;

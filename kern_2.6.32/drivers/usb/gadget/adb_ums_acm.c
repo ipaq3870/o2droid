@@ -156,7 +156,8 @@ void android_usb_set_connected(int connected)
 static void enable_adb(struct android_dev *dev, int enable);
 #endif
 
-static int __init android_bind_config(struct usb_configuration *c)
+//static int __init android_bind_config(struct usb_configuration *c)
+static int android_bind_config(struct usb_configuration *c)
 {
 	struct android_dev *dev = _android_dev;
 	int ret;
