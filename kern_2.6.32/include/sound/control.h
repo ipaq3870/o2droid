@@ -90,7 +90,7 @@ struct snd_kctl_event {
 struct snd_ctl_file {
 	struct list_head list;		/* list of all control files */
 	struct snd_card *card;
-	pid_t pid;
+	struct pid *pid;
 	int prefer_pcm_subdevice;
 	int prefer_rawmidi_subdevice;
 	wait_queue_head_t change_sleep;
