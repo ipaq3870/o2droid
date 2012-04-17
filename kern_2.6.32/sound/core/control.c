@@ -247,6 +247,7 @@ struct snd_kcontrol *snd_ctl_new1(const struct snd_kcontrol_new *ncontrol,
 		 (ncontrol->access & (SNDRV_CTL_ELEM_ACCESS_READWRITE|
 				      SNDRV_CTL_ELEM_ACCESS_INACTIVE|
 		 		      SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE|
+		 		      SNDRV_CTL_ELEM_ACCESS_TLV_COMMAND|
 		 		      SNDRV_CTL_ELEM_ACCESS_TLV_CALLBACK));
 	kctl.info = ncontrol->info;
 	kctl.get = ncontrol->get;
