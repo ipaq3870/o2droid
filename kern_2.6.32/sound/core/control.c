@@ -837,7 +837,6 @@ static int snd_ctl_elem_lock(struct snd_ctl_file *file,
 			result = -EBUSY;
 		else {
 			vd->owner = file;
-			vd->owner_pid = current->pid;
 			result = 0;
 		}
 	}
@@ -868,7 +867,6 @@ static int snd_ctl_elem_unlock(struct snd_ctl_file *file,
 			result = -EPERM;
 		else {
 			vd->owner = NULL;
-			vd->owner_pid = 0;
 			result = 0;
 		}
 	}
