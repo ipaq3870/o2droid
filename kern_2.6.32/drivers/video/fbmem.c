@@ -1515,7 +1515,6 @@ register_framebuffer(struct fb_info *fb_info)
 				       fb_info->fix.id,
 				       registered_fb[i]->fix.id);
 				unregister_framebuffer(registered_fb[i]);
-				break;
 			}
 		}
 	}
