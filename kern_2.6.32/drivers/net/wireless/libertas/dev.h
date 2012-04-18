@@ -187,8 +187,6 @@ struct lbs_private {
 	/** Pending command buffers */
 	struct list_head cmdpendingq;
 
-	wait_queue_head_t cmd_pending;
-
 	/* Command responses sent from the hardware to the driver */
 	u8 resp_idx;
 	u8 resp_buf[2][LBS_UPLD_SIZE];
