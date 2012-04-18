@@ -1280,8 +1280,9 @@ struct lbs_private *lbs_add_card(void *card, struct device *dmdev)
 	sprintf(priv->mesh_ssid, "mesh");
 	priv->mesh_ssid_len = 4;
 
-	priv->wol_criteria = 0xffffffff;
+	priv->wol_criteria = EHS_REMOVE_WAKEUP;
 	priv->wol_gpio = 0xff;
+	priv->ehs_remove_supported = true;
 
 	goto done;
 
