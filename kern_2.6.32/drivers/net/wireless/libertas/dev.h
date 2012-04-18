@@ -204,7 +204,6 @@ struct lbs_private {
 
 	/** Timers */
 	struct timer_list command_timer;
-	int nr_retries;
 	int cmd_timed_out;
 
 	/** current ssid/bssid related parameters*/
