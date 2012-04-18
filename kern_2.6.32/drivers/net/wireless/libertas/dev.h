@@ -319,6 +319,8 @@ struct lbs_private {
 
 	u32 monitormode;
 	u8 fw_ready;
+
+	u8 authtype_auto;
 };
 
 extern struct cmd_confirm_sleep confirm_sleep;

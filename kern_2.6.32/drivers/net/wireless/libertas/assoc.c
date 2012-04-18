@@ -24,6 +24,9 @@ static const u8 bssid_off[ETH_ALEN]  __attribute__ ((aligned (2))) =
 #define CAPINFO_MASK	(~(0xda00))
 
 
+static int assoc_helper_wep_keys(struct lbs_private *priv,
+		struct assoc_request *assoc_req);
+
 /**
  *  @brief This function finds common rates between rates and card rates.
  *
@@ -214,7 +217,7 @@ static int lbs_assoc_post(struct lbs_private *priv,
 
 	if (status_code) {
 		lbs_mac_event_disconnected(priv);
-		ret = -1;
+		ret = status_code;
 		goto done;
 	}
 
@@ -423,7 +426,24 @@ static int lbs_try_associate(struct lbs_private *priv,
 		goto out;
 
 	ret = lbs_associate(priv, assoc_req, CMD_802_11_ASSOCIATE);
+	/* If the association fails with current auth mode, let's
+	 * try by changing the auth mode
+	 */
+	if ((priv->authtype_auto) &&
+			(ret == WLAN_STATUS_NOT_SUPPORTED_AUTH_ALG) &&
+			(assoc_req->secinfo.wep_enabled) &&
+			(priv->connect_status != LBS_CONNECTED)) {
+		if (priv->secinfo.auth_mode == IW_AUTH_ALG_OPEN_SYSTEM)
+			priv->secinfo.auth_mode = IW_AUTH_ALG_SHARED_KEY;
+		else
+			priv->secinfo.auth_mode = IW_AUTH_ALG_OPEN_SYSTEM;
+		if (!assoc_helper_wep_keys(priv, assoc_req))
+			ret = lbs_associate(priv, assoc_req,
+						CMD_802_11_ASSOCIATE);
+	}
 
+	if (ret)
+		ret = -1;
 out:
 	lbs_deb_leave_args(LBS_DEB_ASSOC, "ret %d", ret);
 	return ret;

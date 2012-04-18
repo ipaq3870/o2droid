@@ -1155,6 +1155,7 @@ static int lbs_init_adapter(struct lbs_private *priv)
 	priv->capability = WLAN_CAPABILITY_SHORT_PREAMBLE;
 	priv->psmode = LBS802_11POWERMODECAM;
 	priv->psstate = PS_STATE_FULL_POWER;
+	priv->authtype_auto = 1;
 
 	mutex_init(&priv->lock);
 
