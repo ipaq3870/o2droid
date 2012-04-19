@@ -495,10 +495,10 @@ void lcd_power_ctrl(s32 value)
 			printk(KERN_ERR "lcd power control time out\n");
 			//return -1;
 		}
-*/
+
 		if (lcd_late_resume == 0)
 			return;
-
+*/
 		//printk("Lcd power on sequence start\n");
 
 		/* Power On Sequence */
