@@ -870,8 +870,34 @@ void s3cfb_display_logo(int win_num)
 {
 	s3c_fb_info_t *fbi = &s3c_fb_info[0];
 #if 1
+#ifdef CONFIG_FB_S3C_BPP_24
+	struct rgb565 {
+		u16 red:5;
+		u16 green:6;
+		u16 blue:5;
+	};
+
+	struct rgb888 {
+		u8 red;
+		u8 green;
+		u8 blue;
+		u8 alpha;
+	};
+
+	int i;
+	u16 *src = (u16 *)pixel_data;
+	u32 *dst = (u32 *)fbi->map_cpu_f1;
+
+	memset(fbi->map_cpu_f1, 0x00, 800*480*4);
+	for (i = 0; i < 480*160*2; i += 2, src++, dst++) {
+		((struct rgb888*)dst)->red = ((struct rgb565*)src)->red << 3;
+		((struct rgb888*)dst)->green = ((struct rgb565*)src)->green<< 2;
+		((struct rgb888*)dst)->blue = ((struct rgb565*)src)->blue << 3;
+	}
+#else
 	memset(fbi->map_cpu_f1, 0x00, 800*480*2);
 	memcpy(fbi->map_cpu_f1, pixel_data, 480*160*2);         
+#endif
 #else
 	u16 *logo_virt_buf;
 #ifdef CONFIG_FB_S3C_BPP_24
