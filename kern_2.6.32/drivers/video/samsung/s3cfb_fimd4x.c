@@ -2024,7 +2024,7 @@ void s3cfb_late_resume(struct early_suspend *h)
 
 	lcd_clock_status = 1;
 	lcd_late_resume = 1;
-//	lcd_power_ctrl(1);
+	lcd_power_ctrl(1);
 }
 /*
  *  Suspend
