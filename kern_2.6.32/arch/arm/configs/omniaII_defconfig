@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.9
-# Sun Apr  1 03:59:13 2012
+# Thu Apr 19 11:18:47 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1167,7 +1167,7 @@ CONFIG_FB_S3C_BPP=y
 # CONFIG_FB_S3C_BPP_8 is not set
 # CONFIG_FB_S3C_BPP_16 is not set
 CONFIG_FB_S3C_BPP_24=y
-CONFIG_FB_S3C_NUM=4
+CONFIG_FB_S3C_NUM=2
 # CONFIG_FB_S3C_VIRTUAL_SCREEN is not set
 CONFIG_FB_S3C_DOUBLE_BUFFERING=y
 CONFIG_FB_S3C_SHOW_LOGO=y
