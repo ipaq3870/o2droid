@@ -115,7 +115,7 @@ extern struct sys_timer s3c64xx_timer;
 extern struct sys_timer sec_timer;
 #endif /* CONFIG_HIGH_RES_TIMERS */
 
-static struct s3c_uartcfg omnia_II_uartcfgs[] __initdata = {
+static struct s3c_uartcfg omnia_II_uartcfgs[] = {
 	[0] = {	/* Phone */
 		.hwport	     = 0,
 		.flags	     = 0,
@@ -169,19 +169,19 @@ static struct platform_device sec_device_i2c_common = {
 	.dev.platform_data	= &i2c_common_platdata,
 };
 
-static struct i2c_board_info i2c_devs0[] __initdata = {
+static struct i2c_board_info i2c_devs0[] = {
 	{ I2C_BOARD_INFO("kxsd9_2042", (KXSD9_I2C_ADDRESS >> 1)), },
 };
 
-static struct i2c_board_info i2c_devs1[] __initdata = {
+static struct i2c_board_info i2c_devs1[] = {
 	{ I2C_BOARD_INFO("ce131", (CE131_ID >> 1)), },
 };
 
-static struct i2c_board_info i2c_devs2[] __initdata = {
+static struct i2c_board_info i2c_devs2[] = {
 	{ I2C_BOARD_INFO("max8698", (0xcc >> 1)), },
 };
 
-static struct i2c_board_info i2c_devs3[] __initdata = {
+static struct i2c_board_info i2c_devs3[] = {
 	{ I2C_BOARD_INFO("MAX9877 I2C (AMP)", (MAX9877_I2C_ADDRESS >> 1)), },
 	{ I2C_BOARD_INFO("AK4671 I2C Codec", (AK4671_I2C_ADDRESS >> 1)), },
 	{ I2C_BOARD_INFO("Si4709", (SI4709_I2C_ADDRESS >> 1)), },
@@ -562,7 +562,7 @@ static struct map_desc smdk6410_iodesc[] = {
 	},
 };
 
-static struct platform_device *smdk6410_devices[] __initdata = {
+static struct platform_device *smdk6410_devices[] = {
 #if defined(CONFIG_S3C_DMA_PL080_SOL)
         &s3c_device_dma0,
         &s3c_device_dma1,
@@ -608,7 +608,7 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 	&ram_console_device,
 };
 
-static struct s3c_ts_mach_info s3c_ts_platform __initdata = {
+static struct s3c_ts_mach_info s3c_ts_platform = {
 	.delay 			= 10000, //41237
 	.presc 			= 49,
 	.oversampling_shift	= 2,//4
