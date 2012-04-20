@@ -616,11 +616,58 @@ static struct s3c_ts_mach_info s3c_ts_platform = {
 	.s3c_adc_con		= ADC_TYPE_2,
 };
 
+#define CONFIG_SPICA_CPU_667_AHB_166
+//#define CONFIG_SPICA_AHB_166
+#define S3C64XX_OTHERS_SYNCACK_MASK	(0xf << 8)
+#define S3C64XX_OTHERS_SYNCMODE		(1 << 7)
+#define S3C64XX_OTHERS_SYNCMUXSEL	(1 << 6)
 static void __init omnia_II_map_io(void)
 {
+#if defined(CONFIG_SPICA_AHB_166) || defined(CONFIG_SPICA_CPU_667_AHB_166)
+	u32 reg;
+#endif
 	s3c64xx_gpiolib_init();
 	pm_power_off = omnia_II_pm_power_off;
 	s3c64xx_init_io(smdk6410_iodesc, ARRAY_SIZE(smdk6410_iodesc));
+#if defined(CONFIG_SPICA_AHB_166)
+	reg = __raw_readl(S3C64XX_OTHERS);
+	reg &= ~S3C64XX_OTHERS_SYNCMODE;
+	reg &= ~S3C64XX_OTHERS_SYNCMUXSEL;
+	__raw_writel(reg, S3C64XX_OTHERS);
+
+	while (__raw_readl(S3C64XX_OTHERS) & S3C64XX_OTHERS_SYNCACK_MASK);
+
+	reg = __raw_readl(S3C_CLK_DIV0);
+	reg &= ~S3C6400_CLKDIV0_HCLK2_MASK;
+	reg |= 0x0 << S3C6400_CLKDIV0_HCLK2_SHIFT;
+	__raw_writel(reg, S3C_CLK_DIV0);
+
+	__raw_writel(0xc14d0302, S3C_MPLL_CON);
+#elif defined(CONFIG_SPICA_CPU_667_AHB_166)
+	reg = __raw_readl(S3C64XX_OTHERS);
+	reg &= ~S3C64XX_OTHERS_SYNCMODE;
+	reg &= ~S3C64XX_OTHERS_SYNCMUXSEL;
+	__raw_writel(reg, S3C64XX_OTHERS);
+
+	while (__raw_readl(S3C64XX_OTHERS) & S3C64XX_OTHERS_SYNCACK_MASK);
+
+	__raw_writel(0xc14d0301, S3C_APLL_CON);
+
+	reg = __raw_readl(S3C_CLK_DIV0);
+	reg &= ~S3C6400_CLKDIV0_HCLK2_MASK;
+	reg |= 0x1 << S3C6400_CLKDIV0_HCLK2_SHIFT;
+	__raw_writel(reg, S3C_CLK_DIV0);
+
+	reg = __raw_readl(S3C64XX_OTHERS);
+	reg |= S3C64XX_OTHERS_SYNCMODE;
+	reg |= S3C64XX_OTHERS_SYNCMUXSEL;
+	__raw_writel(reg, S3C64XX_OTHERS);
+
+	do {
+		reg = __raw_readl(S3C64XX_OTHERS);
+		reg &= S3C64XX_OTHERS_SYNCACK_MASK;
+	} while (reg != S3C64XX_OTHERS_SYNCACK_MASK);
+#endif
 	s3c_init_clocks(12000000);
         s3c_init_uarts(omnia_II_uartcfgs, ARRAY_SIZE(omnia_II_uartcfgs));
 }
@@ -631,7 +678,8 @@ static void omnia_II_set_qos(void)
 
 	reg = (u32) ioremap((unsigned long) S3C6410_PA_AXI_SYS, SZ_4K); /* QoS override: FIMD min. latency */
 //	writel(0x2, S3C_VA_SYS + 0x128);  	    			/* AXI QoS */
-	writel(0xffb6, S3C_VA_SYS + 0x128);  	    			/* AXI QoS */
+//	writel(0xffb6, S3C_VA_SYS + 0x128);  	    			/* AXI QoS */
+	writel(0x7702, S3C_VA_SYS + 0x128);  	    			/* AXI QoS */
 	writel(0x7, reg + 0x460);   					/* (8 - MFC ch.) */
 	writel(0x7ff7, reg + 0x464);      				/* Bus cacheable */
 	writel(0x8ff, S3C_VA_SYS + 0x838);
@@ -648,6 +696,28 @@ static void s3c6410_wdt_io_map(void)
 
 static void __init omnia_II_machine_init(void)
 {
+	struct clk *parent;
+
+	struct clk *clk;
+	unsigned long rate;
+
+	/* Setup frequencies of some clocks */
+	clk = clk_get(NULL, "hclk");
+	rate = clk_get_rate(clk);
+	clk_put(clk);
+#if 0
+	parent = clk_get(NULL, "dout_mpll");
+	clk = clk_get(NULL, "uclk1");
+	clk_set_rate(parent, rate);
+	clk_set_parent(clk, parent);
+	clk_set_rate(clk, rate);
+	clk_put(clk);
+	clk_put(parent);
+
+	clk = clk_get(NULL, "sclk_mfc");
+	clk_set_rate(clk, rate);
+	clk_put(clk);
+#endif
 
 //	system_rev = 0x20;
 	s3c_config_gpio_table(ARRAY_SIZE(omnia_II_init_gpio_table),
