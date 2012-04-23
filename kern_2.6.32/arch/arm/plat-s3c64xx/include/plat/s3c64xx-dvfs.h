@@ -10,7 +10,7 @@
 #ifndef __PLAT_S3C64XX_DVFS_H
 #define __PLAT_S3C64XX_DVFS_H __FILE__
 
-#define MAXIMUM_FREQ 800000
+#define MAXIMUM_FREQ policy->max
 //#undef USE_DVS
 #define USE_DVS
 //#define USE_DVFS_AL1_LEVEL
