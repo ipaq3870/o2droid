@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.9
-# Wed Apr 18 13:35:37 2012
+# Tue Apr 24 12:31:01 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -247,6 +247,8 @@ CONFIG_S3C6410_SETUP_SDHCI=y
 # Samsung S3C6410 Implementations
 #
 CONFIG_MACH_OMNIA_II=y
+# CONFIG_OMNIA_II_AHB_166 is not set
+CONFIG_OMNIA_II_CPU_667_AHB_166=y
 # CONFIG_MACH_INSTINCTQ is not set
 CONFIG_MACH_VINSQ=y
 # CONFIG_MACH_VITAL is not set

@@ -616,20 +616,18 @@ static struct s3c_ts_mach_info s3c_ts_platform = {
 	.s3c_adc_con		= ADC_TYPE_2,
 };
 
-#define CONFIG_SPICA_CPU_667_AHB_166
-//#define CONFIG_SPICA_AHB_166
 #define S3C64XX_OTHERS_SYNCACK_MASK	(0xf << 8)
 #define S3C64XX_OTHERS_SYNCMODE		(1 << 7)
 #define S3C64XX_OTHERS_SYNCMUXSEL	(1 << 6)
 static void __init omnia_II_map_io(void)
 {
-#if defined(CONFIG_SPICA_AHB_166) || defined(CONFIG_SPICA_CPU_667_AHB_166)
+#if defined(CONFIG_OMNIA_II_AHB_166) || defined(CONFIG_OMNIA_II_CPU_667_AHB_166)
 	u32 reg;
 #endif
 	s3c64xx_gpiolib_init();
 	pm_power_off = omnia_II_pm_power_off;
 	s3c64xx_init_io(smdk6410_iodesc, ARRAY_SIZE(smdk6410_iodesc));
-#if defined(CONFIG_SPICA_AHB_166)
+#if defined(CONFIG_OMNIA_II_AHB_166)
 	reg = __raw_readl(S3C64XX_OTHERS);
 	reg &= ~S3C64XX_OTHERS_SYNCMODE;
 	reg &= ~S3C64XX_OTHERS_SYNCMUXSEL;
@@ -643,7 +641,7 @@ static void __init omnia_II_map_io(void)
 	__raw_writel(reg, S3C_CLK_DIV0);
 
 	__raw_writel(0xc14d0302, S3C_MPLL_CON);
-#elif defined(CONFIG_SPICA_CPU_667_AHB_166)
+#elif defined(CONFIG_OMNIA_II_CPU_667_AHB_166)
 	reg = __raw_readl(S3C64XX_OTHERS);
 	reg &= ~S3C64XX_OTHERS_SYNCMODE;
 	reg &= ~S3C64XX_OTHERS_SYNCMUXSEL;
