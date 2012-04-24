@@ -45,6 +45,57 @@ static struct cpufreq_frequency_table freq_table_532MHz[] = {
 #endif /* USE_DVFS_AL1_LEVEL */
 };
 
+static unsigned char transition_state_532MHz[][2] = {
+	{1, 0},
+	{2, 0},
+	{3, 1},
+#ifdef USE_DVFS_AL1_LEVEL
+	{4, 2},
+	{4, 3},		
+#else
+	{3, 2},
+#endif /* USE_DVFS_AL1_LEVEL */
+};
+
+/* frequency voltage matching table */
+static const unsigned int frequency_match_532MHz[][4] = {
+/* frequency, Mathced VDD ARM voltage , Matched VDD INT*/
+	{532000, 1150, 1250, 0},
+	{266000, 1100, 1250, 1},
+	{133000, 1000, 1250, 2},
+#ifdef USE_DVFS_AL1_LEVEL
+	{133000, 1050, 1050, 3},
+	{66000, 1050, 1050, 4},
+#else
+	{66000, 1050, 1050, 3},
+#endif /* USE_DVFS_AL1_LEVEL */
+};
+
+#ifdef CONFIG_OMNIA_II_CPU_667_AHB_166
+static struct cpufreq_frequency_table freq_table_667MHz[] = {
+	{0, 666*KHZ_T},
+	{1, 333*KHZ_T},
+	{2, 166*KHZ_T},	
+	{3, 83*KHZ_T},
+	{4, CPUFREQ_TABLE_END},
+};
+
+static unsigned char transition_state_667MHz[][2] = {
+	{1, 0},
+	{2, 0},
+	{3, 1},
+	{3, 2},
+};
+
+/* frequency voltage matching table */
+static const unsigned int frequency_match_667MHz[][4] = {
+/* frequency, Mathced VDD ARM voltage , Matched VDD INT*/
+	{666000, 1150, 1250, 0},
+	{333000, 1100, 1250, 1},
+	{166000, 1050, 1250, 2},
+	{83000, 1050, 1050, 3},
+};
+#else
 static struct cpufreq_frequency_table freq_table_800MHz[] = {
 	{0, 800*KHZ_T},
 	{1, 400*KHZ_T},
@@ -64,38 +115,12 @@ static unsigned char transition_state_800MHz[][2] = {
 	{1, 0},
 	{2, 0},
 	{3, 1},
-	{4, 2},
+	{3, 2},
 #ifdef USE_DVFS_AL1_LEVEL
 	{5, 3},
 	{5, 4},
 #else
 	{4, 3},
-#endif /* USE_DVFS_AL1_LEVEL */
-};
-
-static unsigned char transition_state_532MHz[][2] = {
-	{1, 0},
-	{2, 0},
-	{3, 1},
-#ifdef USE_DVFS_AL1_LEVEL
-	{4, 2},
-	{4, 3},		
-#else
-	{3, 2},
-#endif /* USE_DVFS_AL1_LEVEL */
-};
-
-/* frequency voltage matching table */
-static const unsigned int frequency_match_532MHz[][4] = {
-/* frequency, Mathced VDD ARM voltage , Matched VDD INT*/
-	{532000, 1100, 1250, 0},
-	{266000, 1100, 1250, 1},
-	{133000, 1000, 1250, 2},
-#ifdef USE_DVFS_AL1_LEVEL
-	{133000, 1050, 1050, 3},
-	{66000, 1050, 1050, 4},
-#else
-	{66000, 1050, 1050, 3},
 #endif /* USE_DVFS_AL1_LEVEL */
 };
 
@@ -113,21 +138,35 @@ static const unsigned int frequency_match_800MHz[][4] = {
 	{66000, 1050, 1050, 4},
 #endif /* USE_DVFS_AL1_LEVEL */
 };
+#endif
+
 
 extern int is_pmic_initialized(void);
 static const unsigned int (*frequency_match[2])[4] = {
 	frequency_match_532MHz,
+#ifdef CONFIG_OMNIA_II_CPU_667_AHB_166
+	frequency_match_667MHz,
+#else
 	frequency_match_800MHz,
+#endif
 };
 
 static unsigned char (*transition_state[2])[2] = {
 	transition_state_532MHz,
+#ifdef CONFIG_OMNIA_II_CPU_667_AHB_166
+	transition_state_667MHz,
+#else
 	transition_state_800MHz,
+#endif
 };
 
 static struct cpufreq_frequency_table *s3c6410_freq_table[] = {
 	freq_table_532MHz,
+#ifdef CONFIG_OMNIA_II_CPU_667_AHB_166
+	freq_table_667MHz,
+#else
 	freq_table_800MHz,
+#endif
 };
 
 int set_max_freq_flag = 0;

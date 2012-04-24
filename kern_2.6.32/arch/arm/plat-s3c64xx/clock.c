@@ -62,6 +62,15 @@ static const u32 s3c_cpu_clk_tab_533MHz[][6] = {
 	{ 66*MHZ, 133 *MHZ, 266, 1, 7, 3},
 };
 
+#if defined(CONFIG_OMNIA_II_CPU_667_AHB_166)
+/* ARMCLK, HCLKX2, APLL, PDIV, ARM_DIV, HCLKX2_DIV */
+static const u32 s3c_cpu_clk_tab_667MHz[][6] = {
+	{666*MHZ,  333 *MHZ, 333, 3, 0, 1},
+	{333*MHZ,  333 *MHZ, 333, 3, 1, 1},
+	{166*MHZ,  333 *MHZ, 333, 3, 3, 1},
+	{ 83*MHZ,  166 *MHZ, 333, 1, 7, 3},
+};
+#else
 /* ARMCLK, HCLKX2, APLL, PDIV, ARM_DIV, HCLKX2_DIV */
 static const u32 s3c_cpu_clk_tab_800MHz[][6] = {
 	{800*MHZ,  266 *MHZ, 400, 3, 0, 2},
@@ -73,12 +82,17 @@ static const u32 s3c_cpu_clk_tab_800MHz[][6] = {
 #endif /* USE_DVFS_AL1_LEVEL */
 	{ 66*MHZ,  133 *MHZ, 400, 1, 11, 5},
 };
+#endif
 
 unsigned int S3C64XX_FREQ_TAB = 1;
 
 static const u32 (*s3c_cpu_clk_tab[2])[6] = {
 	s3c_cpu_clk_tab_533MHz,
+#if defined(CONFIG_OMNIA_II_CPU_667_AHB_166)
+	s3c_cpu_clk_tab_667MHz,
+#else
 	s3c_cpu_clk_tab_800MHz,
+#endif
 } ;
 
 struct clk clk_27m = {
@@ -118,7 +132,11 @@ static u32 s3c_cpu_clk_tab_size(void)
 {
 	u32 size;
 	if(S3C64XX_FREQ_TAB)
+#if defined(CONFIG_OMNIA_II_CPU_667_AHB_166)
+		size = ARRAY_SIZE(s3c_cpu_clk_tab_667MHz);
+#else
 		size = ARRAY_SIZE(s3c_cpu_clk_tab_800MHz);
+#endif
 	else
 		size = ARRAY_SIZE(s3c_cpu_clk_tab_533MHz);
 
@@ -149,6 +167,8 @@ unsigned long s3c64xx_get_clk_rate(int *armclk)
 	*armclk = (ret / (clk_div0 + 1));
 
 	ret = ret /(hclkx2_div + 1);
+
+//printk("XXX MDIV=%ld PDIV=%ld SDIV=%ld ARM_DIV=%ld HCLKX2DIV=%ld Clock=%ld Armclock=%ld\n", m, p, s, clk_div0, hclkx2_div, ret, *armclk);
 
 	return ret;
 }
