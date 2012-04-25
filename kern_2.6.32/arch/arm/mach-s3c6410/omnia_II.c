@@ -666,6 +666,15 @@ static void __init omnia_II_map_io(void)
 		reg &= S3C64XX_OTHERS_SYNCACK_MASK;
 	} while (reg != S3C64XX_OTHERS_SYNCACK_MASK);
 #endif
+
+#ifdef CONFIG_OMNIA_II_AHB_166
+	//try reducing lcd clock to half for higher mpll
+	reg = __raw_readl(S3C_CLK_DIV1);
+	reg &= ~S3C6400_CLKDIV1_LCD_MASK;
+	reg |= 0x1 << S3C6400_CLKDIV1_LCD_SHIFT;
+	__raw_writel(reg, S3C_CLK_DIV1);
+#endif
+
 	s3c_init_clocks(12000000);
         s3c_init_uarts(omnia_II_uartcfgs, ARRAY_SIZE(omnia_II_uartcfgs));
 }
