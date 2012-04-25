@@ -70,6 +70,15 @@ static const u32 s3c_cpu_clk_tab_667MHz[][6] = {
 	{166*MHZ,  333 *MHZ, 333, 3, 3, 1},
 	{ 83*MHZ,  166 *MHZ, 333, 1, 7, 3},
 };
+#elif defined(CONFIG_OMNIA_II_AHB_166)
+/* ARMCLK, HCLKX2, APLL, PDIV, ARM_DIV, HCLKX2_DIV */
+static const u32 s3c_cpu_clk_tab_800MHz[][6] = {
+	{800*MHZ,  266 *MHZ, 333, 3, 0, 0},
+	{400*MHZ,  266 *MHZ, 333, 3, 1, 0},
+	{266*MHZ,  266 *MHZ, 333, 3, 2, 0},
+	{133*MHZ,  266 *MHZ, 333, 3, 5, 0},
+	{ 66*MHZ,  133 *MHZ, 333, 1, 11, 3},
+};
 #else
 /* ARMCLK, HCLKX2, APLL, PDIV, ARM_DIV, HCLKX2_DIV */
 static const u32 s3c_cpu_clk_tab_800MHz[][6] = {
