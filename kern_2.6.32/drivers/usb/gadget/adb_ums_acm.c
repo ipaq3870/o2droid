@@ -69,7 +69,7 @@ static const char longname[] = "Gadget Android";
  * ADB_ENABLE_AT_BOOT intends to enable adb function 
  * in case of no enabling by adbd or improper RFS
  */
-#define ADB_ENABLE_AT_BOOT	1
+#define ADB_ENABLE_AT_BOOT	0
 
 extern void get_usb_serial(char *usb_serial_number);
 
