@@ -68,8 +68,8 @@ static const u32 s3c_cpu_clk_tab_667MHz[][6] = {
 	{666*MHZ,  333 *MHZ, 333, 3, 0, 1},
 	{333*MHZ,  333 *MHZ, 333, 3, 1, 1},
 	{166*MHZ,  333 *MHZ, 333, 3, 3, 1},
-//	{ 83*MHZ,  166 *MHZ, 333, 1, 7, 3},
-	{ 83*MHZ,  333 *MHZ, 333, 3, 7, 3},
+	{ 83*MHZ,  166 *MHZ, 333, 1, 7, 3}, //camera FC
+//	{ 83*MHZ,  333 *MHZ, 333, 3, 7, 3}, //camera ok but clock halved
 };
 #elif defined(CONFIG_OMNIA_II_AHB_166)
 /* ARMCLK, HCLKX2, APLL, PDIV, ARM_DIV, HCLKX2_DIV */
