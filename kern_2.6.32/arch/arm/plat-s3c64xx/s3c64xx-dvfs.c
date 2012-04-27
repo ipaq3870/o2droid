@@ -75,8 +75,8 @@ static const unsigned int frequency_match_532MHz[][4] = {
 static struct cpufreq_frequency_table freq_table_667MHz[] = {
 	{0, 666*KHZ_T},
 	{1, 333*KHZ_T},
-	{2, 166*KHZ_T},	
-	{3, 83*KHZ_T},
+	{2, 166.5*KHZ_T},
+	{3, 83.25*KHZ_T},
 	{4, CPUFREQ_TABLE_END},
 };
 
@@ -92,8 +92,8 @@ static const unsigned int frequency_match_667MHz[][4] = {
 /* frequency, Mathced VDD ARM voltage , Matched VDD INT*/
 	{666000, 1150, 1250, 0},
 	{333000, 1100, 1250, 1},
-	{166000, 1050, 1250, 2},
-	{83000, 1050, 1050, 3},
+	{166500, 1050, 1250, 2},
+	{83250, 1050, 1050, 3},
 };
 #else
 static struct cpufreq_frequency_table freq_table_800MHz[] = {
