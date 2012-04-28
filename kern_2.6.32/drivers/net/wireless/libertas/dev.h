@@ -159,7 +159,6 @@ struct lbs_private {
 	uint32_t wol_criteria;
 	uint8_t wol_gpio;
 	uint8_t wol_gap;
-	bool ehs_remove_supported;
 
 	/** Wlan adapter data structure*/
 	/** STATUS variables */
@@ -187,6 +186,8 @@ struct lbs_private {
 	/** Pending command buffers */
 	struct list_head cmdpendingq;
 
+	wait_queue_head_t cmd_pending;
+
 	/* Command responses sent from the hardware to the driver */
 	u8 resp_idx;
 	u8 resp_buf[2][LBS_UPLD_SIZE];
@@ -203,6 +204,7 @@ struct lbs_private {
 
 	/** Timers */
 	struct timer_list command_timer;
+	int nr_retries;
 	int cmd_timed_out;
 
 	/** current ssid/bssid related parameters*/
@@ -318,8 +320,6 @@ struct lbs_private {
 
 	u32 monitormode;
 	u8 fw_ready;
-
-	u8 authtype_auto;
 };
 
 extern struct cmd_confirm_sleep confirm_sleep;

@@ -581,6 +581,33 @@ static int lbs_eth_stop(struct net_device *dev)
 	return 0;
 }
 
+static void lbs_tx_timeout(struct net_device *dev)
+{
+	struct lbs_private *priv = dev->ml_priv;
+
+	lbs_deb_enter(LBS_DEB_TX);
+
+	lbs_pr_err("tx watch dog timeout\n");
+
+	dev->trans_start = jiffies;
+
+	if (priv->currenttxskb)
+		lbs_send_tx_feedback(priv, 0);
+
+	/* XX: Shouldn't we also call into the hw-specific driver
+	   to kick it somehow? */
+	lbs_host_to_card_done(priv);
+
+	/* More often than not, this actually happens because the
+	   firmware has crapped itself -- rather than just a very
+	   busy medium. So send a harmless command, and if/when
+	   _that_ times out, we'll kick it in the head. */
+	lbs_prepare_and_send_command(priv, CMD_802_11_RSSI, 0,
+				     0, 0, NULL);
+
+	lbs_deb_leave(LBS_DEB_TX);
+}
+
 void lbs_host_to_card_done(struct lbs_private *priv)
 {
 	unsigned long flags;
@@ -844,11 +871,26 @@ static int lbs_thread(void *data)
 		if (priv->cmd_timed_out && priv->cur_cmd) {
 			struct cmd_ctrl_node *cmdnode = priv->cur_cmd;
 
-			lbs_pr_info("Timeout submitting command 0x%04x\n",
-				le16_to_cpu(cmdnode->cmdbuf->command));
-			lbs_complete_command(priv, cmdnode, -ETIMEDOUT);
-			if (priv->reset_card)
-				priv->reset_card(priv);
+			if (++priv->nr_retries > 3) {
+				lbs_pr_info("Excessive timeouts submitting "
+					"command 0x%04x\n",
+					le16_to_cpu(cmdnode->cmdbuf->command));
+				lbs_complete_command(priv, cmdnode, -ETIMEDOUT);
+				priv->nr_retries = 0;
+				if (priv->reset_card)
+					priv->reset_card(priv);
+			} else {
+				priv->cur_cmd = NULL;
+				priv->dnld_sent = DNLD_RES_RECEIVED;
+				lbs_pr_info("requeueing command 0x%04x due "
+					"to timeout (#%d)\n",
+					le16_to_cpu(cmdnode->cmdbuf->command),
+					priv->nr_retries);
+
+				/* Stick it back at the _top_ of the pending queue
+				   for immediate resubmission */
+				list_add(&cmdnode->list, &priv->cmdpendingq);
+			}
 		}
 		priv->cmd_timed_out = 0;
 
@@ -901,6 +943,12 @@ static int lbs_thread(void *data)
 		if (!priv->dnld_sent && !priv->cur_cmd)
 			lbs_execute_next_command(priv);
 
+		/* Wake-up command waiters which can't sleep in
+		 * lbs_prepare_and_send_command
+		 */
+		if (!list_empty(&priv->cmdpendingq))
+			wake_up_all(&priv->cmd_pending);
+
 		spin_lock_irq(&priv->driver_lock);
 		if (!priv->dnld_sent && priv->tx_pending_len > 0) {
 			int ret = priv->hw_host_to_card(priv, MVMS_DAT,
@@ -925,6 +973,7 @@ static int lbs_thread(void *data)
 	}
 
 	del_timer(&priv->command_timer);
+	wake_up_all(&priv->cmd_pending);
 
 	lbs_deb_leave(LBS_DEB_THREAD);
 	return 0;
@@ -1051,7 +1100,7 @@ done:
  *  This function handles the timeout of command sending.
  *  It will re-send the same command again.
  */
-static void lbs_cmd_timeout_handler(unsigned long data)
+static void command_timer_fn(unsigned long data)
 {
 	struct lbs_private *priv = (struct lbs_private *)data;
 	unsigned long flags;
@@ -1121,17 +1170,17 @@ static int lbs_init_adapter(struct lbs_private *priv)
 	priv->capability = WLAN_CAPABILITY_SHORT_PREAMBLE;
 	priv->psmode = LBS802_11POWERMODECAM;
 	priv->psstate = PS_STATE_FULL_POWER;
-	priv->authtype_auto = 1;
 
 	mutex_init(&priv->lock);
 
-	setup_timer(&priv->command_timer, lbs_cmd_timeout_handler,
+	setup_timer(&priv->command_timer, command_timer_fn,
 		(unsigned long)priv);
 
 	INIT_LIST_HEAD(&priv->cmdfreeq);
 	INIT_LIST_HEAD(&priv->cmdpendingq);
 
 	spin_lock_init(&priv->driver_lock);
+	init_waitqueue_head(&priv->cmd_pending);
 
 	/* Allocate the command buffers */
 	if (lbs_allocate_cmd_buffer(priv)) {
@@ -1175,6 +1224,7 @@ static const struct net_device_ops lbs_netdev_ops = {
 	.ndo_stop		= lbs_eth_stop,
 	.ndo_start_xmit		= lbs_hard_start_xmit,
 	.ndo_set_mac_address	= lbs_set_mac_address,
+	.ndo_tx_timeout 	= lbs_tx_timeout,
 	.ndo_set_multicast_list = lbs_set_multicast_list,
 	.ndo_change_mtu		= eth_change_mtu,
 	.ndo_validate_addr	= eth_validate_addr,
@@ -1244,9 +1294,8 @@ struct lbs_private *lbs_add_card(void *card, struct device *dmdev)
 	sprintf(priv->mesh_ssid, "mesh");
 	priv->mesh_ssid_len = 4;
 
-	priv->wol_criteria = EHS_REMOVE_WAKEUP;
+	priv->wol_criteria = 0xffffffff;
 	priv->wol_gpio = 0xff;
-	priv->ehs_remove_supported = true;
 
 	goto done;
 
@@ -1300,6 +1349,7 @@ void lbs_remove_card(struct lbs_private *priv)
 
 	lbs_free_adapter(priv);
 
+	priv->dev = NULL;
 	free_netdev(dev);
 
 	lbs_deb_leave(LBS_DEB_MAIN);

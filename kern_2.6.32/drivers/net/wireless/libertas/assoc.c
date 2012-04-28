@@ -24,9 +24,6 @@ static const u8 bssid_off[ETH_ALEN]  __attribute__ ((aligned (2))) =
 #define CAPINFO_MASK	(~(0xda00))
 
 
-static int assoc_helper_wep_keys(struct lbs_private *priv,
-		struct assoc_request *assoc_req);
-
 /**
  *  @brief This function finds common rates between rates and card rates.
  *
@@ -217,7 +214,7 @@ static int lbs_assoc_post(struct lbs_private *priv,
 
 	if (status_code) {
 		lbs_mac_event_disconnected(priv);
-		ret = status_code;
+		ret = -1;
 		goto done;
 	}
 
@@ -426,24 +423,7 @@ static int lbs_try_associate(struct lbs_private *priv,
 		goto out;
 
 	ret = lbs_associate(priv, assoc_req, CMD_802_11_ASSOCIATE);
-	/* If the association fails with current auth mode, let's
-	 * try by changing the auth mode
-	 */
-	if ((priv->authtype_auto) &&
-			(ret == WLAN_STATUS_NOT_SUPPORTED_AUTH_ALG) &&
-			(assoc_req->secinfo.wep_enabled) &&
-			(priv->connect_status != LBS_CONNECTED)) {
-		if (priv->secinfo.auth_mode == IW_AUTH_ALG_OPEN_SYSTEM)
-			priv->secinfo.auth_mode = IW_AUTH_ALG_SHARED_KEY;
-		else
-			priv->secinfo.auth_mode = IW_AUTH_ALG_OPEN_SYSTEM;
-		if (!assoc_helper_wep_keys(priv, assoc_req))
-			ret = lbs_associate(priv, assoc_req,
-						CMD_802_11_ASSOCIATE);
-	}
 
-	if (ret)
-		ret = -1;
 out:
 	lbs_deb_leave_args(LBS_DEB_ASSOC, "ret %d", ret);
 	return ret;
@@ -1698,6 +1678,13 @@ void lbs_association_worker(struct work_struct *work)
 			goto out;
 	}
 
+	if (   test_bit(ASSOC_FLAG_WEP_KEYS, &assoc_req->flags)
+	    || test_bit(ASSOC_FLAG_WEP_TX_KEYIDX, &assoc_req->flags)) {
+		ret = assoc_helper_wep_keys(priv, assoc_req);
+		if (ret)
+			goto out;
+	}
+
 	if (test_bit(ASSOC_FLAG_SECINFO, &assoc_req->flags)) {
 		ret = assoc_helper_secinfo(priv, assoc_req);
 		if (ret)
@@ -1710,21 +1697,9 @@ void lbs_association_worker(struct work_struct *work)
 			goto out;
 	}
 
-	/*
-	 * v10 FW wants WPA keys to be set/cleared before WEP key operations,
-	 * otherwise it will fail to correctly associate to WEP networks.
-	 * Other firmware versions don't appear to care.
-	 */
 	if (test_bit(ASSOC_FLAG_WPA_MCAST_KEY, &assoc_req->flags)
 	    || test_bit(ASSOC_FLAG_WPA_UCAST_KEY, &assoc_req->flags)) {
 		ret = assoc_helper_wpa_keys(priv, assoc_req);
-		if (ret)
-			goto out;
-	}
-
-	if (   test_bit(ASSOC_FLAG_WEP_KEYS, &assoc_req->flags)
-	    || test_bit(ASSOC_FLAG_WEP_TX_KEYIDX, &assoc_req->flags)) {
-		ret = assoc_helper_wep_keys(priv, assoc_req);
 		if (ret)
 			goto out;
 	}

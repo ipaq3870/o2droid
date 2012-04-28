@@ -145,10 +145,13 @@ static void lbs_ethtool_get_wol(struct net_device *dev,
 {
 	struct lbs_private *priv = dev->ml_priv;
 
-	wol->supported = WAKE_UCAST|WAKE_MCAST|WAKE_BCAST|WAKE_PHY;
-
- 	if (priv->wol_criteria == EHS_REMOVE_WAKEUP)
+	if (priv->wol_criteria == 0xffffffff) {
+		/* Interface driver didn't configure wake */
+		wol->supported = wol->wolopts = 0;
 		return;
+	}
+
+	wol->supported = WAKE_UCAST|WAKE_MCAST|WAKE_BCAST|WAKE_PHY;
 
 	if (priv->wol_criteria & EHS_WAKE_ON_UNICAST_DATA)
 		wol->wolopts |= WAKE_UCAST;
