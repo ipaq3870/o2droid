@@ -39,6 +39,7 @@
 #include <linux/ctype.h>
 #include <linux/log2.h>
 #include <linux/crc16.h>
+#include <linux/cleancache.h>
 #include <asm/uaccess.h>
 
 #include "ext4.h"
@@ -1995,6 +1996,7 @@ static loff_t ext4_max_size(int blkbits, int has_huge_files)
 	if (res > upper_limit)
 		res = upper_limit;
 
+	cleancache_init_fs(sb);
 	return res;
 }
 
