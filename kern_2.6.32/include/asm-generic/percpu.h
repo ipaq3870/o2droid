@@ -66,8 +66,6 @@ extern void setup_per_cpu_areas(void);
 #define per_cpu(var, cpu)			(*((void)(cpu), &per_cpu_var(var)))
 #define __get_cpu_var(var)			per_cpu_var(var)
 #define __raw_get_cpu_var(var)			per_cpu_var(var)
-#define this_cpu_ptr(ptr) per_cpu_ptr(ptr, 0)
-#define __this_cpu_ptr(ptr) this_cpu_ptr(ptr)
 
 #endif	/* SMP */
 
