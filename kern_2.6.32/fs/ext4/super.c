@@ -1686,6 +1686,7 @@ static int ext4_setup_super(struct super_block *sb, struct ext4_super_block *es,
 			EXT4_INODES_PER_GROUP(sb),
 			sbi->s_mount_opt);
 
+	cleancache_init_fs(sb);
 	return res;
 }
 
@@ -1996,7 +1997,6 @@ static loff_t ext4_max_size(int blkbits, int has_huge_files)
 	if (res > upper_limit)
 		res = upper_limit;
 
-	cleancache_init_fs(sb);
 	return res;
 }
 
