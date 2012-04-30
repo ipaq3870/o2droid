@@ -42,12 +42,55 @@
 #include <linux/cleancache.h>
 #include <linux/cpu.h>
 #include <linux/highmem.h>
-#include <linux/lzo.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/u64_stats_sync.h>
 
 #include "zcache_drv.h"
+
+#if defined(CONFIG_ZCACHE_LZO)
+#include <linux/lzo.h>
+#define WMSIZE		LZO1X_MEM_COMPRESS
+#define COMPRESS(s, sl, d, dl, wm)	\
+	lzo1x_1_compress(s, sl, d, dl, wm)
+#define DECOMPRESS(s, sl, d, dl)	\
+	lzo1x_decompress_safe(s, sl, d, dl)
+#elif defined(CONFIG_ZCACHE_SNAPPY)
+#include "../snappy/csnappy.h" /* if built in drivers/staging */
+#define WMSIZE_ORDER	((PAGE_SHIFT > 14) ? (15) : (PAGE_SHIFT+1))
+#define WMSIZE		(1 << WMSIZE_ORDER)
+static int
+snappy_compress_(
+	const unsigned char *src,
+	size_t src_len,
+	unsigned char *dst,
+	size_t *dst_len,
+	void *workmem)
+{
+	const unsigned char *end = csnappy_compress_fragment(
+		src, (uint32_t)src_len, dst, workmem, WMSIZE_ORDER);
+	*dst_len = end - dst;
+	return 0;
+}
+static int
+snappy_decompress_(
+	const unsigned char *src,
+	size_t src_len,
+	unsigned char *dst,
+	size_t *dst_len)
+{
+	uint32_t dst_len_ = (uint32_t)*dst_len;
+	int ret = csnappy_decompress_noheader(src, src_len, dst, &dst_len_);
+	*dst_len = (size_t)dst_len_;
+	return ret;
+}
+#define COMPRESS(s, sl, d, dl, wm)	\
+	snappy_compress_(s, sl, d, dl, wm)
+#define DECOMPRESS(s, sl, d, dl)	\
+	snappy_decompress_(s, sl, d, dl)
+#else
+#error either CONFIG_ZCACHE_LZO or CONFIG_ZCACHE_SNAPPY must be defined
+#endif
 
 static DEFINE_PER_CPU(unsigned char *, compress_buffer);
 static DEFINE_PER_CPU(unsigned char *, compress_workmem);
@@ -572,10 +615,10 @@ static int zcache_store_page(struct zcache_inode_rb *znode,
 	}
 
 	src_data = kmap_atomic(page, KM_USER0);
-	ret = lzo1x_1_compress(src_data, PAGE_SIZE, zbuffer, &clen, zworkmem);
+	COMPRESS(src_data, PAGE_SIZE, zbuffer, &clen, zworkmem);
 	kunmap_atomic(src_data, KM_USER0);
 
-	if (unlikely(ret != LZO_E_OK) || clen > zcache_max_page_size) {
+	if (clen > zcache_max_page_size) {
 		ret = -EINVAL;
 		preempt_enable();
 		goto out;
@@ -1037,7 +1080,7 @@ static int zcache_get_page(int pool_id, struct cleancache_filekey filekey,
 
 	dest_data = kmap_atomic(page, KM_USER1);
 
-	ret = lzo1x_decompress_safe(src_data + sizeof(*zheader),
+	ret = DECOMPRESS(src_data + sizeof(*zheader),
 			xv_get_object_size(src_data) - sizeof(*zheader),
 			dest_data, &clen);
 
@@ -1045,7 +1088,7 @@ static int zcache_get_page(int pool_id, struct cleancache_filekey filekey,
 	kunmap_atomic(dest_data, KM_USER1);
 
 	/* Failure here means bug in LZO! */
-	if (unlikely(ret != LZO_E_OK))
+	if (unlikely(ret))
 		goto out_free;
 
 	flush_dcache_page(page);
@@ -1246,7 +1289,7 @@ static int zcache_cpu_notify(struct notifier_block *nb, unsigned long action,
 		per_cpu(compress_buffer, cpu) = (void *)__get_free_pages(
 					GFP_KERNEL | __GFP_ZERO, 1);
 		per_cpu(compress_workmem, cpu) = kzalloc(
-					LZO1X_MEM_COMPRESS, GFP_KERNEL);
+					WMSIZE, GFP_KERNEL);
 
 		break;
 	case CPU_DEAD:
