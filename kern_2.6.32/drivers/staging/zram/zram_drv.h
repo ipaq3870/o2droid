@@ -15,8 +15,8 @@
 #ifndef _ZRAM_DRV_H_
 #define _ZRAM_DRV_H_
 
-#include <linux/spinlock.h>
 #include <linux/mutex.h>
+#include <linux/u64_stats_sync.h>
 
 #include "xvmalloc.h"
 
@@ -90,18 +90,22 @@ struct table {
 	u8 flags;
 } __attribute__((aligned(4)));
 
-struct zram_stats {
-	u64 compr_size;		/* compressed size of pages stored */
-	u64 num_reads;		/* failed + successful */
-	u64 num_writes;		/* --do-- */
-	u64 failed_reads;	/* should NEVER! happen */
-	u64 failed_writes;	/* can happen when memory is too low */
-	u64 invalid_io;		/* non-page-aligned I/O requests */
-	u64 notify_free;	/* no. of swap slot free notifications */
-	u32 pages_zero;		/* no. of zero filled pages */
-	u32 pages_stored;	/* no. of pages currently stored */
-	u32 good_compress;	/* % of pages with compression ratio<=50% */
-	u32 pages_expand;	/* % of incompressible pages */
+enum zram_stats_index {
+	ZRAM_STAT_COMPR_SIZE,	/* compressed size of pages stored */
+	ZRAM_STAT_NUM_READS,	/* failed + successful */
+	ZRAM_STAT_NUM_WRITES,	/* --do-- */
+	ZRAM_STAT_INVALID_IO,	/* non-page-aligned I/O requests */
+	ZRAM_STAT_NOTIFY_FREE,	/* no. of swap slot free notifications */
+	ZRAM_STAT_DISCARD,	/* no. of block discard requests */
+	ZRAM_STAT_PAGES_ZERO,	/* no. of zero filled pages */
+	ZRAM_STAT_PAGES_STORED,	/* no. of pages currently stored */
+	ZRAM_STAT_PAGES_EXPAND,	/* no. of incompressible pages */
+	ZRAM_STAT_NSTATS,
+};
+
+struct zram_stats_cpu {
+	s64 count[ZRAM_STAT_NSTATS];
+	struct u64_stats_sync syncp;
 };
 
 struct zram {
@@ -109,12 +113,7 @@ struct zram {
 #ifdef MULTIPLE_COMPRESSORS
 	const struct zram_compressor *compressor;
 #endif
-	void *compress_workmem;
-	void *compress_buffer;
 	struct table *table;
-	spinlock_t stat64_lock;	/* protect 64-bit stats */
-	struct mutex lock;	/* protect compression buffers against
-				 * concurrent writes */
 	struct request_queue *queue;
 	struct gendisk *disk;
 	int init_done;
@@ -126,7 +125,7 @@ struct zram {
 	 */
 	u64 disksize;	/* bytes */
 
-	struct zram_stats stats;
+	struct zram_stats_cpu *stats;
 };
 
 extern struct zram *devices;
