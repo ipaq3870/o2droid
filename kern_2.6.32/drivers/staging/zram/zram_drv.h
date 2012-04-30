@@ -9,7 +9,7 @@
  * Released under the terms of 3-clause BSD License
  * Released under the terms of GNU General Public License Version 2.0
  *
- * Project home: http://compcache.googlecode.com/
+ * Project home: http://compcache.googlecode.com
  */
 
 #ifndef _ZRAM_DRV_H_
@@ -26,6 +26,18 @@
  */
 static const unsigned max_num_devices = 32;
 
+/*
+ * Stored at beginning of each compressed object.
+ *
+ * It stores back-reference to table entry which points to this
+ * object. This is required to support memory defragmentation.
+ */
+struct zobj_header {
+#if 0
+	u32 table_idx;
+#endif
+};
+
 /*-- Configurable parameters */
 
 /* Default zram disk size: 25% of total RAM */
@@ -38,7 +50,8 @@ static const unsigned default_disksize_perc_ram = 25;
 static const unsigned max_zpage_size = PAGE_SIZE / 8 * 7;
 
 /*
- * NOTE: max_zpage_size must be less than or equal to XV_MAX_ALLOC_SIZE
+ * NOTE: max_zpage_size must be less than or equal to:
+ *   XV_MAX_ALLOC_SIZE - sizeof(struct zobj_header)
  * otherwise, xv_malloc() would always return failure.
  */
 
@@ -56,12 +69,26 @@ static const unsigned max_zpage_size = PAGE_SIZE / 8 * 7;
 #define MULTIPLE_COMPRESSORS
 #endif
 
-/*
- * Maintains swap slot to compressed object mapping.
- */
-struct table {
-	phys_addr_t addr;	/* location of [compressed] object */
+/* Flags for zram pages (table[page_no].flags) */
+enum zram_pageflags {
+	/* Page is stored uncompressed */
+	ZRAM_UNCOMPRESSED,
+
+	/* Page consists entirely of zeros */
+	ZRAM_ZERO,
+
+	__NR_ZRAM_PAGEFLAGS,
 };
+
+/*-- Data structures */
+
+/* Allocated for each disk page */
+struct table {
+	struct page *page;
+	u16 offset;
+	u8 count;	/* object ref count (not yet used) */
+	u8 flags;
+} __attribute__((aligned(4)));
 
 enum zram_stats_index {
 	ZRAM_STAT_COMPR_SIZE,	/* compressed size of pages stored */
@@ -89,15 +116,16 @@ struct zram {
 	struct table *table;
 	struct request_queue *queue;
 	struct gendisk *disk;
-	unsigned int init_done;
+	int init_done;
 	/* Prevent concurrent execution of device init and reset */
 	struct mutex init_lock;
 	/*
 	 * This is the limit on amount of *uncompressed* worth of data
-	 * we can store in a disk (in bytes).
+	 * we can store in a disk.
 	 */
-	u64 disksize;
-	struct zram_stats_cpu *stats;	/* percpu stats */
+	u64 disksize;	/* bytes */
+
+	struct zram_stats_cpu *stats;
 };
 
 extern struct zram *devices;
