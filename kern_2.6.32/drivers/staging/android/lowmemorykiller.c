@@ -34,6 +34,7 @@
 #include <linux/mm.h>
 #include <linux/oom.h>
 #include <linux/sched.h>
+#include <linux/profile.h>
 #include <linux/notifier.h>
 
 static uint32_t lowmem_debug_level = 2;
@@ -109,12 +110,8 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 	if (lowmem_minfree_size < array_size)
 		array_size = lowmem_minfree_size;
 	for (i = 0; i < array_size; i++) {
-#if 1
-		if ((other_free + other_file) < lowmem_minfree[i])
-#else
 		if (other_free < lowmem_minfree[i] &&
 		    other_file < lowmem_minfree[i])
-#endif
 		{
 			min_adj = lowmem_adj[i];
 			break;
@@ -181,12 +178,18 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 		lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
 			     selected->pid, selected->comm,
 			     selected_oom_adj, selected_tasksize);
+		/*
+		 * If CONFIG_PROFILING is off, then task_handoff_register()
+		 * is a nop. In that case we don't want to stall the killer
+		 * by setting lowmem_deathpending.
+		 */
+#ifdef CONFIG_PROFILING
 		lowmem_deathpending = selected;
-		task_free_register(&task_nb);
+		task_handoff_register(&task_nb);
+#endif
 		force_sig(SIGKILL, selected);
 		rem -= selected_tasksize;
-	} else
-		rem = -1;
+	}
 	lowmem_print(4, "lowmem_shrink %d, %x, return %d\n",
 		     nr_to_scan, gfp_mask, rem);
 	read_unlock(&tasklist_lock);
