@@ -675,14 +675,14 @@ static struct platform_device pmem_jpeg_device = {
 	.dev		= { .platform_data = &pmem_jpeg_pdata },
 };
 
-#define RAM_CONSOLE_SIZE	(SZ_2M)
+#define RAM_CONSOLE_SIZE	(SZ_1M)
 #define RAM_CONSOLE_START	(RESERVED_PMEM_END_ADDR \
 				- RAM_CONSOLE_SIZE)
 
 static struct resource ram_console_resource[] = {
 	{
 		.start	= RAM_CONSOLE_START,
-		.end	= RAM_CONSOLE_START + SZ_1M - 1,
+		.end	= RAM_CONSOLE_START + RAM_CONSOLE_SIZE - 1,
 		.flags	= IORESOURCE_MEM,
 	}
 };
