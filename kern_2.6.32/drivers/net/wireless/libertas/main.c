@@ -179,6 +179,8 @@ static u8 fw_data_rates[MAX_RATES] =
       0x18, 0x24, 0x30, 0x48, 0x60, 0x6C, 0x00
 };
 
+void *buf_beacon = NULL;
+
 static int lbs_set_rf_reg(struct lbs_private* priv, u16 offset, u8 value)
 {
 	struct lbs_offset_value offval;
@@ -1142,12 +1144,17 @@ static int lbs_init_adapter(struct lbs_private *priv)
 
 	/* Allocate buffer to store the BSSID list */
 	bufsize = MAX_NETWORK_COUNT * sizeof(struct bss_descriptor);
+#if 0
 	priv->networks = kzalloc(bufsize, GFP_KERNEL);
 	if (!priv->networks) {
 		lbs_pr_err("Out of memory allocating beacons\n");
 		ret = -1;
 		goto out;
 	}
+#else
+	memset(buf_beacon, 0, bufsize);
+	priv->networks = buf_beacon;
+#endif
 
 	/* Initialize scan result lists */
 	INIT_LIST_HEAD(&priv->network_free_list);
@@ -1213,7 +1220,9 @@ static void lbs_free_adapter(struct lbs_private *priv)
 	if (priv->event_fifo)
 		kfifo_free(priv->event_fifo);
 	del_timer(&priv->command_timer);
+#if 0
 	kfree(priv->networks);
+#endif
 	priv->networks = NULL;
 
 	lbs_deb_leave(LBS_DEB_MAIN);
@@ -1678,6 +1687,30 @@ void lbs_notify_command_response(struct lbs_private *priv, u8 resp_idx)
 }
 EXPORT_SYMBOL_GPL(lbs_notify_command_response);
 
+/* Hack to pre-allocate buf during module load to prevent later OOM.
+   IMPORTANT: Assuming only one network interface in system */
+static int prealloc_buf(void) {
+	size_t bufsize;
+	int ret = 0;
+
+	bufsize = MAX_NETWORK_COUNT * sizeof(struct bss_descriptor);
+	if (!buf_beacon) {
+		lbs_pr_err("Out of memory pre-allocating beacons\n");
+		ret = -1;
+		goto out;
+	}
+
+out:
+	return ret;
+}
+
+static void prealloc_buf_free(void) {
+	if (buf_beacon)
+		kfree(buf_beacon);
+
+	return;
+}
+
 static int __init lbs_init_module(void)
 {
 	lbs_deb_enter(LBS_DEB_MAIN);
@@ -1686,6 +1719,7 @@ static int __init lbs_init_module(void)
 	confirm_sleep.hdr.size = cpu_to_le16(sizeof(confirm_sleep));
 	confirm_sleep.action = cpu_to_le16(CMD_SUBCMD_SLEEP_CONFIRMED);
 	lbs_debugfs_init();
+	prealloc_buf();
 	lbs_deb_leave(LBS_DEB_MAIN);
 	return 0;
 }
@@ -1693,6 +1727,7 @@ static int __init lbs_init_module(void)
 static void __exit lbs_exit_module(void)
 {
 	lbs_deb_enter(LBS_DEB_MAIN);
+	prealloc_buf_free();
 	lbs_debugfs_remove();
 	lbs_deb_leave(LBS_DEB_MAIN);
 }
