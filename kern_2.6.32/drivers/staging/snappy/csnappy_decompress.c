@@ -412,5 +412,3 @@ EXPORT_SYMBOL(csnappy_decompress);
 MODULE_LICENSE("BSD");
 MODULE_DESCRIPTION("Snappy Decompressor");
 #endif
-
-void __aeabi_unwind_cpp_pr0(void) {};
