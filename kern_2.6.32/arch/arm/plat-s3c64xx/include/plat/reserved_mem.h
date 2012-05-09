@@ -24,7 +24,7 @@
 #define RESERVED_PMEM_PREVIEW		(4 * 1024 * 1024) //2 
 #define RESERVED_PMEM_RENDER	  	(4 * 1024 * 1024) //4 
 #define RESERVED_PMEM_STREAM	  	(8 * 1024 * 1024) //4
-#define RESERVED_G3D			(63 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
+#define RESERVED_G3D			(/*63*/50 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
 #define RESERVED_PMEM			(16 * 1024 * 1024)//12 working well, i9000 16mb --> if we move to 16M then 16mb *FIX*
 #define RESERVED_PMEM_SKIA		(0)//0
 
