@@ -1,0 +1,33 @@
+config ZCACHE
+	bool "Page cache compression support"
+	depends on CLEANCACHE
+	select XVMALLOC
+	default n
+	help
+	  Compresses relatively unused page cache pages and stores them in
+	  memory itself. This increases effective memory size and can help
+	  reduce access to backing store device(s) which is typically much
+	  slower than access to main memory.
+
+	  Statistics are expoted through sysfs interface:
+	  /sys/kernel/mm/zcache/
+
+	  Project home: http://compcache.googlecode.com/
+
+choice ZCACHE_COMPRESS
+	prompt "compression method"
+	depends on ZCACHE
+	default ZCACHE_LZO
+	help
+	  Select the compression method used by zcache.
+	  LZO is the default. Snappy compresses a bit worse (around ~2%) but
+	  much (~2x) faster, at least on x86-64.
+config ZCACHE_LZO
+	bool "LZO compression"
+	select LZO_COMPRESS
+	select LZO_DECOMPRESS
+config ZCACHE_SNAPPY
+	bool "Snappy compression"
+	select SNAPPY_COMPRESS
+	select SNAPPY_DECOMPRESS
+endchoice

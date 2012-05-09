@@ -1225,6 +1225,7 @@ static void s3c_udc_change_nextep(struct s3c_udc *dev)
  * s3c_udc_irq
  * irq handler of s3c-udc
  */
+#define INT_P_TX_FIFO_EMPTY	(0x1 << 26)
 static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 {
 	struct s3c_udc *dev = _dev;
@@ -1270,14 +1271,14 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 /*
 	Currently(Apr 13, 2009)
 	No activities needed during early suspend.
-	
+*/
 	if (intr_status & INT_EARLY_SUSPEND) 
 	{
 		DEBUG_PM("[%s] Early suspend interrupt\n", __func__);
 		writel(INT_EARLY_SUSPEND, S3C_UDC_OTG_GINTSTS);
 		goto	OK_OUT;
 	}
-*/
+
 	if (intr_status & INT_SUSPEND) 
 	{
 		handle_suspend_intr(dev);
@@ -1287,6 +1288,24 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 	if (intr_status & INT_RESUME) 
 	{
 		handle_resume_intr(dev);
+		goto	OK_OUT;
+	}
+
+	if (intr_status & INT_NP_TX_FIFO_EMPTY)
+	{
+		/* Disable the interrupt to stop it happening again
+		 * unless one of these endpoint routines decides that
+		 * it needs re-enabling */
+		DEBUG_PM("[%s] INT_NP_TX_FIFO_EMPTY interrupt\n", __func__);
+		writel(gintmsk & ~INT_NP_TX_FIFO_EMPTY, S3C_UDC_OTG_GINTMSK);
+		goto	OK_OUT;
+	}
+
+	if (intr_status & INT_P_TX_FIFO_EMPTY)
+	{
+		/* See note in INT_P_TX_FIFO_EMPTY */
+		DEBUG_PM("[%s] INT_P_TX_FIFO_EMPTY interrupt\n", __func__);
+		writel(gintmsk & ~INT_P_TX_FIFO_EMPTY, S3C_UDC_OTG_GINTMSK);
 		goto	OK_OUT;
 	}
 	

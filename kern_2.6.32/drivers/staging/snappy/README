@@ -1,0 +1,41 @@
+Google Snappy, available at http://code.google.com/p/snappy/
+is a compression library designed for speed rather than compression ratios.
+
+It is not a new concept by far. The Linux kernel currently uses LZO as the
+ default fast compressor. Snappy works faster, though achieves less compression.
+
+Google's code is written in C with a lot of C++. Some of the more interesting
+ features that rely on C++ appear to have been elided from the open source
+ version of Snappy.
+
+Goals:
+To get the codebase into a shape that can be accepted into the mainline
+ Linux kernel and used with zram (http://code.google.com/p/compcache/).
+Being able to compress vmlinux and initrd with Snappy is a secondary goal.
+Same for support in Squashfs and other parts of the kernel that currently
+ support LZO.
+
+Results:
+I cut out or ported to plain ANSI C the necessary code and headers.
+To cause less confusion, I call this project (and files) csnappy.
+The API looks right, but I welcome comments.
+The code *has* been tested in kernel-space using a patched zram and it works.
+
+The code has been tested in a qemu emulating a PowerPC Mac and ARMv5TE running
+ Debian Wheezy.
+
+I also use an ARMv6 Android phone for testing.
+
+Testing on other hardware or platforms is welcome.
+
+Note: The userspace tester is a hack, as is the shared library.
+
+Someone wrote a perl wrapper for csnappy:
+http://search.cpan.org/dist/Compress-Snappy/
+https://github.com/gray/compress-snappy
+
+Patch for upstream snappy tester is available: snappy_tester.patch
+Patch for linux kernel is available: kernel_3_2_10.patch
+
+Benchmark in userspace: userspace_benchmark.txt
+Benchmark in kernel space with zram: zram_benchmark.txt

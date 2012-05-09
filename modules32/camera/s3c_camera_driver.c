@@ -2424,7 +2424,8 @@ int s3c_camif_open(struct file *file)
 		up((struct semaphore *) &cfg->cis->lock);
 	}
 #ifdef CONFIG_CPU_FREQ
-	set_dvfs_level(0);
+	//set_dvfs_level(0);
+	set_dvfs_perf_level();
 #endif /* CONFIG_CPU_FREQ */
 	err = s3c_cam_exclusive_open();
 	cfg->cis->user++;
@@ -2476,7 +2477,7 @@ int s3c_camif_release(struct file *file)
 	s3c_cam_exclusive_release();
 
 #ifdef CONFIG_CPU_FREQ
-	set_dvfs_level(1);
+	//set_dvfs_level(1);
 #endif /* CONFIG_CPU_FREQ */
 
 	if (cfg->cis->sensor == NULL)
