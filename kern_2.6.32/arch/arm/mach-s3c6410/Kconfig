@@ -36,6 +36,28 @@ config MACH_OMNIA_II
 	help
 	  Machine support for the Samsung INSTINCTQ
 
+	config OMNIA_II_AHB_166
+	bool "Enable 166 MHz AHB overclock"
+	depends on MACH_OMNIA_II
+	default n
+
+	help
+	  This option makes the kernel reconfigure the system for asynchronous
+	  mode operation with bus clocks generated from MPLL clocked at 333 MHz.
+	  Effectively this overclocks AHB bus (and all components using it to
+	  clock themselves) to 166 MHz and APB bus to 83 MHz.
+
+	config OMNIA_II_CPU_667_AHB_166
+	bool "Enable 166 MHz AHB overclock with CPU downclock to 667 MHz"
+	depends on MACH_OMNIA_II
+	depends on !OMNIA_II_AHB_166
+	default n
+
+	help
+	  This option makes the kernel reconfigure the system for asynchronous
+	  mode operation with bus clocks generated from MPLL clocked at 333 MHz.
+	  Effectively this overclocks AHB bus (and all components using it to
+	  clock themselves) to 166 MHz and APB bus to 83 MHz.
 
 config MACH_INSTINCTQ
 	bool "INSTINCTQ"
