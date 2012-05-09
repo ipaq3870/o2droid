@@ -140,6 +140,11 @@ static DEFINE_MUTEX(ams320fs01_backlight_lock);
 
 static void s3cfb_set_fimd_info(void)
 {
+	s3c_fimd.dithmode	= S3C_DITHMODE_RDITHPOS_6BIT |
+				  S3C_DITHMODE_GDITHPOS_6BIT |
+				  S3C_DITHMODE_BDITHPOS_6BIT |
+				  S3C_DITHMODE_DITHERING_DISABLE;
+
 	s3c_fimd.vidcon1	= S3C_VIDCON1_IHSYNC_INVERT |
 							S3C_VIDCON1_IVSYNC_INVERT |
 							S3C_VIDCON1_IVDEN_INVERT|S3C_VIDCON1_IVCLK_RISE_EDGE;
@@ -172,6 +177,9 @@ static void s3cfb_set_fimd_info(void)
 #if defined(CONFIG_FB_S3C_VIRTUAL_SCREEN)
 	s3c_fimd.xres_virtual = S3C_FB_HRES_VIRTUAL;
 	s3c_fimd.yres_virtual = S3C_FB_VRES_VIRTUAL;
+#elif defined(CONFIG_FB_S3C_DOUBLE_BUFFERING)
+	s3c_fimd.xres_virtual = S3C_FB_HRES;
+	s3c_fimd.yres_virtual = S3C_FB_VRES * 2;
 #else
 	s3c_fimd.xres_virtual = S3C_FB_HRES;
 	s3c_fimd.yres_virtual = S3C_FB_VRES;
@@ -185,6 +193,9 @@ static void s3cfb_set_fimd_info(void)
 #if defined(CONFIG_FB_S3C_VIRTUAL_SCREEN)
 	s3c_fimd.osd_xres_virtual = S3C_FB_HRES_OSD_VIRTUAL;
 	s3c_fimd.osd_yres_virtual = S3C_FB_VRES_OSD_VIRTUAL;
+#elif defined(CONFIG_FB_S3C_DOUBLE_BUFFERING)
+	s3c_fimd.osd_xres_virtual = S3C_FB_HRES_OSD;
+	s3c_fimd.osd_yres_virtual = S3C_FB_VRES_OSD * 2;
 #else
 	s3c_fimd.osd_xres_virtual = S3C_FB_HRES_OSD;
 	s3c_fimd.osd_yres_virtual = S3C_FB_VRES_OSD;
@@ -853,12 +864,65 @@ void s3cfb_init_hw(void)
 	lcd_gpio_init();
 }
 
+//#define LOGO_MEM_BASE		(0x50000000 + 0x08000000 - 0x100000)	/* SDRAM_BASE + SRAM_SIZE(128MB) - 1MB */
 
 void s3cfb_display_logo(int win_num)
 {
 	s3c_fb_info_t *fbi = &s3c_fb_info[0];
+#if 1
+#ifdef CONFIG_FB_S3C_BPP_24
+	struct rgb565 {
+		u16 red:5;
+		u16 green:6;
+		u16 blue:5;
+	};
+
+	struct rgb888 {
+		u8 red;
+		u8 green;
+		u8 blue;
+		u8 alpha;
+	};
+
+	int i;
+	u16 *src = (u16 *)pixel_data;
+	u32 *dst = (u32 *)fbi->map_cpu_f1;
+
+	memset(fbi->map_cpu_f1, 0x00, 800*480*4);
+	for (i = 0; i < 480*160*2; i += 2, src++, dst++) {
+		((struct rgb888*)dst)->red = ((struct rgb565*)src)->red << 3;
+		((struct rgb888*)dst)->green = ((struct rgb565*)src)->green<< 2;
+		((struct rgb888*)dst)->blue = ((struct rgb565*)src)->blue << 3;
+	}
+#else
 	memset(fbi->map_cpu_f1, 0x00, 800*480*2);
-	memcpy(fbi->map_cpu_f1, pixel_data, 480*160*2);		
+	memcpy(fbi->map_cpu_f1, pixel_data, 480*160*2);         
+#endif
+#else
+	u16 *logo_virt_buf;
+#ifdef CONFIG_FB_S3C_BPP_24
+	u32 count;
+	u32 *scr_virt_buf = (u32 *)fbi->map_cpu_f1;
+#endif
+
+	if(win_num != 0)
+		return;
+ 	
+ 	logo_virt_buf = ioremap_nocache(LOGO_MEM_BASE, LOGO_MEM_SIZE);
+ 
+#ifdef CONFIG_FB_S3C_BPP_24
+	count = LOGO_MEM_SIZE / 2;
+	do {
+		u16 srcpix = *(logo_virt_buf++);
+		u32 dstpix =	((srcpix & 0xF800) << 8) |
+				((srcpix & 0x07E0) << 5) |
+				((srcpix & 0x001F) << 3);
+		*(scr_virt_buf++) = dstpix;
+	} while (--count);
+#else
+ 	memcpy(fbi->map_cpu_f1, logo_virt_buf, LOGO_MEM_SIZE);	
+#endif
+ 
+ 	iounmap(logo_virt_buf);
+#endif
 }
-
-

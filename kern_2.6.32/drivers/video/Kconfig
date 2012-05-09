@@ -311,11 +311,6 @@ config FB_S3C_BPP_24
 	bool "24 BPP"
 	---help---
 	TBA
-
-config FB_S3C_BPP_32
-	bool "32 BPP"
-	---help---
-	TBA
 endchoice
 
 config FB_S3C_NUM
@@ -338,6 +333,14 @@ config FB_S3C_DOUBLE_BUFFERING
 	depends on FB_S3C_BPP
 
 	default n
+	---help---
+	TBA
+
+config FB_S3C_SHOW_LOGO
+	bool "Show full screen logo with progress bar"
+	depends on FB_S3C_BPP
+
+	default y
 	---help---
 	TBA
 

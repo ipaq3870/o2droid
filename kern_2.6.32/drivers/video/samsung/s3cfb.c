@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2008 Jinsung Yang <jsgood.yang@samsung.com>
  *
- * This file is subject to the terms and conditions of the GNU eneral Public
+ * This file is subject to the terms and conditions of the GNU General Public
  * License.  See the file COPYING in the main directory of this archive for
  * more details.
  *
@@ -93,7 +93,7 @@ static int __init s3cfb_map_video_memory(s3c_fb_info_t *fbi)
 		/* prevent initial garbage on screen */
 		printk("Window[%d] - FB1: map_video_memory: clear %p:%08x\n",
 			fbi->win_id, fbi->map_cpu_f1, fbi->map_size_f1);
-		memset(fbi->map_cpu_f1, 0xf0, fbi->map_size_f1);
+		memset(fbi->map_cpu_f1, 0x00, fbi->map_size_f1);
 
 		fbi->screen_dma_f1 = fbi->map_dma_f1;
 		fbi->fb.screen_base = fbi->map_cpu_f1;
@@ -133,9 +133,6 @@ static void s3cfb_unmap_video_memory(s3c_fb_info_t *fbi)
 {
 	dma_free_writecombine(fbi->dev, fbi->map_size_f1, fbi->map_cpu_f1,  fbi->map_dma_f1);
 
-#if defined(CONFIG_FB_S3C_DOUBLE_BUFFERING)
-	dma_free_writecombine(fbi->dev, fbi->map_size_f2, fbi->map_cpu_f2,  fbi->map_dma_f2);
-#endif
 
 	if (s3c_fimd.unmap_video_memory)
 		(s3c_fimd.unmap_video_memory)(fbi);
@@ -175,14 +172,8 @@ static int s3cfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 			var->transp = s3c_fb_rgb_24.transp;
 			s3c_fimd.bytes_per_pixel = 4;
 			break;
-
-		case 32:
-			var->red = s3c_fb_rgb_32.red;
-			var->green = s3c_fb_rgb_32.green;
-			var->blue = s3c_fb_rgb_32.blue;
-			var->transp = s3c_fb_rgb_32.transp;
-			s3c_fimd.bytes_per_pixel = 4;
-			break;
+		default:
+			return -EINVAL;
 	}
 
 	return 0;
@@ -203,7 +194,7 @@ static int s3cfb_set_par(struct fb_info *info)
 	else
 		fbi->fb.fix.visual = FB_VISUAL_PSEUDOCOLOR;
 
-	fbi->fb.fix.line_length = var->xres * s3c_fimd.bytes_per_pixel;
+	fbi->fb.fix.line_length = var->xres_virtual * s3c_fimd.bytes_per_pixel;
 
 	/* activate this new configuration */
 	s3cfb_activate_var(fbi, var);
@@ -488,7 +479,9 @@ void s3cfb_stop_lcd(void)
 	local_irq_save(flags);
 
 	tmp = readl(S3C_VIDCON0);
-	writel(tmp & ~(S3C_VIDCON0_ENVID_ENABLE | S3C_VIDCON0_ENVID_F_ENABLE), S3C_VIDCON0);
+	tmp |= S3C_VIDCON0_ENVID_ENABLE;
+	tmp &= S3C_VIDCON0_ENVID_F_ENABLE;
+	writel(tmp, S3C_VIDCON0);
 
 	local_irq_restore(flags);
 }
@@ -503,7 +496,8 @@ void s3cfb_start_lcd(void)
 	local_irq_save(flags);
 
 	tmp = readl(S3C_VIDCON0);
-	writel(tmp | S3C_VIDCON0_ENVID_ENABLE | S3C_VIDCON0_ENVID_F_ENABLE, S3C_VIDCON0);
+	tmp |= S3C_VIDCON0_ENVID_ENABLE | S3C_VIDCON0_ENVID_F_ENABLE;
+	writel(tmp, S3C_VIDCON0);
 
 	local_irq_restore(flags);
 }
@@ -768,14 +762,11 @@ static void s3cfb_init_fbinfo(s3c_fb_info_t *finfo, char *drv_name, int index)
 	finfo->fb.var.sync = s3c_fimd.sync;
 	finfo->fb.var.grayscale = s3c_fimd.cmap_grayscale;
 	
-	finfo->fb.fix.smem_len = finfo->fb.var.xres_virtual * finfo->fb.var.yres_virtual * s3c_fimd.bytes_per_pixel;
+	finfo->fb.fix.smem_len = 
+		finfo->fb.var.xres_virtual * finfo->fb.var.yres_virtual * 4;
 
-	finfo->fb.fix.line_length = finfo->fb.var.xres * s3c_fimd.bytes_per_pixel;
-
-#if !defined(CONFIG_FB_S3C_VIRTUAL_SCREEN) && defined(CONFIG_FB_S3C_DOUBLE_BUFFERING)
-	if (index < 2)
-		finfo->fb.fix.smem_len *= 2;
-#endif
+	finfo->fb.fix.line_length =
+		finfo->fb.var.xres_virtual * s3c_fimd.bytes_per_pixel;
 
 	for (i = 0; i < 256; i++)
 		finfo->palette_buffer[i] = S3C_FB_PALETTE_BUFF_CLEAR;
@@ -966,6 +957,7 @@ static int s3cfb_remove(struct platform_device *pdev)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	unregister_early_suspend(&info->early_suspend);
 #endif	/* CONFIG_HAS_EARLYSUSPEND */
+
 	s3cfb_stop_lcd();
 	msleep(1);
 
