@@ -17,18 +17,48 @@
 #define RESERVED_PMEM_END_ADDR 		(DRAM_END_ADDR)
 #endif
 
-#define RESERVED_MEM_CMM		(/*16*/3 * 1024 * 1024)
-#define RESERVED_MEM_MFC		(/*12*/6 * 1024 * 1024)
-#define RESERVED_PMEM_PICTURE		(/*12*/6 * 1024 * 1024)	/* PMEM_PIC and MFC use share area */
-#define RESERVED_PMEM_JPEG		(/*6*/3 * 1024 * 1024) //
-#define RESERVED_PMEM_PREVIEW		(/*4*/2 * 1024 * 1024) //2 
-#define RESERVED_PMEM_RENDER	  	(/*4*/4 * 1024 * 1024) //4 
-#define RESERVED_PMEM_STREAM	  	(/*8*/8 * 1024 * 1024) //4
-#define RESERVED_G3D			(/*63*/31 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
-#define RESERVED_PMEM			(/*16*/16 * 1024 * 1024)//12 working well, i9000 16mb --> if we move to 16M then 16mb *FIX*
+#if defined(CONFIG_OMNIA_II_MEMADD_32MB)
+#define RESERVED_MEM_CMM		(3 * 1024 * 1024)
+#define RESERVED_MEM_MFC		(6 * 1024 * 1024)
+#define RESERVED_PMEM_PICTURE		(6 * 1024 * 1024)	/* PMEM_PIC and MFC use share area */
+#define RESERVED_PMEM_JPEG		(3 * 1024 * 1024) //
+#define RESERVED_PMEM_PREVIEW		(2 * 1024 * 1024) //2 
+#define RESERVED_PMEM_RENDER	  	(4 * 1024 * 1024) //4 
+#define RESERVED_PMEM_STREAM	  	(8 * 1024 * 1024) //4
+#define RESERVED_G3D			(31 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
+#elif defined(CONFIG_OMNIA_II_MEMADD_16MB)
+#define RESERVED_MEM_CMM		(3 * 1024 * 1024)
+#define RESERVED_MEM_MFC		(6 * 1024 * 1024)
+#define RESERVED_PMEM_PICTURE		(6 * 1024 * 1024)	/* PMEM_PIC and MFC use share area */
+#define RESERVED_PMEM_JPEG		(3 * 1024 * 1024) //
+#define RESERVED_PMEM_PREVIEW		(2 * 1024 * 1024) //2 
+#define RESERVED_PMEM_RENDER	  	(4 * 1024 * 1024) //4 
+#define RESERVED_PMEM_STREAM	  	(8 * 1024 * 1024) //4
+#define RESERVED_G3D			(47 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
+#elif defined(CONFIG_OMNIA_II_MEMADD_13MB)
+#define RESERVED_MEM_CMM		(16 * 1024 * 1024)
+#define RESERVED_MEM_MFC		(12 * 1024 * 1024)
+#define RESERVED_PMEM_PICTURE		(12 * 1024 * 1024)	/* PMEM_PIC and MFC use share area */
+#define RESERVED_PMEM_JPEG		(6 * 1024 * 1024) //
+#define RESERVED_PMEM_PREVIEW		(4 * 1024 * 1024) //2 
+#define RESERVED_PMEM_RENDER	  	(4 * 1024 * 1024) //4 
+#define RESERVED_PMEM_STREAM	  	(8 * 1024 * 1024) //4
+#define RESERVED_G3D			(50 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
+#else
+#define RESERVED_MEM_CMM		(16 * 1024 * 1024)
+#define RESERVED_MEM_MFC		(12 * 1024 * 1024)
+#define RESERVED_PMEM_PICTURE		(12 * 1024 * 1024)	/* PMEM_PIC and MFC use share area */
+#define RESERVED_PMEM_JPEG		(6 * 1024 * 1024) //
+#define RESERVED_PMEM_PREVIEW		(4 * 1024 * 1024) //2 
+#define RESERVED_PMEM_RENDER	  	(4 * 1024 * 1024) //4 
+#define RESERVED_PMEM_STREAM	  	(8 * 1024 * 1024) //4
+#define RESERVED_G3D			(63 * 1024 * 1024) 	/* G3D is shared with uppper memory areas */ //34
+#endif
+
+#define RESERVED_PMEM			(16 * 1024 * 1024)//12 working well, i9000 16mb --> if we move to 16M then 16mb *FIX*
 #define RESERVED_PMEM_SKIA		(0)//0
 
-#define RESERVED_G3D_UI			(/*8*/8 * 1024 * 1024) //(6mb -->unable 4th block
+#define RESERVED_G3D_UI			(8 * 1024 * 1024) //(6mb -->unable 4th block
 //3+6+6+3+2+6=28M
 #define RESERVED_G3D_SHARED		(RESERVED_MEM_CMM + RESERVED_MEM_MFC + RESERVED_PMEM_STREAM + RESERVED_PMEM_JPEG + RESERVED_PMEM_PREVIEW + RESERVED_PMEM_RENDER) //22
 #define RESERVED_G3D_APP		(RESERVED_G3D - /*RESERVED_G3D_UI*/ - RESERVED_G3D_SHARED) //32-26=6m //THIS IS ONLY FOR UNDERSTANDING PURPOSES, DOESNT DO ANYTHING, NOW 2MB (1 block)
