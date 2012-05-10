@@ -1241,6 +1241,8 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 			__func__, intr_status, state_names[dev->ep0state], gintmsk, 
 			readl(S3C_UDC_OTG_DAINT), readl(S3C_UDC_OTG_DAINTMSK));
 
+	intr_status &= gintmsk;
+
 	if(intr_status & INT_OUT_EP)
 	{
 		DEBUG_OUT_EP("[%s] : EP Out interrupt \n", __func__);
