@@ -1243,6 +1243,15 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 
 	intr_status &= gintmsk;
 
+	if (intr_status & INT_OTG)
+	{
+		DEBUG_PM("[%s] INT_OTG interrupt, GOTGINT : 0x%x\n", __func__, readl(S3C_UDC_OTG_GOTGINT));
+		//silence OTG interrupt as a workaround
+		writel(gintmsk & ~INT_OTG, S3C_UDC_OTG_GINTMSK);
+		writel(0, S3C_UDC_OTG_GOTGINT);
+		goto	OK_OUT;
+	}
+
 	if(intr_status & INT_OUT_EP)
 	{
 		DEBUG_OUT_EP("[%s] : EP Out interrupt \n", __func__);
