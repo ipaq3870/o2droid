@@ -192,14 +192,20 @@ static struct i2c_board_info i2c_devs3[] = {
 static void __init omnia_II_fixup(struct machine_desc *desc,
 		struct tag *tags, char **cmdline, struct meminfo *mi)
 {
-	mi->nr_banks = 2;
+	mi->nr_banks = 1;
 	mi->bank[0].start = UL(0x50000000);//PHYS_OFFSET;
 	mi->bank[0].size = (128 * 1024 * 1024); 
 	mi->bank[0].node = PHYS_TO_NID(0x50000000);
+
+#if (PHYS_UNRESERVED_SIZE < 0)
+#error PHYS_UNRESERVED_SIZE smaller than 0
+#elif (PHYS_UNRESERVED_SIZE > 0)
+	mi->nr_banks = 2;
 	mi->bank[1].start = UL(0x60000000);
 	mi->bank[1].size = PHYS_UNRESERVED_SIZE;
 //	mi->bank[1].size = (80 * 1024 * 1024);
 	mi->bank[1].node = PHYS_TO_NID(0x60000000);
+#endif
 }
 
 struct platform_device sec_device_opt_prox = {
