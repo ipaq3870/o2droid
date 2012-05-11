@@ -56,7 +56,7 @@ static int lowmem_minfree[6] = {
 static int lowmem_minfree_size = 4;
 
 static unsigned long lowmem_deathpending_timeout;
-static int fudgeswap = 512;
+static int fudgeswap = 0;
 
 #define lowmem_print(level, x...)			\
 	do {						\
