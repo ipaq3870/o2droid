@@ -75,32 +75,29 @@ endchoice
 
 choice
     prompt "Additional Free Memory"
+    default OMNIA_II_MEMADD_0MB
 
 	config OMNIA_II_MEMADD_0MB
 	bool "Add 0MB to Free Memory"
 	depends on MACH_OMNIA_II
-	default n
 	help
 	  Addtional 0MB to Free Memory
 
 	config OMNIA_II_MEMADD_13MB
 	bool "Add 13MB to Free Memory"
 	depends on MACH_OMNIA_II
-	default y
 	help
 	  Addtional 13MB to Free Memory
 
 	config OMNIA_II_MEMADD_16MB
 	bool "Add 16MB to Free Memory"
 	depends on MACH_OMNIA_II
-	default n
 	help
 	  Addtional 16MB to Free Memory
 
 	config OMNIA_II_MEMADD_32MB
 	bool "Add 32MB to Free Memory"
 	depends on MACH_OMNIA_II
-	default n
 	help
 	  Addtional 32MB to Free Memory
 
