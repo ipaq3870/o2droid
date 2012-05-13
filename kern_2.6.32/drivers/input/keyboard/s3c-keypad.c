@@ -469,7 +469,7 @@ static int s3c_keypad_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-
+#define SAMSUNG_KEYIFCON_WAKEUPEN (1 << 4)
 
 static struct sleep_save s3c_keypad_save[] = {
 	SAVE_ITEM(KEYPAD_ROW_GPIOCON),
@@ -484,12 +484,16 @@ static int s3c_keypad_suspend(struct platform_device *dev, pm_message_t state)
 	keyifcon = readl(key_base + S3C_KEYIFCON);
 	keyiffc = readl(key_base + S3C_KEYIFFC);
 
+	enable_irq_wake(platform_get_irq(dev, 0));
+	keyifcon |= SAMSUNG_KEYIFCON_WAKEUPEN;
+	writel(keyifcon, key_base + S3C_KEYIFCON);
+
 	s3c6410_pm_do_save(s3c_keypad_save, ARRAY_SIZE(s3c_keypad_save));
 
 	//writel(~(0xfffffff), KEYPAD_ROW_GPIOCON);
 	//writel(~(0xfffffff), KEYPAD_COL_GPIOCON);
 
-	disable_irq(IRQ_KEYPAD);
+	//disable_irq(IRQ_KEYPAD);
 
 	clk_disable(keypad_clock);
 
@@ -505,8 +509,6 @@ static int s3c_keypad_resume(struct platform_device *dev)
 //	struct input_dev *iDev = s3c_keypad->dev;
 //	unsigned int key_temp_data = 0;
 
-	printk(KERN_DEBUG "++++ %s\n", __FUNCTION__);
-
 	clk_enable(keypad_clock);
 
 	writel(KEYIFCON_INIT, key_base + S3C_KEYIFCON);
@@ -515,7 +517,7 @@ static int s3c_keypad_resume(struct platform_device *dev)
 
 	s3c6410_pm_do_restore(s3c_keypad_save, ARRAY_SIZE(s3c_keypad_save));
 
-	enable_irq(IRQ_KEYPAD);
+	//enable_irq(IRQ_KEYPAD);
 	printk(KERN_DEBUG "---- %s\n", __FUNCTION__);
 	return 0;
 }

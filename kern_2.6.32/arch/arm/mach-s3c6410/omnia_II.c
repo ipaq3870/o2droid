@@ -1088,7 +1088,6 @@ void s3c_config_wakeup_source(void)
 
 	/* Alarm Wakeup Enable */
 	__raw_writel((__raw_readl(S3C_PWR_CFG) & ~(0x1 << 10)), S3C_PWR_CFG);
-printk("S3C_PWR_CFG: %lx\n", __raw_readl(S3C_PWR_CFG));
 	/* Keypad Wakeup Enable */
 	__raw_writel((__raw_readl(S3C_PWR_CFG) & ~(0x1 << 8)), S3C_PWR_CFG);
 printk("S3C_PWR_CFG: %lx\n", __raw_readl(S3C_PWR_CFG));
