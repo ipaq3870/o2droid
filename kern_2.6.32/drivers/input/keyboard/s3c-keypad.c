@@ -137,7 +137,7 @@ static void keypad_timer_handler(unsigned long data)
 	printk("%s L(0x%x) H(0x%x)\n", "keypad_timer_handler", keymask_low, keymask_high);
 #endif
 #ifdef CONFIG_KERNEL_DEBUG_SEC
-	if((keymask_low == 0x40001) && (keymask_high == 0x0)) // power+up+camera
+	if((keymask_low == 0x50002) && (keymask_high == 0x0)) // back+voldown+menu
 	{
 		if (kernel_sec_viraddr_wdt_reset_reg)
 		{
