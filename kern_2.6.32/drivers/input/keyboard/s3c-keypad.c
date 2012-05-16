@@ -148,6 +148,13 @@ static void keypad_timer_handler(unsigned long data)
 	}
 #endif
 
+	if (in_sleep) {
+		in_sleep = 0;
+		printk("%s: in_sleep ========\n", __func__);
+		input_report_key(dev, 116, 1);
+		input_report_key(dev, 116, 0);
+	}
+
 	for (col = 0; col < KEYPAD_COLUMNS; col++) {
 		press_mask = ((keymask[col] ^ prevmask[col]) & keymask[col]);
 		release_mask = ((keymask[col] ^ prevmask[col]) & prevmask[col]);
