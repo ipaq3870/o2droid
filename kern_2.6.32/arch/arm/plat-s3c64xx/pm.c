@@ -46,6 +46,7 @@
 #include <plat/regs-gpio.h>
 #include <plat/regs-onenand.h>
 #include <plat/gpio-cfg.h>
+#include <plat/regs-sys.h>
 
 #include <mach/hardware.h>
 #include <mach/regs-mem.h>
@@ -776,12 +777,15 @@ extern unsigned int extra_wakeup_stat = 0x0;
 EXPORT_SYMBOL(extra_eint0pend);
 EXPORT_SYMBOL(extra_wakeup_stat);
 
+static u32 s3c64xx_others_save;
+
 static int s3c6410_pm_enter(suspend_state_t state)
 {
 	unsigned long regs_save[16];
 	unsigned int tmp;
 	unsigned int wakeup_stat = 0x0;
 	unsigned int eint0pend = 0x0;
+	u32 reg, val;
 
 	/* ensure the debug is initialised (if enabled) */
 
@@ -809,6 +813,7 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_pm_do_save(sromc_save, ARRAY_SIZE(sromc_save));
 //bss	s3c6410_pm_do_save(onenand_save, ARRAY_SIZE(onenand_save));
 	s3c6410_pm_do_save(uart_save, ARRAY_SIZE(uart_save));
+	s3c64xx_others_save = __raw_readl(S3C64XX_OTHERS);
 
 	/* ensure INF_REG0  has the resume address */
 	__raw_writel(0xE240000C, (phys_to_virt(0x50008000)));
@@ -885,6 +890,18 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	cpu_init();
 
 	__raw_writel(s3c_eint_mask_val, S3C_EINT_MASK);
+
+	__raw_writel(s3c64xx_others_save, S3C64XX_OTHERS);
+
+	if (s3c64xx_others_save & S3C64XX_OTHERS_SYNCMUXSEL)
+		val = S3C64XX_OTHERS_SYNCACK_MASK;
+	else
+		val = 0;
+
+	do {
+		reg = __raw_readl(S3C64XX_OTHERS);
+		reg &= S3C64XX_OTHERS_SYNCACK_MASK;
+	} while (reg != val);
 
 	/* restore the system state */
 	s3c6410_pm_do_restore_core(core_save, ARRAY_SIZE(core_save));
