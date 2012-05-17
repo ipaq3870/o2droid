@@ -624,9 +624,6 @@ static struct s3c_ts_mach_info s3c_ts_platform = {
 	.s3c_adc_con		= ADC_TYPE_2,
 };
 
-#define S3C64XX_OTHERS_SYNCACK_MASK	(0xf << 8)
-#define S3C64XX_OTHERS_SYNCMODE		(1 << 7)
-#define S3C64XX_OTHERS_SYNCMUXSEL	(1 << 6)
 static void __init omnia_II_map_io(void)
 {
 #if defined(CONFIG_OMNIA_II_AHB_166) || defined(CONFIG_OMNIA_II_CPU_667_AHB_166)
