@@ -43,8 +43,8 @@
 #include <linux/kernel_sec_common.h>
 #endif
 
-#undef S3C_KEYPAD_DEBUG 
-//#define S3C_KEYPAD_DEBUG 
+//#undef S3C_KEYPAD_DEBUG 
+#define S3C_KEYPAD_DEBUG 
 
 #ifdef S3C_KEYPAD_DEBUG
 #define DPRINTK(x...) printk(KERN_INFO "S3C-Keypad " x)
@@ -151,8 +151,8 @@ static void keypad_timer_handler(unsigned long data)
 	if (in_sleep) {
 		in_sleep = 0;
 		printk("%s: in_sleep ========\n", __func__);
-		input_report_key(dev, 116, 1);
-		input_report_key(dev, 116, 0);
+		INPUT_REPORT_KEY(dev, 116, 1);
+		INPUT_REPORT_KEY(dev, 116, 0);
 	}
 
 	for (col = 0; col < KEYPAD_COLUMNS; col++) {
