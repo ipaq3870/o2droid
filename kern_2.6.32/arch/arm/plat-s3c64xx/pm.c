@@ -220,6 +220,7 @@ static struct sleep_save core_save[] = {
 	SAVE_ITEM(S3C_AHB_CON1),
 	SAVE_ITEM(S3C_AHB_CON2),
 	SAVE_ITEM(S3C_MISC_CON),
+	SAVE_ITEM(S3C_QOS_OVERRIDE1),
 };
 
 static struct sleep_save gpio_save[] = {
