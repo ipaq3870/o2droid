@@ -44,7 +44,7 @@
 #endif
 
 //#undef S3C_KEYPAD_DEBUG 
-#define S3C_KEYPAD_DEBUG 
+//#define S3C_KEYPAD_DEBUG 
 
 #ifdef S3C_KEYPAD_DEBUG
 #define DPRINTK(x...) printk(KERN_INFO "S3C-Keypad " x)
