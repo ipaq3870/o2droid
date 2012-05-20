@@ -692,6 +692,8 @@ int __init Si4709_driver_init(void)
 
 MISC_IRQ_DREG:
     free_irq(Si4709_IRQ, (void *)NULL);
+    if (gpio_is_valid(GPIO_FM_nRST))
+        gpio_free(GPIO_FM_nRST);
 
 MISC_DREG:
     misc_deregister(&Si4709_misc_device);
@@ -708,6 +710,8 @@ void __exit Si4709_driver_exit(void)
     Si4709_i2c_drv_exit();
 
     free_irq(Si4709_IRQ, (void *)NULL);
+    if (gpio_is_valid(GPIO_FM_nRST))
+        gpio_free(GPIO_FM_nRST);
     
     /*misc device deregistration*/
     misc_deregister(&Si4709_misc_device);
