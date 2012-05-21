@@ -47,6 +47,7 @@
 #include <plat/regs-onenand.h>
 #include <plat/gpio-cfg.h>
 #include <plat/regs-sys.h>
+#include <plat/regs-syscon-power.h>
 
 #include <mach/hardware.h>
 #include <mach/regs-mem.h>
@@ -915,6 +916,12 @@ static int s3c6410_pm_enter(suspend_state_t state)
 	s3c6410_pm_do_restore(irq_save, ARRAY_SIZE(irq_save));
 //bss	s3c6410_pm_do_restore(onenand_save, ARRAY_SIZE(onenand_save));
 	s3c6410_pm_do_restore(uart_save, ARRAY_SIZE(uart_save));
+
+	/* Setup PWRCFG to enter idle mode (for cpuidle) */
+	tmp = __raw_readl(S3C_PWR_CFG);
+	tmp &= ~S3C64XX_PWRCFG_CFG_WFI_MASK;
+	tmp |= S3C64XX_PWRCFG_CFG_WFI_IDLE;
+	__raw_writel(tmp, S3C_PWR_CFG);
 	
 	__raw_writel(0x0, S3C64XX_SLPEN);
 
