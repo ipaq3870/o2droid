@@ -3095,7 +3095,7 @@ static void lun_release(struct device *dev)
 
 /*-------------------------------------------------------------------------*/
 
-static int __init fsg_alloc(void)
+static int fsg_alloc(void)
 {
 	struct fsg_dev		*fsg;
 
@@ -3157,7 +3157,7 @@ fsg_function_unbind(struct usb_configuration *c, struct usb_function *f)
 	switch_dev_unregister(&fsg->sdev);
 }
 
-static int __init
+static int 
 fsg_function_bind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct usb_composite_dev *cdev = c->cdev;
@@ -3362,7 +3362,7 @@ static void fsg_function_disable(struct usb_function *f)
 	raise_exception(fsg, FSG_STATE_CONFIG_CHANGE);
 }
 
-static int __init fsg_probe(struct platform_device *pdev)
+static int fsg_probe(struct platform_device *pdev)
 {
 	struct usb_mass_storage_platform_data *pdata = pdev->dev.platform_data;
 	struct fsg_dev *fsg = the_fsg;
@@ -3389,7 +3389,7 @@ static struct platform_driver fsg_platform_driver = {
 	.probe = fsg_probe,
 };
 
-int __init mass_storage_function_add(struct usb_composite_dev *cdev,
+int mass_storage_function_add(struct usb_composite_dev *cdev,
 	struct usb_configuration *c, int nluns)
 {
 	int		rc;

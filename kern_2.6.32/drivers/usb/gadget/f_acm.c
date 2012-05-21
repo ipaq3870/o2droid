@@ -614,7 +614,7 @@ static int acm_send_break(struct gserial *port, int duration)
 /*-------------------------------------------------------------------------*/
 
 /* ACM function driver setup/binding */
-static int __init
+static int 
 acm_bind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct usb_composite_dev *cdev = c->cdev;
@@ -787,7 +787,7 @@ static inline bool can_support_cdc(struct usb_configuration *c)
  * handle all the ones it binds.  Caller is also responsible
  * for calling @gserial_cleanup() before module unload.
  */
-int __init acm_bind_config(struct usb_configuration *c, u8 port_num)
+int acm_bind_config(struct usb_configuration *c, u8 port_num)
 {
 	struct f_acm	*acm;
 	int		status;
@@ -851,7 +851,7 @@ int __init acm_bind_config(struct usb_configuration *c, u8 port_num)
 	return status;
 }
 
-int __init acm_function_add(struct usb_composite_dev *cdev,
+int acm_function_add(struct usb_composite_dev *cdev,
 	struct usb_configuration *c)
 {
 	int ret = acm_bind_config(c, 0);

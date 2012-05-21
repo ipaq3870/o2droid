@@ -680,7 +680,7 @@ struct i2c_driver fsa9480_i2c_driver = {
 };
 
 
-static int __init fsa9480_driver_init(void)
+static int fsa9480_driver_init(void)
 {
 	int ret;
 	DEBUG_FSA9480("%s\n", __func__);
@@ -691,7 +691,7 @@ static int __init fsa9480_driver_init(void)
 	return ret;
 }
 
-static void __exit fsa9480_driver_exit(void)
+static void fsa9480_driver_exit(void)
 {
 	DEBUG_FSA9480("%s\n", __func__);
 	i2c_del_driver(&fsa9480_i2c_driver);
