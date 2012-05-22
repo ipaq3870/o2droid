@@ -1027,6 +1027,10 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 	}
 #if defined(CONFIG_FB_S3C_BPP_24) && !(defined(CONFIG_OMNIA_II_AHB_166) || defined(CONFIG_OMNIA_II_CPU_667_AHB_166))
 	policy->user_policy.min = 133000;
+#elif defined(CONFIG_FB_S3C_BPP_24) && defined(CONFIG_OMNIA_II_CPU_667_AHB_166)
+	policy->user_policy.min = 166500;
+#elif defined(CONFIG_FB_S3C_BPP_24) && defined(CONFIG_OMNIA_II_AHB_166)
+	policy->user_policy.min = 133000;
 #else
 	policy->user_policy.min = policy->min;
 #endif
