@@ -2673,7 +2673,7 @@ struct v4l2_file_operations camif_p_fops = {
 void camif_vdev_release (struct video_device *vdev) {
 
 	__TRACE_CAMERA_DRV(printk("[CAM-DRV] +camif_vdev_release\n"));
-	kfree(vdev);
+	//kfree(vdev);
 	__TRACE_CAMERA_DRV(printk("[CAM-DRV] -camif_vdev_release\n"));
 }
 
