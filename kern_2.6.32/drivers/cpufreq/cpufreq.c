@@ -540,6 +540,10 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 						&new_policy.governor))
 		return -EINVAL;
 
+#ifdef CONFIG_OMNIA_II_CPU_667_AHB_166
+	new_policy.min = 166500;
+#endif
+
 	/* Do not use cpufreq_set_policy here or the user_policy.max
 	   will be wrongly overridden */
 	ret = __cpufreq_set_policy(policy, &new_policy);
