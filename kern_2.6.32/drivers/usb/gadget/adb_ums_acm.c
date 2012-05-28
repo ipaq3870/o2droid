@@ -156,7 +156,7 @@ void android_usb_set_connected(int connected)
 static void enable_adb(struct android_dev *dev, int enable);
 #endif
 
-//static int __init android_bind_config(struct usb_configuration *c)
+//static int android_bind_config(struct usb_configuration *c)
 static int android_bind_config(struct usb_configuration *c)
 {
 	struct android_dev *dev = _android_dev;
@@ -198,7 +198,7 @@ static struct usb_configuration android_config  = {
 	.bMaxPower	= 0x30, /*  x2 = 160ma */
 };
 
-static int __init android_bind(struct usb_composite_dev *cdev)
+static int android_bind(struct usb_composite_dev *cdev)
 {
 	struct android_dev *dev = _android_dev;
 	struct usb_gadget	*gadget = cdev->gadget;
@@ -381,7 +381,7 @@ static struct miscdevice adb_enable_device = {
 	.fops = &adb_enable_fops,
 };
 
-static int __init android_probe(struct platform_device *pdev)
+static int android_probe(struct platform_device *pdev)
 {
 	struct android_usb_platform_data *pdata = pdev->dev.platform_data;
 	struct android_dev *dev = _android_dev;
@@ -418,7 +418,7 @@ static struct platform_driver android_platform_driver = {
 	.probe = android_probe,
 };
 
-static int __init init(void)
+static int init(void)
 {
 	struct android_dev *dev;
 	int ret;
@@ -449,7 +449,7 @@ static int __init init(void)
 }
 module_init(init);
 
-static void __exit cleanup(void)
+static void cleanup(void)
 {
 	usb_composite_unregister(&android_usb_driver);
 	misc_deregister(&adb_enable_device);

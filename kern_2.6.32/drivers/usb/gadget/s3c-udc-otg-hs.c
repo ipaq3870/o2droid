@@ -1467,7 +1467,7 @@ static struct platform_driver s3c_udc_driver = {
 };
 //---------------------------------------------------------------------------------------
 
-static int __init s3c_udc_init(void)
+static int s3c_udc_init(void)
 {
 	int ret;
 
@@ -1477,7 +1477,7 @@ static int __init s3c_udc_init(void)
 }
 //---------------------------------------------------------------------------------------
 
-static void __exit s3c_udc_exit(void)
+static void s3c_udc_exit(void)
 {
 	platform_driver_unregister(&s3c_udc_driver);
 	DEBUG("Unloaded %s version %s\n", driver_name, DRIVER_VERSION);

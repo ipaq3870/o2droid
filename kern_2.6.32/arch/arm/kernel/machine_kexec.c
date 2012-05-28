@@ -12,6 +12,7 @@
 #include <asm/mmu_context.h>
 #include <asm/cacheflush.h>
 #include <asm/mach-types.h>
+#include <plat/s3c64xx-dvfs.h>
 
 extern const unsigned char relocate_new_kernel[];
 extern const unsigned int relocate_new_kernel_size;
@@ -51,6 +52,7 @@ void machine_kexec(struct kimage *image)
 	unsigned long reboot_code_buffer_phys;
 	void *reboot_code_buffer;
 
+	set_dvfs_perf_level();
 
 	page_list = image->head & PAGE_MASK;
 
@@ -76,5 +78,13 @@ void machine_kexec(struct kimage *image)
 
 	cpu_proc_fin();
 	setup_mm_for_reboot(0); /* mode is not used, so just pass 0*/
-	cpu_reset(reboot_code_buffer_phys);
+	/*
+	 * cpu_reset disables the MMU, so branch to its (1-to-1 mapped)
+	 * physical address not its virtual one.
+	 */
+        {
+            void (*cpu_reset_phys)(unsigned long dest) =
+                virt_to_phys(cpu_reset);
+            cpu_reset_phys(reboot_code_buffer_phys);
+        }
 }

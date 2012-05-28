@@ -10,7 +10,11 @@
 #ifndef __PLAT_S3C64XX_DVFS_H
 #define __PLAT_S3C64XX_DVFS_H __FILE__
 
-#define MAXIMUM_FREQ policy->max
+#ifdef CONFIG_OMNIA_II_CPU_667_AHB_166
+#define MAXIMUM_FREQ 666000
+#else
+#define MAXIMUM_FREQ 800000
+#endif
 //#undef USE_DVS
 #define USE_DVS
 //#define USE_DVFS_AL1_LEVEL

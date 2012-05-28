@@ -255,7 +255,7 @@ static void adb_complete_out(struct usb_ep *ep, struct usb_request *req)
 	wake_up(&dev->read_wq);
 }
 
-static int __init create_bulk_endpoints(struct adb_dev *dev,
+static int create_bulk_endpoints(struct adb_dev *dev,
 				struct usb_endpoint_descriptor *in_desc,
 				struct usb_endpoint_descriptor *out_desc)
 {
@@ -521,7 +521,7 @@ static int adb_function_suspend(struct usb_function *f) {
 #endif
 
 
-static int __init
+static int 
 adb_function_bind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct usb_composite_dev *cdev = c->cdev;
@@ -640,7 +640,7 @@ static void adb_function_disable(struct usb_function *f)
 	VDBG(cdev, "%s disabled\n", dev->function.name);
 }
 
-int __init adb_function_add(struct usb_composite_dev *cdev,
+int adb_function_add(struct usb_composite_dev *cdev,
 	struct usb_configuration *c)
 {
 	struct adb_dev *dev;
