@@ -29,8 +29,8 @@
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_UP_THRESHOLD		(96)
-#define DEF_FREQUENCY_DOWN_THRESHOLD		(85)
+#define DEF_FREQUENCY_UP_THRESHOLD		(65)
+#define DEF_FREQUENCY_DOWN_THRESHOLD		(30)
 #ifdef CONFIG_CPU_S3C6410
 #define DEF_MAX_FREQ_TIME_HZ			(15*HZ)
 #define DEF_SAMPLING_FREQ_STEP	20
