@@ -1025,11 +1025,7 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 		dprintk("initialization failed\n");
 		goto err_unlock_policy;
 	}
-#if defined(CONFIG_FB_S3C_BPP_24) && !(defined(CONFIG_OMNIA_II_AHB_166) || defined(CONFIG_OMNIA_II_CPU_667_AHB_166))
-	policy->user_policy.min = 133000;
-#else
 	policy->user_policy.min = policy->min;
-#endif
 	policy->user_policy.max = policy->max;
 
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
