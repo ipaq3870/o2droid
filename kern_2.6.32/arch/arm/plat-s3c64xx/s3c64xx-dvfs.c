@@ -414,14 +414,14 @@ static int s3c6410_target(struct cpufreq_policy *policy,
 	arm_clk = s3c6410_freq_table[S3C64XX_FREQ_TAB][index].frequency;
 	freqs.new = arm_clk;
 	freqs.cpu = 0;
-#ifdef CONFIG_OMNIA_II_CPU_667_AHB_166
+#if defined(CONFIG_OMNIA_II_CPU_667_AHB_166) || defined(CONFIG_OMNIA_II_AHB_166)
 	freqs.new_hclk = 166500;
 #else
 	freqs.new_hclk = 133000;
 #endif
   
 	if(index > S3C64XX_MAXFREQLEVEL) {
-#ifdef CONFIG_OMNIA_II_CPU_667_AHB_166
+#if defined(CONFIG_OMNIA_II_CPU_667_AHB_166) || defined(CONFIG_OMNIA_II_AHB_166)
 		freqs.new_hclk = 83250;
 #else
 		freqs.new_hclk = 66000;         
