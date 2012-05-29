@@ -18,6 +18,8 @@
 
 #include <linux/timed_output.h>
 
+#include <linux/clk.h>
+
 //#include "vibetonz.h"
 
 /*********** for debug **********************************************************/
@@ -189,8 +191,17 @@ static int vibetonz_start(void)
 {
 	int ret = 0;
 
+        struct clk *clk;
+        unsigned long rate;
+
 	//printk("[VIBETONZ] %s : \n",__func__);
 	spin_lock_init(&vib_lock);
+
+        clk = clk_get(NULL, "pclk");
+        rate = clk_get_rate(clk);
+        clk_put(clk);
+
+	pwm_freq = rate / 2 / 5 / 128 / 175;
 
 	/* hrtimer settings */
 	hrtimer_init(&timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
