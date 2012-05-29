@@ -231,6 +231,8 @@ static int vibetonz_start(void)
 static void vibetonz_end(void)
 {
 	printk("[VIBETONZ] %s \n",__func__);
+	if (gpio_is_valid(GPIO_VIB_EN))
+		gpio_free(GPIO_VIB_EN);
 	device_remove_file(timed_output_vt.dev, &dev_attr_freq);
 	timed_output_dev_unregister(&timed_output_vt);
 }
