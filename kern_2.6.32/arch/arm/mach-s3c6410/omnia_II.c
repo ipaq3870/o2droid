@@ -709,6 +709,7 @@ static void s3c6410_wdt_io_map(void)
 
 static void __init omnia_II_machine_init(void)
 {
+#if 0
 	struct clk *parent;
 
 	struct clk *clk;
@@ -718,7 +719,7 @@ static void __init omnia_II_machine_init(void)
 	clk = clk_get(NULL, "hclk");
 	rate = clk_get_rate(clk);
 	clk_put(clk);
-#if 0
+
 	parent = clk_get(NULL, "dout_mpll");
 	clk = clk_get(NULL, "uclk1");
 	clk_set_rate(parent, rate);
