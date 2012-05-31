@@ -59,6 +59,8 @@
 #include <plat/ts.h>
 #include <mach/irqs.h>
 
+#define NEWCAL
+
 #define CONFIG_TOUCHSCREEN_S3C_DEBUG
 #undef CONFIG_TOUCHSCREEN_S3C_DEBUG
 
@@ -71,7 +73,11 @@
 static int prev_val[9];	
 unsigned long xtemp, ytemp;
 unsigned long x, y; 
+#ifndef NEWCAL
 static int pointercal[7] = { 20348, -207, -26813464, 369, -26067, 78543672, 65536 };
+#else
+static int pointercal[7] = { 4618, 18, -23200608, -24, -6574, 79300032, 65536 };
+#endif
 module_param_array(pointercal, int, 7, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(pointercal, "pointercal");
 
@@ -194,10 +200,23 @@ static void touch_timer_fire(unsigned long data)
 	xtemp = ts->xp;
 	ytemp = ts->yp;
 
+#ifndef NEWCAL
+//ORIG
 	x = ((pointercal[2] + (pointercal[0]*xtemp * 10^7) + (pointercal[1]*ytemp* 10^7) ) / (pointercal[6]* 10^7));
 	y = ((pointercal[5] + (pointercal[3]*xtemp * 10^7) + (pointercal[4]*ytemp * 10^7) ) / (pointercal[6] * 10^7));
 	input_report_abs(ts->dev, ABS_X, ((x/ ts->count)-400));
 	 input_report_abs(ts->dev, ABS_Y, ((y/ ts->count) - 480));
+#else
+//NEW
+//for real
+	x = ((pointercal[2] + (pointercal[0]*xtemp) + (pointercal[1]*ytemp) ) / (pointercal[6]));
+	y = ((pointercal[5] + (pointercal[3]*xtemp) + (pointercal[4]*ytemp) ) / (pointercal[6]));
+	input_report_abs(ts->dev, ABS_X, x);
+	 input_report_abs(ts->dev, ABS_Y, y);
+//for cal
+//	input_report_abs(ts->dev, ABS_X, xtemp);
+//	 input_report_abs(ts->dev, ABS_Y, ytemp);
+#endif
 
 	 input_report_key(ts->dev, BTN_TOUCH, 1);
 	 input_report_abs(ts->dev, ABS_PRESSURE, 1);
