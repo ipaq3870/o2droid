@@ -79,7 +79,7 @@ s3c_fimd_info_t s3c_fimd = {
 #if defined (CONFIG_FB_S3C_BPP_8)
 	.wincon0 =  S3C_WINCONx_BYTSWP_ENABLE | S3C_WINCONx_BURSTLEN_4WORD | S3C_WINCONx_BPPMODE_F_8BPP_PAL,
 	.wincon1 =  S3C_WINCONx_HAWSWP_ENABLE | S3C_WINCONx_BURSTLEN_4WORD | S3C_WINCONx_BPPMODE_F_16BPP_565 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1,
-	.bpp = S3C_FB_PIXEL_BPP_8,
+	.bpp = 8,
 	.bytes_per_pixel = 1,
 	.wpalcon = S3C_WPALCON_W0PAL_16BIT,
 
@@ -105,7 +105,7 @@ s3c_fimd_info_t s3c_fimd = {
 	           S3C_WINCONx_BURSTLEN_4WORD | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BLD_PIX_PLANE |
 	           S3C_WINCONx_BPPMODE_F_16BPP_565 | S3C_WINCONx_ALPHA_SEL_1 | S3C_WINCONx_ENWIN_F_DISABLE,
 
-	.bpp = S3C_FB_PIXEL_BPP_16,
+	.bpp = 16,
 	.bytes_per_pixel = 2,
 	.wpalcon = S3C_WPALCON_W0PAL_16BIT,
 
@@ -115,7 +115,7 @@ s3c_fimd_info_t s3c_fimd = {
 	.wincon2 = S3C_WINCONx_HAWSWP_DISABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_24BPP_888 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1,
 	.wincon3 = S3C_WINCONx_HAWSWP_DISABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_24BPP_888 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1,
 	.wincon4 = S3C_WINCONx_HAWSWP_DISABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_24BPP_888 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1,
-	.bpp = S3C_FB_PIXEL_BPP_24,
+	.bpp = 32,
 	.bytes_per_pixel = 4,
 	.wpalcon = S3C_WPALCON_W0PAL_24BIT,
 #endif
@@ -1194,7 +1194,7 @@ void s3cfb_activate_var(s3c_fb_info_t *fbi, struct fb_var_screeninfo *var)
 		s3c_fimd.wincon2 = S3C_WINCONx_HAWSWP_ENABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_16BPP_565 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
 		s3c_fimd.wincon3 = S3C_WINCONx_HAWSWP_ENABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_16BPP_565 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
 		s3c_fimd.wincon4 = S3C_WINCONx_HAWSWP_ENABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_16BPP_565 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
-		s3c_fimd.bpp     = S3C_FB_PIXEL_BPP_8;
+		s3c_fimd.bpp     = 8;
 		s3c_fimd.bytes_per_pixel = 1;
 		s3c_fimd.wpalcon = S3C_WPALCON_W0PAL_16BIT;
 		break;
@@ -1205,21 +1205,17 @@ void s3cfb_activate_var(s3c_fb_info_t *fbi, struct fb_var_screeninfo *var)
 		s3c_fimd.wincon2 = S3C_WINCONx_HAWSWP_ENABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_16BPP_565 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
 		s3c_fimd.wincon3 = S3C_WINCONx_HAWSWP_ENABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_16BPP_565 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
 		s3c_fimd.wincon4 = S3C_WINCONx_HAWSWP_ENABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_16BPP_565 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
-		s3c_fimd.bpp     = S3C_FB_PIXEL_BPP_16;
+		s3c_fimd.bpp     = 16;
 		s3c_fimd.bytes_per_pixel = 2;
 		break;
 
-	case 24:
+	case 32:
 		s3c_fimd.wincon0 = S3C_WINCONx_HAWSWP_DISABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_24BPP_888;
 		s3c_fimd.wincon1 = S3C_WINCONx_HAWSWP_DISABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_24BPP_888 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
 		s3c_fimd.wincon2 = S3C_WINCONx_HAWSWP_DISABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_24BPP_888 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
 		s3c_fimd.wincon3 = S3C_WINCONx_HAWSWP_DISABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_24BPP_888 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
 		s3c_fimd.wincon4 = S3C_WINCONx_HAWSWP_DISABLE | S3C_WINCONx_BURSTLEN_16WORD | S3C_WINCONx_BPPMODE_F_24BPP_888 | S3C_WINCONx_BLD_PIX_PLANE | S3C_WINCONx_ALPHA_SEL_1;
-		s3c_fimd.bpp     = S3C_FB_PIXEL_BPP_24;
-		s3c_fimd.bytes_per_pixel = 4;
-		break;
-
-	case 32:
+		s3c_fimd.bpp     = 32;
 		s3c_fimd.bytes_per_pixel = 4;
 		break;
 	}
@@ -2056,7 +2052,7 @@ extern void lcd_power_ctrl(s32 value);
 void s3cfb_shutdown(struct platform_device *dev)
 {
 	printk("s3cfb_shutdown \n");
-#if 0
+#ifndef CONFIG_FB_S3C_KEEP_POWER_ON_SHUTDOWN
 	lcd_power_ctrl(0);
 #endif
 }
@@ -2094,7 +2090,8 @@ int s3cfb_resume(struct platform_device *dev)
  */
 void s3cfb_shutdown(struct platform_device *dev)
 {
-#if 0
+#ifndef CONFIG_FB_S3C_KEEP_POWER_ON_SHUTDOWN
+
 	lcd_power_ctrl(0);
 #endif
 }

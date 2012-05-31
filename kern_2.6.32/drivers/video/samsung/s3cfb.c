@@ -166,6 +166,9 @@ static int s3cfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 			break;
 
 		case 24:
+			var->bits_per_pixel = 32;
+			/* drop through */
+		case 32:
 			var->red = s3c_fb_rgb_24.red;
 			var->green = s3c_fb_rgb_24.green;
 			var->blue = s3c_fb_rgb_24.blue;
@@ -189,7 +192,7 @@ static int s3cfb_set_par(struct fb_info *info)
 	struct fb_var_screeninfo *var = &info->var;
 	s3c_fb_info_t *fbi = (s3c_fb_info_t *) info;
 
-	if (var->bits_per_pixel == 16 || var->bits_per_pixel == 24)
+	if (var->bits_per_pixel == 16 || var->bits_per_pixel == 32)
 		fbi->fb.fix.visual = FB_VISUAL_TRUECOLOR;
 	else
 		fbi->fb.fix.visual = FB_VISUAL_PSEUDOCOLOR;
@@ -292,7 +295,7 @@ int s3cfb_set_vs_info(s3c_vs_info_t vs_info)
 	if (vs_info.width != s3c_fimd.xres || vs_info.height != s3c_fimd.yres)
 		return 1;
 
-	if (!(vs_info.bpp == 8 || vs_info.bpp == 16 || vs_info.bpp == 24 || vs_info.bpp == 32))
+	if (!(vs_info.bpp == 8 || vs_info.bpp == 16 || vs_info.bpp == 32))
 		return 1;
 
 	if (vs_info.offset < 0)
@@ -364,13 +367,13 @@ int s3cfb_set_color_key_registers(s3c_fb_info_t *fbi, s3c_color_key_info_t colke
 
 	win_num--;
 
-	if (fbi->fb.var.bits_per_pixel == S3C_FB_PIXEL_BPP_16) {
+	if (fbi->fb.var.bits_per_pixel == 16) {
 		/* RGB 5-6-5 mode */
 		compkey  = (((colkey_info.compkey_red & 0x1f) << 19) | 0x70000);
 		compkey |= (((colkey_info.compkey_green & 0x3f) << 10) | 0x300);
 		compkey |= (((colkey_info.compkey_blue  & 0x1f)  << 3 )| 0x7);
-	} else if (fbi->fb.var.bits_per_pixel == S3C_FB_PIXEL_BPP_24) {
-		/* currently RGB 8-8-8 mode  */
+	} else if (fbi->fb.var.bits_per_pixel == 32) {
+		/* currently RGBX 8-8-8-0 mode  */
 		compkey  = ((colkey_info.compkey_red & 0xff) << 16);
 		compkey |= ((colkey_info.compkey_green & 0xff) << 8);
 		compkey |= ((colkey_info.compkey_blue & 0xff) << 0);
@@ -402,12 +405,12 @@ int s3cfb_set_color_value(s3c_fb_info_t *fbi, s3c_color_val_info_t colval_info)
 
 	win_num--;
 
-	if (fbi->fb.var.bits_per_pixel == S3C_FB_PIXEL_BPP_16) {
+	if (fbi->fb.var.bits_per_pixel == 16) {
 		/* RGB 5-6-5 mode */
 		colval  = (((colval_info.colval_red   & 0x1f) << 19) | 0x70000);
 		colval |= (((colval_info.colval_green & 0x3f) << 10) | 0x300);
 		colval |= (((colval_info.colval_blue  & 0x1f)  << 3 )| 0x7);
-	} else if (fbi->fb.var.bits_per_pixel == S3C_FB_PIXEL_BPP_24) {
+	} else if (fbi->fb.var.bits_per_pixel == 32) {
 		/* currently RGB 8-8-8 mode  */
 		colval  = ((colval_info.colval_red  & 0xff) << 16);
 		colval |= ((colval_info.colval_green & 0xff) << 8);
@@ -445,24 +448,10 @@ static int s3cfb_set_bpp(s3c_fb_info_t *fbi, int bpp)
 		break;
 
 	case 24:
-		writel(val | S3C_WINCONx_BPPMODE_F_24BPP_888 | S3C_WINCONx_BLD_PIX_PLANE, S3C_WINCON0 + (0x04 * win_num));
-		var->bits_per_pixel = bpp;
-		s3c_fimd.bytes_per_pixel = 4;
-		break;
-
-	case 25:
-		writel(val | S3C_WINCONx_BPPMODE_F_25BPP_A888 | S3C_WINCONx_BLD_PIX_PLANE, S3C_WINCON0 + (0x04 * win_num));
-		var->bits_per_pixel = bpp;
-		s3c_fimd.bytes_per_pixel = 4;
-		break;
-
-	case 28:
-		writel(val | S3C_WINCONx_BPPMODE_F_28BPP_A888 | S3C_WINCONx_BLD_PIX_PIXEL, S3C_WINCON0 + (0x04 * win_num));
-		var->bits_per_pixel = bpp;
-		s3c_fimd.bytes_per_pixel = 4;
-		break;
-
+		bpp = 32;
+		/* drop through */
 	case 32:
+		writel(val | S3C_WINCONx_BPPMODE_F_24BPP_888 | S3C_WINCONx_BLD_PIX_PLANE, S3C_WINCON0 + (0x04 * win_num));
 		var->bits_per_pixel = bpp;
 		s3c_fimd.bytes_per_pixel = 4;
 		break;
@@ -958,6 +947,7 @@ static int s3cfb_remove(struct platform_device *pdev)
 	unregister_early_suspend(&info->early_suspend);
 #endif	/* CONFIG_HAS_EARLYSUSPEND */
 
+#ifndef CONFIG_FB_S3C_KEEP_POWER_ON_SHUTDOWN
 	s3cfb_stop_lcd();
 	msleep(1);
 
@@ -966,6 +956,7 @@ static int s3cfb_remove(struct platform_device *pdev)
 		clk_put(info->clk);
 	 	info->clk = NULL;
 	}
+#endif
 
 	irq = platform_get_irq(pdev, 0);
 	release_resource(info->mem);

@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.9
-# Thu May 10 19:47:00 2012
+# Thu May 31 11:06:35 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1180,6 +1180,7 @@ CONFIG_FB_S3C_NUM=2
 # CONFIG_FB_S3C_VIRTUAL_SCREEN is not set
 CONFIG_FB_S3C_DOUBLE_BUFFERING=y
 CONFIG_FB_S3C_SHOW_LOGO=y
+CONFIG_FB_S3C_KEEP_POWER_ON_SHUTDOWN=y
 # CONFIG_FB_S1D13XXX is not set
 # CONFIG_FB_VIRTUAL is not set
 # CONFIG_FB_METRONOME is not set
