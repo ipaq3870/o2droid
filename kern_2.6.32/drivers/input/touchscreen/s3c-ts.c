@@ -59,6 +59,8 @@
 #include <plat/ts.h>
 #include <mach/irqs.h>
 
+#include <linux/earlysuspend.h>
+
 #define NEWCAL
 
 #define CONFIG_TOUCHSCREEN_S3C_DEBUG
@@ -94,6 +96,12 @@ MODULE_PARM_DESC(pointercal, "pointercal");
 
 #define DEBUG_LVL    KERN_DEBUG
 
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+void s3c_ts_early_suspend(struct early_suspend *h);
+void s3c_ts_late_resume(struct early_suspend *h);
+struct early_suspend early_suspend;
+#endif  /* CONFIG_HAS_EARLYSUSPEND */
 
 /* Touchscreen default configuration */
 struct s3c_ts_mach_info s3c_ts_default_cfg __initdata = {
@@ -476,6 +484,13 @@ static int __init s3c_ts_probe(struct platform_device *pdev)
 		goto fail;
 	}
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	early_suspend.suspend = s3c_ts_early_suspend;
+	early_suspend.resume = s3c_ts_late_resume;
+	early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	register_early_suspend(&early_suspend);
+#endif /* CONFIG_HAS_EARLYSUSPEND */ 
+
 	return 0;
 
 fail:
@@ -504,6 +519,10 @@ err_req:
 static int s3c_ts_remove(struct platform_device *dev)
 {
 	printk(KERN_INFO "s3c_ts_remove() of TS called !\n");
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+        unregister_early_suspend(&early_suspend);
+#endif  /* CONFIG_HAS_EARLYSUSPEND */
 
 	disable_irq(IRQ_ADC);
 	disable_irq(IRQ_PENDN);
@@ -562,11 +581,21 @@ static int s3c_ts_resume(struct platform_device *pdev)
 #define s3c_ts_resume  NULL
 #endif
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+void s3c_ts_early_suspend(struct early_suspend *handler)
+{
+	s3c_ts_suspend(NULL, PMSG_SUSPEND);
+}
+
+void s3c_ts_late_resume(struct early_suspend *handler)
+{
+	s3c_ts_resume(NULL);
+}
+#endif
+
 static struct platform_driver s3c_ts_driver = {
        .probe          = s3c_ts_probe,
        .remove         = s3c_ts_remove,
-       .suspend        = s3c_ts_suspend,
-       .resume         = s3c_ts_resume,
        .driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "s3c-ts",
