@@ -80,7 +80,8 @@ static int pointercal[7] = { 20348, -207, -26813464, 369, -26067, 78543672, 6553
 #else
 static int pointercal[7] = { 4618, 18, -23200608, -24, -6574, 79300032, 65536 };
 #endif
-module_param_array(pointercal, int, 7, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+static int pointercal_size = 7;
+module_param_array_named(pointercal, pointercal, int, &pointercal_size, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(pointercal, "pointercal");
 
 /* For ts->dev.id.version */
