@@ -84,6 +84,10 @@ static int pointercal_size = 7;
 module_param_array_named(pointercal, pointercal, int, &pointercal_size, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(pointercal, "pointercal");
 
+static unsigned int use_tscal = 1;
+module_param_named(use_tscal, use_tscal, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+MODULE_PARM_DESC(use_tscal, "use_tscal");
+
 /* For ts->dev.id.version */
 #define S3C_TSVERSION	0x0101
 
@@ -214,17 +218,18 @@ static void touch_timer_fire(unsigned long data)
 	x = ((pointercal[2] + (pointercal[0]*xtemp * 10^7) + (pointercal[1]*ytemp* 10^7) ) / (pointercal[6]* 10^7));
 	y = ((pointercal[5] + (pointercal[3]*xtemp * 10^7) + (pointercal[4]*ytemp * 10^7) ) / (pointercal[6] * 10^7));
 	input_report_abs(ts->dev, ABS_X, ((x/ ts->count)-400));
-	 input_report_abs(ts->dev, ABS_Y, ((y/ ts->count) - 480));
+	input_report_abs(ts->dev, ABS_Y, ((y/ ts->count) - 480));
 #else
 //NEW
-//for real
-	x = ((pointercal[2] + (pointercal[0]*xtemp) + (pointercal[1]*ytemp) ) / (pointercal[6]));
-	y = ((pointercal[5] + (pointercal[3]*xtemp) + (pointercal[4]*ytemp) ) / (pointercal[6]));
-	input_report_abs(ts->dev, ABS_X, x);
-	 input_report_abs(ts->dev, ABS_Y, y);
-//for cal
-//	input_report_abs(ts->dev, ABS_X, xtemp);
-//	 input_report_abs(ts->dev, ABS_Y, ytemp);
+	if (use_tscal) {
+		x = ((pointercal[2] + (pointercal[0]*xtemp) + (pointercal[1]*ytemp) ) / (pointercal[6]));
+		y = ((pointercal[5] + (pointercal[3]*xtemp) + (pointercal[4]*ytemp) ) / (pointercal[6]));
+		input_report_abs(ts->dev, ABS_X, x);
+		input_report_abs(ts->dev, ABS_Y, y);
+	} else {
+		input_report_abs(ts->dev, ABS_X, xtemp);
+		input_report_abs(ts->dev, ABS_Y, ytemp);
+	}
 #endif
 
 	 input_report_key(ts->dev, BTN_TOUCH, 1);
