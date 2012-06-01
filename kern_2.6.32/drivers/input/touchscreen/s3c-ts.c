@@ -59,6 +59,10 @@
 #include <plat/ts.h>
 #include <mach/irqs.h>
 
+#include <linux/earlysuspend.h>
+
+#define NEWCAL
+
 #define CONFIG_TOUCHSCREEN_S3C_DEBUG
 #undef CONFIG_TOUCHSCREEN_S3C_DEBUG
 
@@ -71,9 +75,18 @@
 static int prev_val[9];	
 unsigned long xtemp, ytemp;
 unsigned long x, y; 
+#ifndef NEWCAL
 static int pointercal[7] = { 20348, -207, -26813464, 369, -26067, 78543672, 65536 };
-module_param_array(pointercal, int, 7, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+#else
+static int pointercal[7] = { 4642, -8, -23457792, -23, -6618, 79796696, 65536 };
+#endif
+static int pointercal_size = 7;
+module_param_array_named(pointercal, pointercal, int, &pointercal_size, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(pointercal, "pointercal");
+
+static unsigned int use_tscal = 1;
+module_param_named(use_tscal, use_tscal, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+MODULE_PARM_DESC(use_tscal, "use_tscal");
 
 /* For ts->dev.id.version */
 #define S3C_TSVERSION	0x0101
@@ -88,6 +101,12 @@ MODULE_PARM_DESC(pointercal, "pointercal");
 
 #define DEBUG_LVL    KERN_DEBUG
 
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+void s3c_ts_early_suspend(struct early_suspend *h);
+void s3c_ts_late_resume(struct early_suspend *h);
+struct early_suspend early_suspend;
+#endif  /* CONFIG_HAS_EARLYSUSPEND */
 
 /* Touchscreen default configuration */
 struct s3c_ts_mach_info s3c_ts_default_cfg __initdata = {
@@ -191,25 +210,37 @@ static void touch_timer_fire(unsigned long data)
 	if (updown) {
 		if (ts->count) {
 
-	xtemp = ts->xp;
-	ytemp = ts->yp;
+			xtemp = ts->xp;
+			ytemp = ts->yp;
 
-	x = ((pointercal[2] + (pointercal[0]*xtemp * 10^7) + (pointercal[1]*ytemp* 10^7) ) / (pointercal[6]* 10^7));
-	y = ((pointercal[5] + (pointercal[3]*xtemp * 10^7) + (pointercal[4]*ytemp * 10^7) ) / (pointercal[6] * 10^7));
-	input_report_abs(ts->dev, ABS_X, ((x/ ts->count)-400));
-	 input_report_abs(ts->dev, ABS_Y, ((y/ ts->count) - 480));
+#ifndef NEWCAL
+			x = ((pointercal[2] + (pointercal[0]*xtemp * 10^7) + (pointercal[1]*ytemp* 10^7) ) / (pointercal[6]* 10^7));
+			y = ((pointercal[5] + (pointercal[3]*xtemp * 10^7) + (pointercal[4]*ytemp * 10^7) ) / (pointercal[6] * 10^7));
+			input_report_abs(ts->dev, ABS_X, ((x/ ts->count)-400));
+			input_report_abs(ts->dev, ABS_Y, ((y/ ts->count) - 480));
+#else
+			if (use_tscal) {
+				x = ((pointercal[2] + (pointercal[0]*xtemp) + (pointercal[1]*ytemp) ) / (pointercal[6]));
+				y = ((pointercal[5] + (pointercal[3]*xtemp) + (pointercal[4]*ytemp) ) / (pointercal[6]));
+				input_report_abs(ts->dev, ABS_X, x);
+				input_report_abs(ts->dev, ABS_Y, y);
+			} else {
+				input_report_abs(ts->dev, ABS_X, xtemp);
+				input_report_abs(ts->dev, ABS_Y, ytemp);
+			}
+#endif
 
-	 input_report_key(ts->dev, BTN_TOUCH, 1);
-	 input_report_abs(ts->dev, ABS_PRESSURE, 1);
-	 input_sync(ts->dev);
-	}
+			input_report_key(ts->dev, BTN_TOUCH, 1);
+			input_report_abs(ts->dev, ABS_PRESSURE, 1);
+			input_sync(ts->dev);
+		}
 
-	ts->xp = 0;
-	ts->yp = 0;
-	ts->count = 0;
+		ts->xp = 0;
+		ts->yp = 0;
+		ts->count = 0;
 
-	writel(S3C_ADCTSC_PULL_UP_DISABLE | AUTOPST, ts_base+S3C_ADCTSC);
-	writel(readl(ts_base+S3C_ADCCON) | S3C_ADCCON_ENABLE_START, ts_base+S3C_ADCCON);
+		writel(S3C_ADCTSC_PULL_UP_DISABLE | AUTOPST, ts_base+S3C_ADCTSC);
+		writel(readl(ts_base+S3C_ADCCON) | S3C_ADCCON_ENABLE_START, ts_base+S3C_ADCCON);
 	}
 	else {
 
@@ -457,6 +488,13 @@ static int __init s3c_ts_probe(struct platform_device *pdev)
 		goto fail;
 	}
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	early_suspend.suspend = s3c_ts_early_suspend;
+	early_suspend.resume = s3c_ts_late_resume;
+	early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	register_early_suspend(&early_suspend);
+#endif /* CONFIG_HAS_EARLYSUSPEND */ 
+
 	return 0;
 
 fail:
@@ -485,6 +523,10 @@ err_req:
 static int s3c_ts_remove(struct platform_device *dev)
 {
 	printk(KERN_INFO "s3c_ts_remove() of TS called !\n");
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+        unregister_early_suspend(&early_suspend);
+#endif  /* CONFIG_HAS_EARLYSUSPEND */
 
 	disable_irq(IRQ_ADC);
 	disable_irq(IRQ_PENDN);
@@ -543,11 +585,21 @@ static int s3c_ts_resume(struct platform_device *pdev)
 #define s3c_ts_resume  NULL
 #endif
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+void s3c_ts_early_suspend(struct early_suspend *handler)
+{
+	s3c_ts_suspend(NULL, PMSG_SUSPEND);
+}
+
+void s3c_ts_late_resume(struct early_suspend *handler)
+{
+	s3c_ts_resume(NULL);
+}
+#endif
+
 static struct platform_driver s3c_ts_driver = {
        .probe          = s3c_ts_probe,
        .remove         = s3c_ts_remove,
-       .suspend        = s3c_ts_suspend,
-       .resume         = s3c_ts_resume,
        .driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "s3c-ts",
