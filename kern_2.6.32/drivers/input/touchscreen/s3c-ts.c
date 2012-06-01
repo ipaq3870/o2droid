@@ -78,7 +78,7 @@ unsigned long x, y;
 #ifndef NEWCAL
 static int pointercal[7] = { 20348, -207, -26813464, 369, -26067, 78543672, 65536 };
 #else
-static int pointercal[7] = { 4618, 18, -23200608, -24, -6574, 79300032, 65536 };
+static int pointercal[7] = { 4642, -8, -23457792, -23, -6618, 79796696, 65536 };
 #endif
 static int pointercal_size = 7;
 module_param_array_named(pointercal, pointercal, int, &pointercal_size, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
