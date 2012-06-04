@@ -39,6 +39,8 @@
 
 #include <plat/pm.h>	
 
+#include <linux/earlysuspend.h>
+
 #ifdef CONFIG_KERNEL_DEBUG_SEC
 #include <linux/kernel_sec_common.h>
 #endif
@@ -63,6 +65,13 @@
 #define TRUE 1
 #define FALSE 0
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+void s3c_keypad_early_suspend(struct early_suspend *h);
+void s3c_keypad_late_resume(struct early_suspend *h);
+static struct early_suspend early_suspend;
+#endif  /* CONFIG_HAS_EARLYSUSPEND */
+
+static int early_sleep = 0;
 
 static struct timer_list keypad_timer;
 //static struct timer_list powerkey_timer;
@@ -428,6 +437,13 @@ static int __init s3c_keypad_probe(struct platform_device *pdev)
 		       dev_attr_key_pressed.attr.name);
 	}
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+       early_suspend.suspend = s3c_keypad_early_suspend;
+       early_suspend.resume = s3c_keypad_late_resume;
+       early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+       register_early_suspend(&early_suspend);
+#endif /* CONFIG_HAS_EARLYSUSPEND */ 
+
 	return 0;
 
  out:
@@ -458,6 +474,10 @@ static int s3c_keypad_remove(struct platform_device *pdev)
 {
 	struct input_dev *input_dev = platform_get_drvdata(pdev);
 	writel(KEYIFCON_CLEAR, key_base + S3C_KEYIFCON);
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+        unregister_early_suspend(&early_suspend);
+#endif  /* CONFIG_HAS_EARLYSUSPEND */
 
 	if (keypad_clock) {
 		clk_disable(keypad_clock);
@@ -500,7 +520,10 @@ static int s3c_keypad_suspend(struct platform_device *dev, pm_message_t state)
 	//writel(~(0xfffffff), KEYPAD_ROW_GPIOCON);
 	//writel(~(0xfffffff), KEYPAD_COL_GPIOCON);
 
+	//HACK: early suspend disables IRQ, and re-enables here for suspend
 	//disable_irq(IRQ_KEYPAD);
+	if (early_sleep)
+		enable_irq(IRQ_KEYPAD);
 
 	clk_disable(keypad_clock);
 
@@ -524,7 +547,10 @@ static int s3c_keypad_resume(struct platform_device *dev)
 
 	s3c6410_pm_do_restore(s3c_keypad_save, ARRAY_SIZE(s3c_keypad_save));
 
+	//HACK: disable IRQ and let late_resume re-enable it.
 	//enable_irq(IRQ_KEYPAD);
+	if (early_sleep)
+		disable_irq(IRQ_KEYPAD);
 	printk(KERN_DEBUG "---- %s\n", __FUNCTION__);
 	return 0;
 }
@@ -532,6 +558,20 @@ static int s3c_keypad_resume(struct platform_device *dev)
 #define s3c_keypad_suspend NULL
 #define s3c_keypad_resume  NULL
 #endif				/* CONFIG_PM */
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+void s3c_keypad_early_suspend(struct early_suspend *handler)
+{
+	early_sleep = 1;
+	disable_irq(IRQ_KEYPAD);
+}
+
+void s3c_keypad_late_resume(struct early_suspend *handler)
+{
+	early_sleep = 0;
+	enable_irq(IRQ_KEYPAD);
+}
+#endif
 
 static struct platform_driver s3c_keypad_driver = {
 	.probe		= s3c_keypad_probe,
