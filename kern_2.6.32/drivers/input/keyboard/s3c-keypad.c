@@ -179,10 +179,14 @@ static void keypad_timer_handler(unsigned long data)
 
 		while (press_mask) {
 			if (press_mask & 1) {
+				//Hack: only allows the below keys during early suspend
+				if (early_sleep && !(pdata->keycodes[i] == 116 || pdata->keycodes[i] == 231 || pdata->keycodes[i] == 102 || pdata->keycodes[i] == 26))
+					goto loopagain1;
 				input_report_key(dev, pdata->keycodes[i], 1);
 				DPRINTK("\nkey Pressed  : key %d map %d\n", i,
 					pdata->keycodes[i]);
 			}
+loopagain1:
 			press_mask >>= 1;
 			i++;
 		}
@@ -191,11 +195,15 @@ static void keypad_timer_handler(unsigned long data)
 
 		while (release_mask) {
 			if (release_mask & 1) {
+				//Hack: only allows the below keys during early suspend
+				if (early_sleep && !(pdata->keycodes[i] == 116 || pdata->keycodes[i] == 231 || pdata->keycodes[i] == 102 || pdata->keycodes[i] == 26))
+					goto loopagain2;
 				input_report_key(dev, pdata->keycodes[i], 0);
 				DPRINTK("\nkey Released : %d  map %d\n", i,
 					pdata->keycodes[i]);
 
 			}
+loopagain2:
 			release_mask >>= 1;
 			i++;
 		}
@@ -520,10 +528,7 @@ static int s3c_keypad_suspend(struct platform_device *dev, pm_message_t state)
 	//writel(~(0xfffffff), KEYPAD_ROW_GPIOCON);
 	//writel(~(0xfffffff), KEYPAD_COL_GPIOCON);
 
-	//HACK: early suspend disables IRQ, and re-enables here for suspend
 	//disable_irq(IRQ_KEYPAD);
-	if (early_sleep)
-		enable_irq(IRQ_KEYPAD);
 
 	clk_disable(keypad_clock);
 
@@ -547,10 +552,7 @@ static int s3c_keypad_resume(struct platform_device *dev)
 
 	s3c6410_pm_do_restore(s3c_keypad_save, ARRAY_SIZE(s3c_keypad_save));
 
-	//HACK: disable IRQ and let late_resume re-enable it.
 	//enable_irq(IRQ_KEYPAD);
-	if (early_sleep)
-		disable_irq(IRQ_KEYPAD);
 	printk(KERN_DEBUG "---- %s\n", __FUNCTION__);
 	return 0;
 }
@@ -563,13 +565,11 @@ static int s3c_keypad_resume(struct platform_device *dev)
 void s3c_keypad_early_suspend(struct early_suspend *handler)
 {
 	early_sleep = 1;
-	disable_irq(IRQ_KEYPAD);
 }
 
 void s3c_keypad_late_resume(struct early_suspend *handler)
 {
 	early_sleep = 0;
-	enable_irq(IRQ_KEYPAD);
 }
 #endif
 
