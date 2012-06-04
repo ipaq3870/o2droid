@@ -105,7 +105,7 @@ MODULE_PARM_DESC(use_tscal, "use_tscal");
 #ifdef CONFIG_HAS_EARLYSUSPEND
 void s3c_ts_early_suspend(struct early_suspend *h);
 void s3c_ts_late_resume(struct early_suspend *h);
-struct early_suspend early_suspend;
+static struct early_suspend early_suspend;
 #endif  /* CONFIG_HAS_EARLYSUSPEND */
 
 /* Touchscreen default configuration */
