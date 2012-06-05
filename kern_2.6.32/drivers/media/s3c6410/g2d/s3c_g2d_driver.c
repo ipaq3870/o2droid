@@ -144,9 +144,7 @@ static int s3c_g2d_init_regs(s3c_g2d_params *params)
 				(params->bpp_dst == G2D_RGB16)   ? S3C_G2D_COLOR_RGB_565 :
 				(params->bpp_dst == G2D_RGBA16) ? S3C_G2D_COLOR_RGBA_5551 :
 				(params->bpp_dst == G2D_ARGB16) ? S3C_G2D_COLOR_ARGB_1555 :	
-				//Hack to return proper format to Android in case Samsung's proprietary driver detection gone crazy
-				//(params->bpp_dst == G2D_RGBA32) ? S3C_G2D_COLOR_RGBA_8888 :	
-				(params->bpp_dst == G2D_RGBA32) ? S3C_G2D_COLOR_XRGB_8888 :	
+				(params->bpp_dst == G2D_RGBA32) ? S3C_G2D_COLOR_RGBA_8888 :	
 				(params->bpp_dst == G2D_ARGB32) ? S3C_G2D_COLOR_ARGB_8888 :
 				(params->bpp_dst == G2D_XRGB32) ? S3C_G2D_COLOR_XRGB_8888 :	
 				(params->bpp_dst == G2D_RGBX32) ? S3C_G2D_COLOR_RGBX_8888 : S3C_G2D_COLOR_RGB_565;
