@@ -34,6 +34,7 @@
 #include <linux/fb.h>
 
 #include <asm/fb.h>
+#include <asm/current.h>
 
 
     /*
@@ -1029,7 +1030,20 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		var = info->var;
 		unlock_fb_info(info);
 
+#if defined(CONFIG_MACH_OMNIA_II) && defined(CONFIG_FB_S3C_BPP_24)
+		//Hack
+		struct fb_var_screeninfo newvar;
+		memcpy(&newvar, &var, sizeof(struct fb_var_screeninfo));
+
+		if (newvar.bits_per_pixel == 32 && strcmp(get_current()->comm, "SurfaceFlinger") == 0) {
+			printk("Hack: %s returning 24 bpp to SurfaceFlinger\n", __func__);
+			newvar.bits_per_pixel = 24;
+		}
+
+		ret = copy_to_user(argp, &newvar, sizeof(newvar)) ? -EFAULT : 0;
+#else
 		ret = copy_to_user(argp, &var, sizeof(var)) ? -EFAULT : 0;
+#endif
 		break;
 	case FBIOPUT_VSCREENINFO:
 		if (copy_from_user(&var, argp, sizeof(var)))
