@@ -557,8 +557,10 @@ static int s3c_keypad_resume(struct platform_device *dev)
 extern void s3c_config_gpio_table(int array_size, int (*gpio_table)[6]);
 
 static int keypad_sleep_gpio_table[][6] = {
+#ifdef CONFIG_MACH_OMNIA_II
         { GPIO_KBR1, 0, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 }, //camera,back
         { GPIO_KBR2, 0, GPIO_LEVEL_NONE, S3C_GPIO_PULL_NONE, 0, 0 }, //volup,voldown
+#endif
 };
 
 void s3c_keypad_early_suspend(struct early_suspend *handler)
